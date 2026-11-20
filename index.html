@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SheetJS (XLSX) untuk Export & Import Excel Asli (.xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Tesseract.js OCR untuk Auto-Scan Foto Bukti Transaksi -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Google Font Inter -->
@@ -471,7 +473,7 @@
                     </div>
 
                     <div class="bg-slate-200/80 border-t border-slate-300 py-2 px-4 text-center text-[11px] text-slate-600">
-                        DONET CELL v2.1.0 &bull; Layanan BRILink Resmi &bull; Database Aktif: <strong id="home-footer-db">GROSIRDONET</strong>
+                        DONET CELL v2.2.0 &bull; Layanan BRILink Resmi &bull; Database Aktif: <strong id="home-footer-db">GROSIRDONET</strong>
                     </div>
                 </div>
 
@@ -491,7 +493,7 @@
             <span class="hidden sm:inline">|</span>
             <span id="footer-network-status" class="font-medium text-emerald-700"><i class="fa-solid fa-wifi mr-1"></i>Internet Online (Auto-Sync Aktif)</span>
             <span class="hidden md:inline">|</span>
-            <span class="hidden md:inline text-sky-700 font-medium"><i class="fa-solid fa-shield-halved mr-1"></i>PWA Offline Cache: Aktif</span>
+            <span class="hidden md:inline text-sky-700 font-medium"><i class="fa-solid fa-shield-halved mr-1"></i>PWA Share &amp; Offline: Aktif</span>
         </div>
         <div class="flex items-center space-x-3">
             <span id="footer-clock" class="font-mono font-medium">20:15:00</span>
@@ -552,6 +554,33 @@
                 <button onclick="closePpobServiceModal()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
             <div class="p-4 space-y-3 text-xs max-h-[82vh] overflow-y-auto">
+                <!-- BANNER AUTO-SCAN FOTO BUKTI & TEMPEL TEKS -->
+                <div class="bg-gradient-to-r from-violet-100 via-purple-50 to-indigo-100 border border-violet-300 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                        <div class="font-extrabold text-violet-950 text-xs flex items-center space-x-1.5">
+                            <i class="fa-solid fa-camera-retro text-violet-700"></i>
+                            <span>Auto-Scan &amp; Direct Share Bank</span>
+                        </div>
+                        <p id="ppob-ocr-status" class="text-[11px] text-violet-700 truncate">Upload foto bukti / share dari m-Banking BCA/BRI!</p>
+                    </div>
+                    <div class="flex items-center space-x-1.5 shrink-0">
+                        <button type="button" onclick="pasteClipboardToPpob()" class="px-2.5 py-1.5 bg-white hover:bg-violet-50 text-violet-800 border border-violet-300 font-bold rounded-lg text-xs shadow-2xs flex items-center space-x-1" title="Tempel teks bukti transfer dari clipboard">
+                            <i class="fa-solid fa-paste"></i>
+                            <span>Tempel Teks</span>
+                        </button>
+                        <label class="px-3 py-1.5 bg-violet-700 hover:bg-violet-800 text-white font-bold rounded-lg text-xs shadow cursor-pointer flex items-center space-x-1.5">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>Upload Foto</span>
+                            <input type="file" id="ppob-photo-input" accept="image/*" class="hidden" onchange="handlePpobPhotoScan(event)">
+                        </label>
+                    </div>
+                </div>
+                <div id="ppob-photo-preview-box" class="hidden bg-slate-100 border border-slate-300 rounded-lg p-2 flex items-center justify-between gap-2">
+                    <img id="ppob-photo-thumb" src="" alt="Preview Bukti" class="h-12 w-12 object-cover rounded border border-slate-300">
+                    <div class="flex-1 text-[11px] text-slate-700" id="ppob-ocr-summary">Memindai teks bukti transaksi...</div>
+                    <button type="button" onclick="document.getElementById('ppob-photo-preview-box').classList.add('hidden')" class="text-slate-400 hover:text-rose-600 px-1"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
                 <div>
                     <label class="block font-bold text-slate-700 mb-1.5">1. Pilih Layanan PPOB *</label>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -561,7 +590,7 @@
                         </button>
                         <button type="button" id="ppob-cat-TRANSFER" onclick="selectPpobCategory('TRANSFER')" class="ppob-cat-btn p-2 rounded-lg border border-slate-300 bg-white text-slate-700 font-semibold flex flex-col items-center space-y-1">
                             <i class="fa-solid fa-building-columns text-base text-sky-600"></i>
-                            <span>Transfer Bank</span>
+                            <span>Transfer Bank / VA</span>
                         </button>
                         <button type="button" id="ppob-cat-TARIK_TUNAI" onclick="selectPpobCategory('TARIK_TUNAI')" class="ppob-cat-btn p-2 rounded-lg border border-slate-300 bg-white text-slate-700 font-semibold flex flex-col items-center space-y-1">
                             <i class="fa-solid fa-money-bill-transfer text-base text-emerald-600"></i>
@@ -735,33 +764,6 @@
         </div>
     </div>
 
-    <!-- MODAL PENCARIAN PESANAN PEMBELIAN BELUM MASUK NOTA -->
-    <div id="pending-po-picker-modal" class="fixed inset-0 bg-slate-900/50 z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-sm shadow-2xl border border-slate-400 w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div class="px-3 py-2 flex items-center justify-between border-b border-slate-300 bg-sky-700 text-white text-xs">
-                <span class="font-semibold">Pilih Pesanan Pembelian — Supplier: <span id="pending-po-supplier-title" class="underline font-bold"></span></span>
-                <button onclick="closePendingPoPickerModal()" class="text-white/80 hover:text-white px-1"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="flex-1 overflow-auto bg-white">
-                <table class="w-full text-left border-collapse text-xs whitespace-nowrap">
-                    <thead class="bg-slate-100 border-b border-slate-300 sticky top-0">
-                        <tr>
-                            <th class="border-r border-slate-300 px-2 py-1.5">No Transaksi PO</th>
-                            <th class="border-r border-slate-300 px-2 py-1.5">Tanggal</th>
-                            <th class="border-r border-slate-300 px-2 py-1.5 text-right">Qty Pesan</th>
-                            <th class="border-r border-slate-300 px-2 py-1.5 text-right">Qty Terima</th>
-                            <th class="px-2 py-1.5 text-center">Pilih</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pending-po-picker-tbody" class="divide-y divide-slate-200"></tbody>
-                </table>
-            </div>
-            <div class="bg-slate-100 border-t border-slate-300 px-3 py-1.5 flex justify-end text-xs">
-                <button onclick="closePendingPoPickerModal()" class="px-3 py-1 bg-white hover:bg-slate-200 border border-slate-400 rounded-xs">Tutup</button>
-            </div>
-        </div>
-    </div>
-
     <!-- INPUT FILE IMPORT EXCEL -->
     <input type="file" id="datasheet-import-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleDatasheetImport(event)">
 
@@ -867,13 +869,7 @@
 
         let daftarItemState = { tipeItem: 'SEMUA', gudang: 'UTM', pilihanItem: 'SEMUA', includeDiscontinued: false, selectedKode: null };
         let kartuStokState = { kodeItem: '', gudang: 'UTM' };
-        let supplierState = { selectedKode: null, editingKode: null };
-        let pelangganState = { selectedKode: null, editingKode: null };
         let posSelectedRowIdx = 0;
-        let poFormState = { editingNo: null, items: [], selectedRowIdx: 0 };
-        let poListState = { selectedNo: null };
-        let fblFormState = { editingNo: null, items: [], selectedRowIdx: 0 };
-        let fblListState = { selectedNo: null };
 
         // --- 2. DATA MASTER & TRANSAKSI ---
         let demoItems = [
@@ -1016,7 +1012,7 @@
             }
         }
 
-        // --- 4. INDEXEDDB LOCAL PERSISTENCE & PWA MANIFEST + SERVICE WORKER ---
+        // --- 4. INDEXEDDB LOCAL PERSISTENCE & PWA MANIFEST + SHARE TARGET + SERVICE WORKER ---
         const IDB_NAME = 'GROSIRDONET_IPOS5_LOCAL_DB';
         const IDB_VERSION = 3;
         let idbInstance = null;
@@ -1153,17 +1149,29 @@
 
         function initPwaSupport() {
             try {
+                const baseUrl = location.href.split('?')[0].split('#')[0];
                 const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#0284c7"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="160" fill="#ffffff">DC</text></svg>`;
                 const iconUrl = 'data:image/svg+xml;base64,' + btoa(svgIcon);
                 const manifest = {
                     name: 'DONET CELL - iPos 5 & BRILink',
                     short_name: 'DONET CELL',
-                    start_url: location.href,
+                    start_url: baseUrl,
                     display: 'standalone',
                     background_color: '#0f172a',
                     theme_color: '#0284c7',
                     orientation: 'portrait',
-                    icons: [{ src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }]
+                    icons: [{ src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }],
+                    share_target: {
+                        action: baseUrl,
+                        method: 'POST',
+                        enctype: 'multipart/form-data',
+                        params: {
+                            title: 'title',
+                            text: 'text',
+                            url: 'url',
+                            files: [{ name: 'receipt_image', accept: ['image/*'] }]
+                        }
+                    }
                 };
                 const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
                 const link = document.createElement('link');
@@ -1175,13 +1183,25 @@
             if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
                 try {
                     const swCode = `
-                        const CACHE_NAME = 'donet-cell-ipos5-v1';
+                        const CACHE_NAME = 'donet-cell-ipos5-v2';
                         self.addEventListener('install', e => {
                             self.skipWaiting();
                             e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['./']).catch(() => {})));
                         });
                         self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
                         self.addEventListener('fetch', e => {
+                            if (e.request.method === 'POST') {
+                                e.respondWith((async () => {
+                                    const formData = await e.request.formData();
+                                    const file = formData.get('receipt_image');
+                                    const text = formData.get('text') || formData.get('title') || '';
+                                    const cache = await caches.open('donet-share-target');
+                                    if (file) await cache.put('/shared-receipt-image', new Response(file));
+                                    if (text) await cache.put('/shared-receipt-text', new Response(text));
+                                    return Response.redirect('./?shared=1', 303);
+                                })());
+                                return;
+                            }
                             if (e.request.method !== 'GET') return;
                             e.respondWith(
                                 fetch(e.request).then(res => {
@@ -1203,6 +1223,39 @@
                 const btn = document.getElementById('pwa-install-btn');
                 if (btn) { btn.classList.remove('hidden'); btn.classList.add('flex'); }
             });
+        }
+
+        async function checkIncomingSharedReceipt() {
+            try {
+                const params = new URLSearchParams(location.search);
+                if (!params.has('shared') && !params.has('text') && !params.has('title')) return;
+
+                closeDbSelectModal();
+                openTab('transaksi-ppob', 'Transaksi PPOB & Layanan Digital', 'fa-bolt text-amber-500');
+                openPpobServiceModal('TRANSFER');
+
+                const sharedTextParam = params.get('text') || params.get('title') || '';
+                if (sharedTextParam) {
+                    parseAndFillPpobFromOcr(sharedTextParam, 'DirectShare');
+                }
+
+                if ('caches' in window) {
+                    const cache = await caches.open('donet-share-target');
+                    const imgRes = await cache.match('/shared-receipt-image');
+                    if (imgRes) {
+                        const blob = await imgRes.blob();
+                        await cache.delete('/shared-receipt-image');
+                        await processImageBlobWithOcr(blob, 'SharedBankReceipt.jpg');
+                    }
+                    const txtRes = await cache.match('/shared-receipt-text');
+                    if (txtRes) {
+                        const sharedTxt = await txtRes.text();
+                        await cache.delete('/shared-receipt-text');
+                        if (sharedTxt) parseAndFillPpobFromOcr(sharedTxt, 'SharedBankText');
+                    }
+                }
+                history.replaceState({}, document.title, location.pathname);
+            } catch (e) {}
         }
 
         async function triggerPwaInstall() {
@@ -1229,19 +1282,10 @@
             const timeFmt = parts[1] ? parts[1].replace(/:/g, '.') : '';
             return timeFmt ? `${dateFmt} ${timeFmt}` : dateFmt;
         }
-        function formatIndoDateOnly(dtStr) {
-            if (!dtStr) return '';
-            const dParts = String(dtStr).split(' ')[0].split('-');
-            return dParts.length === 3 ? `${dParts[2]}/${dParts[1]}/${dParts[0]}` : dtStr;
-        }
         function getCurrentDateTimeStr() {
             const now = new Date();
             const pad = (n) => String(n).padStart(2, '0');
             return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-        }
-        function getSupplierCodeByName(nama) {
-            const found = demoSuppliers.find(s => s.nama.toUpperCase() === String(nama || '').toUpperCase());
-            return found ? found.kode : 'SUP';
         }
 
         function calculateAllDompetBalances() {
@@ -1250,26 +1294,22 @@
                 map[a.nama.toUpperCase()] = { ...a, saldo_akhir: Number(a.saldo_awal || 0) };
             });
 
-            // Penjualan Kasir POS masuk ke KAS BESAR / KASIR
             const kasirKey = 'KAS BESAR / KASIR';
             demoSalesHistory.forEach(s => {
                 if (map[kasirKey]) map[kasirKey].saldo_akhir += Number(s.total || 0);
             });
 
-            // Pembelian Tunai/DP memotong KAS KECIL
             const kasKecilKey = 'KAS KECIL';
             demoPurchaseHistory.forEach(b => {
                 if (map[kasKecilKey]) map[kasKecilKey].saldo_akhir -= Number(b.tunai_dp || 0);
             });
 
-            // Pembayaran Hutang memotong akun terpilih
             demoHutangPayments.forEach(h => {
                 const label = String(h.kode_akun || '').toUpperCase();
                 const matchedKey = Object.keys(map).find(k => label.includes(k));
                 if (matchedKey) map[matchedKey].saldo_akhir -= Number(h.jumlah_bayar || 0);
             });
 
-            // Transaksi PPOB memotong akun_asal & menambah akun_tujuan
             demoPpobTransactions.forEach(p => {
                 const asal = String(p.akun_asal || '').toUpperCase();
                 const tuj = String(p.akun_tujuan || '').toUpperCase();
@@ -1277,7 +1317,6 @@
                 if (map[tuj]) map[tuj].saldo_akhir += Number(p.harga_jual || 0);
             });
 
-            // Pindah Saldo / Mutasi Kas
             demoMutasiKas.forEach(m => {
                 const asal = String(m.akun_asal || '').toUpperCase();
                 const tuj = String(m.akun_tujuan || '').toUpperCase();
@@ -1561,7 +1600,7 @@
             showToast('Beralih ke Mode Lokal.', 'info');
         }
 
-        // --- 8. TRANSAKSI PPOB & LAYANAN DIGITAL ---
+        // --- 8. TRANSAKSI PPOB, DIRECT SHARE & OCR BUKTI TRANSFER ---
         function loadTransaksiPpobWorkspace() {
             const tbody = document.getElementById('ppob-tbody');
             if (!tbody) return;
@@ -1600,11 +1639,147 @@
             document.getElementById('ppob-modal').value = 0;
             document.getElementById('ppob-jual').value = 0;
             document.getElementById('ppob-sn').value = '';
+            const prevBox = document.getElementById('ppob-photo-preview-box');
+            if (prevBox) prevBox.classList.add('hidden');
+            const ocrStat = document.getElementById('ppob-ocr-status');
+            if (ocrStat) ocrStat.textContent = 'Upload foto bukti / share dari m-Banking BCA/BRI!';
             selectPpobCategory(cat);
             recalcPpobPreview();
 
             const m = document.getElementById('ppob-service-modal');
             if (m) { m.classList.remove('hidden'); m.classList.add('flex'); }
+        }
+
+        function triggerPpobUploadDirectly(cat = 'TRANSFER') {
+            openPpobServiceModal(cat);
+            setTimeout(() => {
+                const inp = document.getElementById('ppob-photo-input');
+                if (inp) inp.click();
+            }, 120);
+        }
+
+        async function pasteClipboardToPpob() {
+            try {
+                const txt = await navigator.clipboard.readText();
+                if (!txt || !txt.trim()) {
+                    return showToast('Clipboard kosong. Salin teks bukti transfer dari aplikasi bank terlebih dahulu.', 'warning');
+                }
+                parseAndFillPpobFromOcr(txt, 'ClipboardText');
+            } catch (e) {
+                const manualTxt = prompt('Tempel (Paste) teks bukti transfer dari BCA / BRImo / DANA di sini:');
+                if (manualTxt) parseAndFillPpobFromOcr(manualTxt, 'ManualPaste');
+            }
+        }
+
+        async function handlePpobPhotoScan(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            await processImageBlobWithOcr(file, file.name);
+            event.target.value = '';
+        }
+
+        async function processImageBlobWithOcr(blob, fileName = 'BuktiTransfer.jpg') {
+            const prevBox = document.getElementById('ppob-photo-preview-box');
+            const thumb = document.getElementById('ppob-photo-thumb');
+            const summary = document.getElementById('ppob-ocr-summary');
+            const statusEl = document.getElementById('ppob-ocr-status');
+
+            const reader = new FileReader();
+            reader.onload = (e) => { if (thumb) thumb.src = e.target.result; };
+            reader.readAsDataURL(blob);
+
+            if (prevBox) prevBox.classList.remove('hidden');
+            if (summary) summary.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-violet-700 mr-1"></i>Membaca bukti transfer BCA / m-Banking...';
+            if (statusEl) statusEl.textContent = 'Sedang memindai bukti transaksi...';
+
+            try {
+                let rawText = '';
+                if (window.Tesseract) {
+                    const result = await Tesseract.recognize(blob, 'ind+eng');
+                    rawText = result?.data?.text || '';
+                }
+                parseAndFillPpobFromOcr(rawText, fileName);
+            } catch (err) {
+                parseAndFillPpobFromOcr('', fileName);
+            }
+        }
+
+        function parseAndFillPpobFromOcr(rawText, fileName = '') {
+            const cleanText = String(rawText || '').replace(/\r/g, '\n');
+            const upper = `${cleanText} ${fileName}`.toUpperCase();
+            const summary = document.getElementById('ppob-ocr-summary');
+            const statusEl = document.getElementById('ppob-ocr-status');
+
+            // 1. Deteksi kategori otomatis
+            let detectedCat = activePpobCategory;
+            if (/TARIK\s*TUNAI|PENARIKAN|ATM\s*MINI/.test(upper)) detectedCat = 'TARIK_TUNAI';
+            else if (/DANA|OVO|GOPAY|SHOPEEPAY|LINKAJA|E-?WALLET/.test(upper)) detectedCat = 'EWALLET';
+            else if (/PLN|TOKEN|LISTRIK|PDAM|BPJS|KWH/.test(upper)) detectedCat = 'TOKEN_PLN';
+            else if (/PULSA|KUOTA|DATA|TELKOMSEL|INDOSAT|AXIS|THREE|SMARTFREN/.test(upper)) detectedCat = 'PULSA';
+            else if (/TRANSFER|BERHASIL|VIRTUAL\s*ACCOUNT|BCA|BRI|MANDIRI|BNI|CIMB|REK/.test(upper)) detectedCat = 'TRANSFER';
+            selectPpobCategory(detectedCat);
+
+            // 2. Ekstrak nomor Virtual Account / Rekening / HP / ID Pelanggan (gabungkan angka terpisah baris seperti VA BCA 18 digit)
+            const collapsedDigits = upper.replace(/(\d{10,16})\s*\n\s*(\d{1,6})/g, '$1$2');
+            const digitMatches = collapsedDigits.match(/\b\d{8,20}\b/g) || [];
+            if (digitMatches.length > 0) {
+                // Prioritaskan nomor rekening / VA terpanjang
+                const bestAccount = digitMatches.sort((a, b) => b.length - a.length)[0];
+                document.getElementById('ppob-tujuan').value = bestAccount;
+            }
+
+            // 3. Deteksi Nama Produk / Penerima / Bank (misal INDODANA FINANCE, BCA Virtual Account, dll)
+            let detectedProduct = '';
+            const prodLine = cleanText.match(/(?:Nama\s*Produk|Produk|Tujuan|Penerima)\s*:?\s*([A-Za-z0-9\s.&-]{3,35})/i);
+            const providers = ['INDODANA FINANCE', 'AKULAKU', 'KREDIVO', 'SHOPEE', 'TOKOPEDIA', 'BCA VIRTUAL ACCOUNT', 'BCA', 'BRI', 'MANDIRI', 'BNI', 'CIMB NIAGA', 'BSI', 'DANA', 'OVO', 'GOPAY', 'SHOPEEPAY', 'PLN', 'PDAM', 'BPJS', 'TELKOMSEL', 'INDOSAT', 'XL', 'AXIS', 'THREE'];
+            const foundProv = providers.find(p => upper.includes(p));
+            if (prodLine && prodLine[1] && prodLine[1].trim().length >= 3) {
+                detectedProduct = prodLine[1].trim().replace(/\s+/g, ' ');
+            } else if (foundProv) {
+                detectedProduct = foundProv;
+            } else {
+                detectedProduct = detectedCat === 'TRANSFER' ? 'Transfer Bank / VA' : detectedCat;
+            }
+            document.getElementById('ppob-produk').value = detectedProduct.toUpperCase();
+
+            // 4. Ekstrak nominal rupiah (mendukung format IDR 365,000.00 maupun Rp 365.000)
+            let nominal = 0;
+            const idrDecimalMatches = [...upper.matchAll(/(?:IDR|RP\.?|NOMINAL|TOTAL)\s*:?\s*(\d{1,3}(?:[.,]\d{3})+)(?:[.,]\d{2})?\b/g)];
+            if (idrDecimalMatches.length > 0) {
+                const nums = idrDecimalMatches.map(m => Number(String(m[1]).replace(/[.,]/g, ''))).filter(n => n >= 1000 && n <= 200000000);
+                if (nums.length > 0) nominal = Math.max(...nums);
+            }
+            if (nominal === 0) {
+                const plainMatches = [...upper.matchAll(/(?:IDR|RP\.?|NOMINAL|TOTAL)\s*:?\s*(\d{4,9})\b/g)];
+                if (plainMatches.length > 0) {
+                    nominal = Math.max(...plainMatches.map(m => Number(m[1])));
+                }
+            }
+
+            if (nominal > 0) {
+                const adminFee = detectedCat === 'PULSA' ? 2000 : 5000;
+                document.getElementById('ppob-modal').value = nominal;
+                document.getElementById('ppob-jual').value = nominal + adminFee;
+                recalcPpobPreview();
+            }
+
+            // 5. Ekstrak Kode Ref / SN / Token 20 digit
+            const tokenPln = upper.match(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/);
+            const refMatch = upper.match(/(?:REF|SN|NO\.?\s*REF)\s*:?\s*([A-Z0-9]{6,24})/);
+            if (tokenPln) document.getElementById('ppob-sn').value = tokenPln[0];
+            else if (refMatch) document.getElementById('ppob-sn').value = refMatch[1];
+
+            // Jika sumber dana BCA terdeteksi pada bukti, otomatis arahkan akun asal ke BANK BCA
+            if (upper.includes('BCA') && detectedCat === 'TRANSFER') {
+                const asalEl = document.getElementById('ppob-akun-asal');
+                if (asalEl) asalEl.value = 'BANK BCA';
+            }
+
+            if (summary) {
+                summary.innerHTML = `<strong class="text-emerald-700">Auto-Filled Selesai!</strong> Terdeteksi: <b>${detectedProduct}</b>${nominal > 0 ? ' • Nominal <b>Rp ' + formatRp(nominal) + '</b>' : ''}. Cek &amp; klik Proses.`;
+            }
+            if (statusEl) statusEl.textContent = 'Bukti transfer berhasil dibaca ke formulir!';
+            showToast('Bukti transaksi berhasil dibaca otomatis!', 'success');
         }
 
         function closePpobServiceModal() {
@@ -1631,8 +1806,8 @@
                 if (asalEl) asalEl.value = 'SERVER SIDOMPUL';
                 if (tujEl) tujEl.value = 'KAS BESAR / KASIR';
             } else if (cat === 'TRANSFER') {
-                lblTujuan.textContent = 'No. Rekening Tujuan *';
-                lblProduk.textContent = 'Bank Tujuan (BCA/BRI/Mandiri) *';
+                lblTujuan.textContent = 'No. Rekening / Virtual Account *';
+                lblProduk.textContent = 'Bank / Nama Produk Tujuan *';
                 if (asalEl) asalEl.value = 'BANK BRI (BRILINK)';
                 if (tujEl) tujEl.value = 'KAS BESAR / KASIR';
             } else if (cat === 'TARIK_TUNAI') {
@@ -1973,43 +2148,72 @@
             if (tabId === 'transaksi-ppob') {
                 pane.innerHTML = `
                     <div class="flex-1 overflow-y-auto p-3 sm:p-4 bg-slate-50 space-y-4 text-xs">
-                        <div class="flex flex-wrap items-center justify-between gap-2 bg-white border border-slate-300 rounded-xl p-3 shadow-2xs">
-                            <div>
-                                <h2 class="text-base font-extrabold text-slate-900">Loket Transaksi PPOB &amp; BRILink</h2>
-                                <p class="text-[11px] text-slate-500">Pulsa, Paket Data, Transfer Antar Bank, Tarik Tunai, Topup E-Wallet &amp; Token PLN</p>
+                        <!-- KARTU UTAMA AUTO-SCAN FOTO BUKTI ALA DONET CELL -->
+                        <div class="bg-gradient-to-b from-violet-100 via-purple-50 to-white border-2 border-violet-300 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+                            <div class="text-center space-y-1">
+                                <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-violet-700 text-white text-[11px] font-bold">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                    <span>DONET CELL &bull; Auto-Scan &amp; Direct Share m-Banking</span>
+                                </div>
+                                <h2 class="text-xl sm:text-2xl font-black text-slate-900">Semua Fitur Cukup Upload / Share Foto</h2>
+                                <p class="text-xs text-slate-600 max-w-xl mx-auto">Share bukti transfer dari BCA/BRImo atau upload foto struk. Sistem otomatis membaca &amp; mengisi formulir untukmu.</p>
                             </div>
-                            <button onclick="openPpobServiceModal('PULSA')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow flex items-center space-x-1.5">
-                                <i class="fa-solid fa-plus"></i>
-                                <span>Transaksi PPOB Baru</span>
-                            </button>
-                        </div>
 
-                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                            <button onclick="openPpobServiceModal('PULSA')" class="bg-white hover:bg-sky-50 border border-slate-300 rounded-xl p-3 text-left shadow-2xs">
-                                <i class="fa-solid fa-mobile-screen-button text-xl text-sky-600 mb-1.5"></i>
-                                <div class="font-bold text-slate-900">Pulsa &amp; Data</div>
-                                <div class="text-[10px] text-slate-500">Semua Operator</div>
-                            </button>
-                            <button onclick="openPpobServiceModal('TRANSFER')" class="bg-white hover:bg-indigo-50 border border-slate-300 rounded-xl p-3 text-left shadow-2xs">
-                                <i class="fa-solid fa-building-columns text-xl text-indigo-600 mb-1.5"></i>
-                                <div class="font-bold text-slate-900">Transfer Bank</div>
-                                <div class="text-[10px] text-slate-500">BCA, BRI, Mandiri, BNI</div>
-                            </button>
-                            <button onclick="openPpobServiceModal('TARIK_TUNAI')" class="bg-white hover:bg-emerald-50 border border-slate-300 rounded-xl p-3 text-left shadow-2xs">
-                                <i class="fa-solid fa-money-bill-transfer text-xl text-emerald-600 mb-1.5"></i>
-                                <div class="font-bold text-slate-900">Tarik Tunai</div>
-                                <div class="text-[10px] text-slate-500">BRILink / EDC</div>
-                            </button>
-                            <button onclick="openPpobServiceModal('EWALLET')" class="bg-white hover:bg-purple-50 border border-slate-300 rounded-xl p-3 text-left shadow-2xs">
-                                <i class="fa-solid fa-wallet text-xl text-purple-600 mb-1.5"></i>
-                                <div class="font-bold text-slate-900">Topup E-Wallet</div>
-                                <div class="text-[10px] text-slate-500">DANA, OVO, GoPay</div>
-                            </button>
-                            <button onclick="openPpobServiceModal('TOKEN_PLN')" class="bg-white hover:bg-amber-50 border border-slate-300 rounded-xl p-3 text-left shadow-2xs">
-                                <i class="fa-solid fa-plug-circle-bolt text-xl text-amber-500 mb-1.5"></i>
-                                <div class="font-bold text-slate-900">Token Listrik</div>
-                                <div class="text-[10px] text-slate-500">PLN Prabayar</div>
-                            </button>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div onclick="triggerPpobUploadDirectly('TRANSFER')" class="bg-violet-200/75 hover:bg-violet-200 border border-violet-400 rounded-xl p-3.5 text-center cursor-pointer transition space-y-1.5 shadow-2xs">
+                                    <div class="w-11 h-11 rounded-full border border-violet-600 bg-white/80 flex items-center justify-center mx-auto relative">
+                                        <i class="fa-solid fa-building-columns text-lg text-violet-900"></i>
+                                        <span class="w-5 h-5 rounded-full bg-violet-900 text-white text-[10px] font-bold flex items-center justify-center absolute -top-1 -right-1">1</span>
+                                    </div>
+                                    <div class="font-extrabold text-sm text-slate-900">Transfer Bank &amp; VA</div>
+                                    <div class="text-xs font-semibold text-violet-900"><i class="fa-solid fa-camera mr-1"></i>Upload / Share Bukti</div>
+                                    <div class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Auto-Filled Form</div>
+                                    <div class="text-[10px] text-slate-700">Rekening, VA, nominal &amp; tujuan otomatis terisi</div>
+                                </div>
+
+                                <div onclick="triggerPpobUploadDirectly('TARIK_TUNAI')" class="bg-purple-100/80 hover:bg-purple-200/70 border border-purple-300 rounded-xl p-3.5 text-center cursor-pointer transition space-y-1.5 shadow-2xs">
+                                    <div class="w-11 h-11 rounded-full border border-purple-600 bg-white/80 flex items-center justify-center mx-auto relative">
+                                        <i class="fa-solid fa-money-bill-wave text-lg text-purple-900"></i>
+                                        <span class="w-5 h-5 rounded-full bg-purple-900 text-white text-[10px] font-bold flex items-center justify-center absolute -top-1 -right-1">2</span>
+                                    </div>
+                                    <div class="font-extrabold text-sm text-slate-900">Tarik Tunai</div>
+                                    <div class="text-xs font-semibold text-purple-900"><i class="fa-solid fa-camera mr-1"></i>Upload Foto Bukti</div>
+                                    <div class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Auto-Filled Form</div>
+                                    <div class="text-[10px] text-slate-700">Nominal &amp; kode penarikan otomatis terisi</div>
+                                </div>
+
+                                <div onclick="triggerPpobUploadDirectly('TOKEN_PLN')" class="bg-purple-100/80 hover:bg-purple-200/70 border border-purple-300 rounded-xl p-3.5 text-center cursor-pointer transition space-y-1.5 shadow-2xs">
+                                    <div class="w-11 h-11 rounded-full border border-purple-600 bg-white/80 flex items-center justify-center mx-auto relative">
+                                        <i class="fa-solid fa-bolt text-lg text-purple-900"></i>
+                                        <span class="w-5 h-5 rounded-full bg-purple-900 text-white text-[10px] font-bold flex items-center justify-center absolute -top-1 -right-1">3</span>
+                                    </div>
+                                    <div class="font-extrabold text-sm text-slate-900">PPOB Listrik &bull; PDAM &bull; BPJS</div>
+                                    <div class="text-xs font-semibold text-purple-900"><i class="fa-solid fa-camera mr-1"></i>Upload Foto Bukti</div>
+                                    <div class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Auto-Filled Form</div>
+                                    <div class="text-[10px] text-slate-700">ID pelanggan &amp; tagihan otomatis terisi</div>
+                                </div>
+
+                                <div onclick="triggerPpobUploadDirectly('EWALLET')" class="bg-purple-100/80 hover:bg-purple-200/70 border border-purple-300 rounded-xl p-3.5 text-center cursor-pointer transition space-y-1.5 shadow-2xs">
+                                    <div class="w-11 h-11 rounded-full border border-purple-600 bg-white/80 flex items-center justify-center mx-auto relative">
+                                        <i class="fa-solid fa-wallet text-lg text-purple-900"></i>
+                                        <span class="w-5 h-5 rounded-full bg-purple-900 text-white text-[10px] font-bold flex items-center justify-center absolute -top-1 -right-1">4</span>
+                                    </div>
+                                    <div class="font-extrabold text-sm text-slate-900">Top Up E-Wallet &amp; Pulsa</div>
+                                    <div class="text-xs font-semibold text-purple-900"><i class="fa-solid fa-camera mr-1"></i>Upload Foto Bukti</div>
+                                    <div class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Auto-Filled Form</div>
+                                    <div class="text-[10px] text-slate-700">Nomor HP, nominal &amp; provider otomatis terisi</div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
+                                <button onclick="triggerPpobUploadDirectly('TRANSFER')" class="w-full sm:w-auto px-6 py-2.5 bg-violet-700 hover:bg-violet-800 text-white font-extrabold rounded-full text-xs shadow-md flex items-center justify-center space-x-2">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span>Mulai Upload Foto Sekarang &rarr;</span>
+                                </button>
+                                <button onclick="openPpobServiceModal('PULSA')" class="w-full sm:w-auto px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold rounded-full text-xs">
+                                    Input Manual
+                                </button>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-3 gap-3">
@@ -2718,6 +2922,7 @@
             updateWindowTitle();
             updateHomeDashboardStats();
             updateSyncBadgeUI();
+            await checkIncomingSharedReceipt();
 
             window.addEventListener('online', () => { updateSyncBadgeUI(); syncOfflineQueueNow(false); });
             window.addEventListener('offline', () => { updateSyncBadgeUI(); });
