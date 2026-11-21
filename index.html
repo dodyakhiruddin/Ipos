@@ -575,11 +575,11 @@
                                         <div class="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-1.5 shadow">
                                             <i class="fas fa-check text-base"></i>
                                         </div>
-                                        <div class="text-xs font-bold text-emerald-700">Transfer Berhasil!</div>
-                                        <div id="dash-last-trx-amount" class="text-lg font-extrabold text-slate-900 mt-0.5">Rp 306.500</div>
-                                        <div id="dash-last-trx-desc" class="text-[11px] text-slate-500 mt-0.5 truncate">Transfer Antar Bank • BCA &rarr; MANDIRI</div>
+                                        <div class="text-xs font-bold text-emerald-700" id="dash-last-trx-status">Belum Ada Transaksi</div>
+                                        <div id="dash-last-trx-amount" class="text-lg font-extrabold text-slate-900 mt-0.5">Rp 0</div>
+                                        <div id="dash-last-trx-desc" class="text-[11px] text-slate-500 mt-0.5 truncate">Siap melayani transaksi POS & PPOB</div>
                                         <div id="dash-last-trx-ref" class="mt-2 pt-1.5 border-t border-dashed border-slate-300 text-[10px] font-mono text-slate-400">
-                                            Ref: TRF-20250219-001
+                                            Ref: -
                                         </div>
                                     </div>
                                 </div>
@@ -1474,11 +1474,11 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                     </div>
                     <div class="border border-red-200 rounded p-3 bg-red-50 flex items-center justify-between">
                         <div>
-                            <div class="font-bold text-red-800">Reset Data ke Awal (Demo Default)</div>
-                            <div class="text-red-600">Menghapus transaksi lokal pada database aktif dan mengembalikan stok awal.</div>
+                            <div class="font-bold text-red-800">Kosongkan Semua Data (Kembali ke 0)</div>
+                            <div class="text-red-600">Menghapus seluruh transaksi, saldo, item, supplier, dan riwayat menjadi 0 (akun user tetap aman).</div>
                         </div>
                         <button onclick="resetDemoData()" class="ipos-btn-danger px-3 py-1.5 rounded font-bold shrink-0">
-                            <i class="fas fa-exclamation-triangle mr-1"></i> Reset Data
+                            <i class="fas fa-exclamation-triangle mr-1"></i> Kosongkan Data
                         </button>
                     </div>
                 </div>
@@ -2108,58 +2108,17 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 },
                 users: getDefaultUsersSeed(),
                 wallets: {
-                    KAS_TOKO: 8500000,
-                    SALDO_BRILINK: 15250000,
-                    SALDO_PULSA: 4320000
+                    KAS_TOKO: 0,
+                    SALDO_BRILINK: 0,
+                    SALDO_PULSA: 0
                 },
-                items: [
-                    { code: 'VCR-TSEL-3', name: 'Voucher Telkomsel 3GB / 5 Hari', category: 'Voucher Fisik', unit: 'PCS', stock: 45, cost: 11500, price: 14000 },
-                    { code: 'VCR-TSEL-7', name: 'Voucher Telkomsel 7GB / 7 Hari', category: 'Voucher Fisik', unit: 'PCS', stock: 30, cost: 21500, price: 25000 },
-                    { code: 'VCR-ISAT-5', name: 'Voucher Indosat Freedom 5GB', category: 'Voucher Fisik', unit: 'PCS', stock: 28, cost: 15000, price: 18000 },
-                    { code: 'VCR-XL-4', name: 'Voucher XL Xtra Combo 4.5GB', category: 'Voucher Fisik', unit: 'PCS', stock: 22, cost: 16500, price: 20000 },
-                    { code: 'PRD-TSEL-0', name: 'Kartu Perdana Telkomsel Segel 3GB', category: 'Kartu Perdana', unit: 'PCS', stock: 18, cost: 14000, price: 18000 },
-                    { code: 'PRD-BYU-0', name: 'Kartu Perdana by.U Kuota 3GB', category: 'Kartu Perdana', unit: 'PCS', stock: 15, cost: 12000, price: 15000 },
-                    { code: 'AKS-KBL-C', name: 'Kabel Data Fast Charging Type-C 1M', category: 'Aksesoris HP', unit: 'PCS', stock: 25, cost: 12000, price: 25000 },
-                    { code: 'AKS-CHG-20', name: 'Kepala Charger 20W PD Original OEM', category: 'Aksesoris HP', unit: 'PCS', stock: 12, cost: 35000, price: 55000 },
-                    { code: 'AKS-TG-ALL', name: 'Tempered Glass Anti Spy All Type', category: 'Aksesoris HP', unit: 'PCS', stock: 40, cost: 6000, price: 15000 },
-                    { code: 'AKS-HF-01', name: 'Headset Handsfree Bass Stereo', category: 'Aksesoris HP', unit: 'PCS', stock: 20, cost: 10000, price: 20000 }
-                ],
-                suppliers: [
-                    { code: 'SUP-001', name: 'PT. Telkomsel Authorized Dealer', phone: '0811-2233-4455', address: 'Kawasan Niaga Blok A2', note: 'Supplier Voucher & Perdana Telkomsel' },
-                    { code: 'SUP-002', name: 'CV. Multi Reload Nusantara', phone: '0857-8899-0011', address: 'Jl. Ahmad Yani No. 45', note: 'Server H2H Pulsa, Kuota & Token PLN' },
-                    { code: 'SUP-003', name: 'Grosir Aksesoris Pusat Jaya', phone: '0819-7766-5544', address: 'ITC Roxy Mas Lt. 2', note: 'Kabel Data, Charger & Tempered Glass' }
-                ],
+                items: [],
+                suppliers: [],
                 customers: [
-                    { code: 'PLG-001', name: 'UMUM (Pelanggan Retail)', group: 'UMUM', phone: '-', address: 'Transaksi Langsung Konter' },
-                    { code: 'PLG-002', name: 'Berkah Cell (Reseller)', group: 'RESELLER', phone: '0812-3456-7890', address: 'Jl. Melati No. 10' },
-                    { code: 'PLG-003', name: 'Bpk. H. Sulaiman', group: 'VIP', phone: '0813-9988-7766', address: 'Perum Griya Asri - Langganan Transfer BRI' }
+                    { code: 'PLG-001', name: 'UMUM (Pelanggan Retail)', group: 'UMUM', phone: '-', address: 'Transaksi Langsung Konter' }
                 ],
-                transactions: [
-                    {
-                        id: 'TRF-20250219-001',
-                        date: new Date().toISOString(),
-                        module: 'BRILINK',
-                        description: 'Transfer Antar Bank • BCA -> MANDIRI (1234****5678)',
-                        customer: 'Pelanggan Umum',
-                        modal: 300000,
-                        total: 306500,
-                        profit: 6500,
-                        paymentMethod: 'KAS_TOKO',
-                        items: [{ name: 'Transfer Bank BCA -> MANDIRI', qty: 1, price: 300000 }, { name: 'Biaya Admin BRILink', qty: 1, price: 6500 }]
-                    }
-                ],
-                stockLedger: [
-                    {
-                        date: new Date().toISOString(),
-                        ref: 'SALDO-AWAL',
-                        code: 'VCR-TSEL-3',
-                        name: 'Voucher Telkomsel 3GB / 5 Hari',
-                        type: 'SALDO AWAL',
-                        inQty: 45,
-                        outQty: 0,
-                        balance: 45
-                    }
-                ]
+                transactions: [],
+                stockLedger: []
             };
         }
 
@@ -2470,9 +2429,15 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
 
             if (appState.transactions.length > 0) {
                 const last = appState.transactions[0];
+                document.getElementById('dash-last-trx-status').textContent = 'Transaksi Berhasil!';
                 document.getElementById('dash-last-trx-amount').textContent = formatRp(last.total);
                 document.getElementById('dash-last-trx-desc').textContent = last.description;
                 document.getElementById('dash-last-trx-ref').textContent = `Ref: ${last.id}`;
+            } else {
+                document.getElementById('dash-last-trx-status').textContent = 'Belum Ada Transaksi';
+                document.getElementById('dash-last-trx-amount').textContent = 'Rp 0';
+                document.getElementById('dash-last-trx-desc').textContent = 'Siap melayani transaksi POS & PPOB';
+                document.getElementById('dash-last-trx-ref').textContent = 'Ref: -';
             }
 
             document.getElementById('ppob-saldo-brilink').textContent = formatRp(appState.wallets.SALDO_BRILINK);
@@ -4085,19 +4050,25 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
 
         async function resetDemoData() {
             if (!isCurrentUserAdmin()) {
-                showToast('Akses ditolak! Hanya role ADMIN yang dapat mereset database.', 'error');
+                showToast('Akses ditolak! Hanya role ADMIN yang dapat mengosongkan database.', 'error');
                 return;
             }
             const keepUrl = appState.settings.supabaseUrl;
             const keepKey = appState.settings.supabaseKey;
-            const keepUsers = appState.users;
+            const keepUsers = (Array.isArray(appState.users) && appState.users.length > 0)
+                ? appState.users
+                : getDefaultUsersSeed();
+
             appState = createDefaultState(activeDatabaseName);
             appState.settings.supabaseUrl = keepUrl;
             appState.settings.supabaseKey = keepKey;
             appState.users = keepUsers;
+            posCart = [];
+            initPosHeader();
+
             await saveAppState();
             closeModal('settings-modal');
-            showToast(`Database [${activeDatabaseName}] berhasil dikembalikan ke kondisi awal!`, 'info');
+            showToast(`Seluruh data [${activeDatabaseName}] berhasil dikosongkan ke 0 (User tetap tersimpan)!`, 'info');
         }
 
         // =========================================================================
