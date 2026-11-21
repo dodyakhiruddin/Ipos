@@ -7,6 +7,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="DONET CELL">
+    <link id="pwa-manifest-link" rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22DONET%20CELL%20-%20iPos%205%20%26%20BRILink%22%2C%22short_name%22%3A%22DONET%20CELL%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%230284c7%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F3135%2F3135706.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%2C%22share_target%22%3A%7B%22action%22%3A%22.%2F%3Fshared%3D1%22%2C%22method%22%3A%22POST%22%2C%22enctype%22%3A%22multipart%2Fform-data%22%2C%22params%22%3A%7B%22title%22%3A%22title%22%2C%22text%22%3A%22text%22%2C%22url%22%3A%22url%22%2C%22files%22%3A%5B%7B%22name%22%3A%22receipt_image%22%2C%22accept%22%3A%5B%22image%2F*%22%2C%22.jpg%22%2C%22.jpeg%22%2C%22.png%22%5D%7D%5D%7D%7D%7D">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3135/3135706.png">
     <title>Menu Utama - iPos Profesional 5.0 Web Edition [GROSIRDONET]</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -248,13 +250,13 @@
                         <i id="icon-grp-pembelian" class="fa-solid fa-chevron-down text-[10px]"></i>
                     </button>
                     <div id="grp-pembelian" class="space-y-0.5 mt-0.5">
+                        <button onclick="openTab('daftar-pembelian', 'Daftar & Input Pembelian', 'fa-cart-flatbed text-orange-500');closeMobileSidebar()" class="sidebar-item w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-md text-left text-slate-300">
+                            <i class="fa-solid fa-cart-flatbed w-4 text-center text-orange-400"></i>
+                            <span>Pembelian &amp; Scan Nota</span>
+                        </button>
                         <button onclick="openTab('pesanan-pembelian', 'Pesanan Pembelian', 'fa-file-signature text-amber-500');closeMobileSidebar()" class="sidebar-item w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-md text-left text-slate-300">
                             <i class="fa-solid fa-file-signature w-4 text-center text-amber-400"></i>
                             <span>Pesanan Pembelian</span>
-                        </button>
-                        <button onclick="openTab('daftar-pembelian', 'Daftar Pembelian', 'fa-cart-flatbed text-orange-500');closeMobileSidebar()" class="sidebar-item w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-md text-left text-slate-300">
-                            <i class="fa-solid fa-cart-flatbed w-4 text-center text-orange-400"></i>
-                            <span>Daftar Pembelian</span>
                         </button>
                         <button onclick="openTab('history-harga-beli', 'History Harga Beli', 'fa-clock-rotate-left text-sky-500');closeMobileSidebar()" class="sidebar-item w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-md text-left text-slate-300">
                             <i class="fa-solid fa-clock-rotate-left w-4 text-center text-sky-400"></i>
@@ -473,7 +475,7 @@
                     </div>
 
                     <div class="bg-slate-200/80 border-t border-slate-300 py-2 px-4 text-center text-[11px] text-slate-600">
-                        DONET CELL v2.2.0 &bull; Layanan BRILink Resmi &bull; Database Aktif: <strong id="home-footer-db">GROSIRDONET</strong>
+                        DONET CELL v2.3.0 &bull; Layanan BRILink Resmi &bull; Database Aktif: <strong id="home-footer-db">GROSIRDONET</strong>
                     </div>
                 </div>
 
@@ -493,7 +495,7 @@
             <span class="hidden sm:inline">|</span>
             <span id="footer-network-status" class="font-medium text-emerald-700"><i class="fa-solid fa-wifi mr-1"></i>Internet Online (Auto-Sync Aktif)</span>
             <span class="hidden md:inline">|</span>
-            <span class="hidden md:inline text-sky-700 font-medium"><i class="fa-solid fa-shield-halved mr-1"></i>PWA Share &amp; Offline: Aktif</span>
+            <span class="hidden md:inline text-sky-700 font-medium"><i class="fa-solid fa-shield-halved mr-1"></i>Auto-Scan Nota, POS &amp; PPOB: Aktif</span>
         </div>
         <div class="flex items-center space-x-3">
             <span id="footer-clock" class="font-mono font-medium">20:15:00</span>
@@ -539,6 +541,96 @@
             <div class="bg-slate-50 border-t border-slate-200 px-4 py-2.5 flex justify-end space-x-2">
                 <button onclick="resetDemoMode()" class="px-3 py-1.5 border border-slate-300 rounded text-xs text-slate-600 hover:bg-slate-100">Gunakan Mode Lokal</button>
                 <button onclick="saveSupabaseConfig()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded text-xs shadow">Simpan &amp; Hubungkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL INPUT FAKTUR PEMBELIAN + AUTO-SCAN NOTA SUPPLIER -->
+    <div id="pembelian-scan-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-2xl overflow-hidden">
+            <div class="bg-orange-700 text-white px-4 py-2.5 flex items-center justify-between">
+                <div class="flex items-center space-x-2 font-semibold text-sm">
+                    <i class="fa-solid fa-cart-flatbed"></i>
+                    <span>Input Faktur Pembelian &amp; Auto-Scan Nota Supplier</span>
+                </div>
+                <button onclick="closePembelianScanModal()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="p-4 space-y-3 text-xs max-h-[82vh] overflow-y-auto">
+                <!-- Banner Auto-Scan Nota Supplier -->
+                <div class="bg-gradient-to-r from-violet-100 via-purple-50 to-amber-50 border border-violet-300 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                        <div class="font-extrabold text-violet-950 text-xs flex items-center space-x-1.5">
+                            <i class="fa-solid fa-camera-retro text-violet-700"></i>
+                            <span>Scan Foto Nota Supplier / Tempel Chat Order</span>
+                        </div>
+                        <p id="bl-ocr-status" class="text-[11px] text-violet-700 truncate">Foto nota pembelian atau tempel rincian dari WA supplier!</p>
+                    </div>
+                    <div class="flex items-center space-x-1.5 shrink-0">
+                        <button type="button" onclick="pasteTextToPembelian()" class="px-2.5 py-1.5 bg-white hover:bg-violet-50 text-violet-800 border border-violet-300 font-bold rounded-lg text-xs shadow-2xs flex items-center space-x-1">
+                            <i class="fa-solid fa-paste"></i>
+                            <span>Tempel Teks</span>
+                        </button>
+                        <label class="px-3 py-1.5 bg-violet-700 hover:bg-violet-800 text-white font-bold rounded-lg text-xs shadow cursor-pointer flex items-center space-x-1.5">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>Upload Nota</span>
+                            <input type="file" id="bl-photo-input" accept="image/*" class="hidden" onchange="handlePembelianPhotoScan(event)">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Supplier *</label>
+                        <select id="bl-supplier" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-semibold">
+                            ${demoSuppliers.map(s => `<option value="${s.nama}">${s.nama}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Gudang Masuk *</label>
+                        <select id="bl-gudang" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white">
+                            <option value="UTM">UTM (Pusat)</option>
+                            <option value="KSR1">KSR1 (Toko Depan)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Sumber Dana Bayar</label>
+                        <select id="bl-akun-bayar" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-semibold text-rose-700"></select>
+                    </div>
+                </div>
+
+                <!-- Tabel Item Pembelian -->
+                <div class="border border-slate-300 rounded-lg overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-100 border-b border-slate-300">
+                            <tr>
+                                <th class="border-r px-2 py-1.5">Kode Item</th>
+                                <th class="border-r px-2 py-1.5">Nama Item</th>
+                                <th class="border-r px-2 py-1.5 text-right w-16">Qty</th>
+                                <th class="border-r px-2 py-1.5 text-right w-28">Harga Beli</th>
+                                <th class="border-r px-2 py-1.5 text-right">Subtotal</th>
+                                <th class="px-2 py-1.5 text-center w-8"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="bl-draft-tbody" class="divide-y divide-slate-200"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <div class="flex items-center space-x-1.5">
+                        <select id="bl-quick-item" class="border border-slate-300 rounded px-2 py-1 bg-white text-xs">
+                            ${demoItems.map(i => `<option value="${i.kode_item}">${i.kode_item} - ${i.nama_item}</option>`).join('')}
+                        </select>
+                        <button type="button" onclick="addQuickItemToPembelianDraft()" class="px-2.5 py-1 bg-sky-600 text-white font-bold rounded text-xs">+ Tambah Item</button>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-slate-500 mr-2">Total Pembelian:</span>
+                        <span id="bl-draft-total" class="text-base font-extrabold text-orange-700">Rp 0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 border-t border-slate-200 px-4 py-2.5 flex justify-end space-x-2">
+                <button onclick="closePembelianScanModal()" class="px-3 py-1.5 border border-slate-300 rounded text-xs">Batal</button>
+                <button onclick="savePembelianDraft()" class="px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded text-xs shadow">Simpan Pembelian &amp; Tambah Stok</button>
             </div>
         </div>
     </div>
@@ -979,6 +1071,7 @@
         let demoHutangPayments = [];
         let demoPurchaseReturns = [];
         let kasirCart = [];
+        let pembelianDraftCart = [];
 
         // --- 3. SIDEBAR RESPONSIVE CONTROLS ---
         function toggleMobileSidebar() {
@@ -1148,73 +1241,80 @@
         }
 
         function initPwaSupport() {
-            try {
-                const baseUrl = location.href.split('?')[0].split('#')[0];
-                const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#0284c7"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="160" fill="#ffffff">DC</text></svg>`;
-                const iconUrl = 'data:image/svg+xml;base64,' + btoa(svgIcon);
-                const manifest = {
-                    name: 'DONET CELL - iPos 5 & BRILink',
-                    short_name: 'DONET CELL',
-                    start_url: baseUrl,
-                    display: 'standalone',
-                    background_color: '#0f172a',
-                    theme_color: '#0284c7',
-                    orientation: 'portrait',
-                    icons: [{ src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }],
-                    share_target: {
-                        action: baseUrl,
-                        method: 'POST',
-                        enctype: 'multipart/form-data',
-                        params: {
-                            title: 'title',
-                            text: 'text',
-                            url: 'url',
-                            files: [{ name: 'receipt_image', accept: ['image/*'] }]
-                        }
+            // 1. Tanamkan Manifest JSON lengkap (termasuk share_target) langsung dari memori
+            const manifestObj = {
+                name: "DONET CELL - iPos 5 & BRILink",
+                short_name: "DONET CELL",
+                description: "Aplikasi Kasir, Pembelian, PPOB & Scan Bukti Transfer Bank",
+                start_url: location.pathname || "/",
+                scope: "/",
+                display: "standalone",
+                background_color: "#0f172a",
+                theme_color: "#0284c7",
+                orientation: "portrait",
+                icons: [
+                    { src: "https://cdn-icons-png.flaticon.com/512/3135/3135706.png", sizes: "192x192", type: "image/png", purpose: "any" },
+                    { src: "https://cdn-icons-png.flaticon.com/512/3135/3135706.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+                ],
+                share_target: {
+                    action: (location.pathname || "/") + "?shared=1",
+                    method: "POST",
+                    enctype: "multipart/form-data",
+                    params: {
+                        title: "title",
+                        text: "text",
+                        url: "url",
+                        files: [{ name: "receipt_image", accept: ["image/*", ".jpg", ".jpeg", ".png", ".webp"] }]
                     }
-                };
-                const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-                const link = document.createElement('link');
-                link.rel = 'manifest';
-                link.href = URL.createObjectURL(blob);
-                document.head.appendChild(link);
+                }
+            };
+            try {
+                const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: "application/manifest+json" });
+                const manifestLink = document.getElementById("pwa-manifest-link");
+                if (manifestLink) manifestLink.href = URL.createObjectURL(manifestBlob);
             } catch (e) {}
 
+            // 2. Daftarkan Service Worker gabungan (mencoba /sw.js dulu, lalu fallback ke Blob SW tertanam)
             if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-                try {
-                    const swCode = `
-                        const CACHE_NAME = 'donet-cell-ipos5-v2';
-                        self.addEventListener('install', e => {
-                            self.skipWaiting();
-                            e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['./']).catch(() => {})));
-                        });
-                        self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-                        self.addEventListener('fetch', e => {
-                            if (e.request.method === 'POST') {
-                                e.respondWith((async () => {
-                                    const formData = await e.request.formData();
-                                    const file = formData.get('receipt_image');
-                                    const text = formData.get('text') || formData.get('title') || '';
-                                    const cache = await caches.open('donet-share-target');
-                                    if (file) await cache.put('/shared-receipt-image', new Response(file));
-                                    if (text) await cache.put('/shared-receipt-text', new Response(text));
-                                    return Response.redirect('./?shared=1', 303);
-                                })());
-                                return;
-                            }
-                            if (e.request.method !== 'GET') return;
-                            e.respondWith(
-                                fetch(e.request).then(res => {
-                                    const copy = res.clone();
-                                    caches.open(CACHE_NAME).then(c => c.put(e.request, copy)).catch(() => {});
-                                    return res;
-                                }).catch(() => caches.match(e.request))
-                            );
-                        });
-                    `;
-                    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-                    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
-                } catch (e) {}
+                const swCode = `
+                    const CACHE_NAME = 'donet-cell-ipos5-v4';
+                    const SHARE_CACHE = 'donet-share-target';
+                    self.addEventListener('install', (e) => {
+                        self.skipWaiting();
+                        e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(['/', '/index.html']).catch(() => {})));
+                    });
+                    self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+                    self.addEventListener('fetch', (e) => {
+                        const url = new URL(e.request.url);
+                        if (e.request.method === 'POST' && (url.searchParams.has('shared') || url.pathname === '/')) {
+                            e.respondWith((async () => {
+                                try {
+                                    const fd = await e.request.formData();
+                                    const img = fd.get('receipt_image');
+                                    const txt = fd.get('text') || fd.get('title') || fd.get('url') || '';
+                                    const cache = await caches.open(SHARE_CACHE);
+                                    if (img && img.size > 0) await cache.put('/shared-receipt-image', new Response(img, { headers: { 'Content-Type': img.type || 'image/jpeg' } }));
+                                    if (txt) await cache.put('/shared-receipt-text', new Response(String(txt), { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }));
+                                } catch (err) {}
+                                return Response.redirect('/?shared=1', 303);
+                            })());
+                            return;
+                        }
+                        if (e.request.method === 'GET') {
+                            e.respondWith(fetch(e.request).then((res) => {
+                                const cl = res.clone();
+                                caches.open(CACHE_NAME).then((c) => c.put(e.request, cl)).catch(() => {});
+                                return res;
+                            }).catch(() => caches.match(e.request)));
+                        }
+                    });
+                `;
+                navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+                    try {
+                        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+                    } catch (err) {}
+                });
             }
 
             window.addEventListener('beforeinstallprompt', (e) => {
@@ -1301,7 +1401,8 @@
 
             const kasKecilKey = 'KAS KECIL';
             demoPurchaseHistory.forEach(b => {
-                if (map[kasKecilKey]) map[kasKecilKey].saldo_akhir -= Number(b.tunai_dp || 0);
+                const targetKey = b.akun_bayar && map[b.akun_bayar.toUpperCase()] ? b.akun_bayar.toUpperCase() : kasKecilKey;
+                if (map[targetKey]) map[targetKey].saldo_akhir -= Number(b.tunai_dp || 0);
             });
 
             demoHutangPayments.forEach(h => {
@@ -1710,7 +1811,6 @@
             const summary = document.getElementById('ppob-ocr-summary');
             const statusEl = document.getElementById('ppob-ocr-status');
 
-            // 1. Deteksi kategori otomatis
             let detectedCat = activePpobCategory;
             if (/TARIK\s*TUNAI|PENARIKAN|ATM\s*MINI/.test(upper)) detectedCat = 'TARIK_TUNAI';
             else if (/DANA|OVO|GOPAY|SHOPEEPAY|LINKAJA|E-?WALLET/.test(upper)) detectedCat = 'EWALLET';
@@ -1719,16 +1819,13 @@
             else if (/TRANSFER|BERHASIL|VIRTUAL\s*ACCOUNT|BCA|BRI|MANDIRI|BNI|CIMB|REK/.test(upper)) detectedCat = 'TRANSFER';
             selectPpobCategory(detectedCat);
 
-            // 2. Ekstrak nomor Virtual Account / Rekening / HP / ID Pelanggan (gabungkan angka terpisah baris seperti VA BCA 18 digit)
             const collapsedDigits = upper.replace(/(\d{10,16})\s*\n\s*(\d{1,6})/g, '$1$2');
             const digitMatches = collapsedDigits.match(/\b\d{8,20}\b/g) || [];
             if (digitMatches.length > 0) {
-                // Prioritaskan nomor rekening / VA terpanjang
                 const bestAccount = digitMatches.sort((a, b) => b.length - a.length)[0];
                 document.getElementById('ppob-tujuan').value = bestAccount;
             }
 
-            // 3. Deteksi Nama Produk / Penerima / Bank (misal INDODANA FINANCE, BCA Virtual Account, dll)
             let detectedProduct = '';
             const prodLine = cleanText.match(/(?:Nama\s*Produk|Produk|Tujuan|Penerima)\s*:?\s*([A-Za-z0-9\s.&-]{3,35})/i);
             const providers = ['INDODANA FINANCE', 'AKULAKU', 'KREDIVO', 'SHOPEE', 'TOKOPEDIA', 'BCA VIRTUAL ACCOUNT', 'BCA', 'BRI', 'MANDIRI', 'BNI', 'CIMB NIAGA', 'BSI', 'DANA', 'OVO', 'GOPAY', 'SHOPEEPAY', 'PLN', 'PDAM', 'BPJS', 'TELKOMSEL', 'INDOSAT', 'XL', 'AXIS', 'THREE'];
@@ -1742,7 +1839,6 @@
             }
             document.getElementById('ppob-produk').value = detectedProduct.toUpperCase();
 
-            // 4. Ekstrak nominal rupiah (mendukung format IDR 365,000.00 maupun Rp 365.000)
             let nominal = 0;
             const idrDecimalMatches = [...upper.matchAll(/(?:IDR|RP\.?|NOMINAL|TOTAL)\s*:?\s*(\d{1,3}(?:[.,]\d{3})+)(?:[.,]\d{2})?\b/g)];
             if (idrDecimalMatches.length > 0) {
@@ -1763,13 +1859,11 @@
                 recalcPpobPreview();
             }
 
-            // 5. Ekstrak Kode Ref / SN / Token 20 digit
             const tokenPln = upper.match(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/);
             const refMatch = upper.match(/(?:REF|SN|NO\.?\s*REF)\s*:?\s*([A-Z0-9]{6,24})/);
             if (tokenPln) document.getElementById('ppob-sn').value = tokenPln[0];
             else if (refMatch) document.getElementById('ppob-sn').value = refMatch[1];
 
-            // Jika sumber dana BCA terdeteksi pada bukti, otomatis arahkan akun asal ke BANK BCA
             if (upper.includes('BCA') && detectedCat === 'TRANSFER') {
                 const asalEl = document.getElementById('ppob-akun-asal');
                 if (asalEl) asalEl.value = 'BANK BCA';
@@ -2138,7 +2232,7 @@
             `).join('');
         }
 
-        // --- 10. MODUL MASTER DATA, PEMBELIAN & KASIR POS ---
+        // --- 10. MODUL MASTER DATA, PEMBELIAN (DENGAN AUTO-SCAN NOTA) & KASIR POS (DENGAN AUTO-SCAN ORDER) ---
         function createTabPane(tabId) {
             const container = document.getElementById('dynamic-tab-panes');
             const pane = document.createElement('div');
@@ -2438,7 +2532,33 @@
                         </table>
                     </div>
                 `;
-            } else if (tabId === 'pesanan-pembelian' || tabId === 'daftar-pembelian' || tabId === 'history-harga-beli' || tabId === 'pembayaran-hutang' || tabId === 'retur-pembelian') {
+            } else if (tabId === 'daftar-pembelian') {
+                pane.innerHTML = `
+                    <div class="p-3 sm:p-4 flex-1 overflow-auto bg-slate-50 text-xs space-y-3">
+                        <!-- Banner Auto-Scan Nota Supplier di Menu Pembelian -->
+                        <div class="bg-gradient-to-r from-violet-100 via-purple-50 to-orange-50 border-2 border-violet-300 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+                            <div class="space-y-0.5">
+                                <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-violet-700 text-white text-[10px] font-bold">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                    <span>Auto-Scan Nota Supplier &bull; Auto-Filled Form</span>
+                                </div>
+                                <div class="font-extrabold text-sm text-slate-900">Input Pembelian Cukup Upload Foto Nota / Tempel Chat Supplier</div>
+                                <div class="text-[11px] text-slate-600">Sistem otomatis mengenali kode/nama item, qty, dan harga beli ke faktur pembelian.</div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="openPembelianScanModal(true)" class="px-3.5 py-2 bg-violet-700 hover:bg-violet-800 text-white font-bold rounded-lg text-xs shadow flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span>Upload Foto Nota</span>
+                                </button>
+                                <button onclick="openPembelianScanModal(false)" class="px-3.5 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-xs shadow">
+                                    + Input Manual
+                                </button>
+                            </div>
+                        </div>
+                        <div id="generic-purchase-box" class="bg-white border border-slate-300 rounded-lg overflow-x-auto"></div>
+                    </div>
+                `;
+            } else if (tabId === 'pesanan-pembelian' || tabId === 'history-harga-beli' || tabId === 'pembayaran-hutang' || tabId === 'retur-pembelian') {
                 pane.innerHTML = `
                     <div class="p-4 flex-1 overflow-auto bg-white text-xs space-y-3">
                         <div class="font-bold text-sm text-sky-800 uppercase">${tabId.replace('-', ' ')}</div>
@@ -2447,6 +2567,24 @@
                 `;
             } else if (tabId === 'kasir-pos') {
                 pane.innerHTML = `
+                    <!-- Banner Auto-Scan Pesanan Pelanggan / Tempel Order WhatsApp -->
+                    <div class="bg-gradient-to-r from-violet-100 via-purple-50 to-emerald-50 border-b border-violet-300 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center space-x-2 min-w-0">
+                            <span class="px-2 py-0.5 rounded-full bg-violet-700 text-white font-bold text-[10px] shrink-0"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Auto-Fill Order</span>
+                            <span class="font-semibold text-slate-800 truncate">Scan Foto Catatan Order atau Tempel Chat Pesanan WA Pelanggan!</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5 shrink-0">
+                            <button type="button" onclick="pasteOrderToKasirPos()" class="px-2.5 py-1 bg-white hover:bg-violet-50 text-violet-800 border border-violet-300 font-bold rounded text-xs shadow-2xs flex items-center space-x-1">
+                                <i class="fa-solid fa-paste"></i>
+                                <span>Tempel Order WA</span>
+                            </button>
+                            <label class="px-2.5 py-1 bg-violet-700 hover:bg-violet-800 text-white font-bold rounded text-xs shadow cursor-pointer flex items-center space-x-1">
+                                <i class="fa-solid fa-camera"></i>
+                                <span>Scan Foto Order</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="handleKasirPhotoOrderScan(event)">
+                            </label>
+                        </div>
+                    </div>
                     <div class="bg-slate-100 border-b border-slate-300 p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
                         <div class="flex flex-wrap items-center gap-2">
                             <label class="font-semibold">Pelanggan :</label>
@@ -2522,7 +2660,214 @@
             container.appendChild(pane);
         }
 
-        // --- 11. LOGIKA ITEM, STOK, SUPPLIER, PELANGGAN, PEMBELIAN & POS ---
+        // --- 11. LOGIKA PEMBELIAN & AUTO-SCAN NOTA SUPPLIER ---
+        function openPembelianScanModal(autoTriggerUpload = false) {
+            const bal = calculateAllDompetBalances();
+            const akunEl = document.getElementById('bl-akun-bayar');
+            if (akunEl) {
+                akunEl.innerHTML = bal.list.map(a => `<option value="${a.nama}">${a.nama} (Rp ${formatRp(a.saldo_akhir)})</option>`).join('');
+                akunEl.value = 'KAS KECIL';
+            }
+            pembelianDraftCart = [];
+            renderPembelianDraftCart();
+            const m = document.getElementById('pembelian-scan-modal');
+            if (m) { m.classList.remove('hidden'); m.classList.add('flex'); }
+            if (autoTriggerUpload) {
+                setTimeout(() => document.getElementById('bl-photo-input')?.click(), 120);
+            }
+        }
+
+        function closePembelianScanModal() {
+            const m = document.getElementById('pembelian-scan-modal');
+            if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+        }
+
+        function addQuickItemToPembelianDraft() {
+            const kode = document.getElementById('bl-quick-item')?.value;
+            const it = demoItems.find(x => x.kode_item === kode);
+            if (!it) return;
+            const ex = pembelianDraftCart.find(x => x.kode_item === kode);
+            if (ex) ex.qty += 1;
+            else pembelianDraftCart.push({ kode_item: it.kode_item, nama_item: it.nama_item, qty: 1, harga_beli: it.harga_pokok });
+            renderPembelianDraftCart();
+        }
+
+        function renderPembelianDraftCart() {
+            const tbody = document.getElementById('bl-draft-tbody');
+            if (!tbody) return;
+            let total = 0;
+            tbody.innerHTML = pembelianDraftCart.length === 0
+                ? '<tr><td colspan="6" class="px-3 py-4 text-center text-slate-400">Belum ada item. Upload foto nota, tempel teks order, atau pilih item di bawah.</td></tr>'
+                : pembelianDraftCart.map((row, idx) => {
+                    const sub = Number(row.qty || 0) * Number(row.harga_beli || 0);
+                    total += sub;
+                    return `
+                        <tr>
+                            <td class="border-r px-2 py-1 font-mono font-semibold">${row.kode_item}</td>
+                            <td class="border-r px-2 py-1">${row.nama_item}</td>
+                            <td class="border-r px-1 py-0.5 text-right"><input type="number" value="${row.qty}" onchange="pembelianDraftCart[${idx}].qty=Math.max(1,Number(this.value)||1);renderPembelianDraftCart()" class="w-14 border border-slate-300 px-1 py-0.5 text-right"></td>
+                            <td class="border-r px-1 py-0.5 text-right"><input type="number" value="${row.harga_beli}" onchange="pembelianDraftCart[${idx}].harga_beli=Math.max(0,Number(this.value)||0);renderPembelianDraftCart()" class="w-24 border border-slate-300 px-1 py-0.5 text-right"></td>
+                            <td class="border-r px-2 py-1 text-right font-bold">Rp ${formatRp(sub)}</td>
+                            <td class="px-2 py-1 text-center"><button onclick="pembelianDraftCart.splice(${idx},1);renderPembelianDraftCart()" class="text-rose-600 font-bold">&times;</button></td>
+                        </tr>
+                    `;
+                }).join('');
+            if (document.getElementById('bl-draft-total')) document.getElementById('bl-draft-total').textContent = 'Rp ' + formatRp(total);
+        }
+
+        function extractItemsFromRawText(rawText) {
+            const lines = String(rawText || '').split(/\r?\n/);
+            const found = [];
+            lines.forEach(line => {
+                const upper = line.toUpperCase();
+                const matchedItem = demoItems.find(it => upper.includes(it.kode_item.toUpperCase()) || upper.includes(it.nama_item.toUpperCase()));
+                if (matchedItem) {
+                    const qtyMatch = upper.match(/(?:QTY|X|PCS)?\s*(\d{1,3})\s*(?:PCS|X|@)?/);
+                    const qty = qtyMatch ? Math.max(1, Number(qtyMatch[1])) : 1;
+                    const priceMatch = upper.match(/(?:@|RP\.?|IDR)\s*(\d{1,3}(?:[.,]\d{3})+|\d{4,7})/);
+                    const harga = priceMatch ? Number(priceMatch[1].replace(/[.,]/g, '')) : matchedItem.harga_pokok;
+                    const ex = found.find(x => x.kode_item === matchedItem.kode_item);
+                    if (ex) ex.qty += qty;
+                    else found.push({ kode_item: matchedItem.kode_item, nama_item: matchedItem.nama_item, qty, harga_beli: harga });
+                }
+            });
+            return found;
+        }
+
+        async function handlePembelianPhotoScan(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const statusEl = document.getElementById('bl-ocr-status');
+            if (statusEl) statusEl.textContent = 'Memindai nota pembelian supplier...';
+            try {
+                let rawText = '';
+                if (window.Tesseract) {
+                    const res = await Tesseract.recognize(file, 'ind+eng');
+                    rawText = res?.data?.text || '';
+                }
+                applyParsedTextToPembelian(rawText);
+            } catch (e) {
+                showToast('Gagal memindai foto nota.', 'warning');
+            }
+            event.target.value = '';
+        }
+
+        async function pasteTextToPembelian() {
+            try {
+                const txt = await navigator.clipboard.readText();
+                if (txt && txt.trim()) return applyParsedTextToPembelian(txt);
+            } catch (e) {}
+            const manual = prompt('Tempel teks nota / daftar barang dari supplier di sini (Contoh: VS71H 10 pcs, VDIF71H 5 pcs):');
+            if (manual) applyParsedTextToPembelian(manual);
+        }
+
+        function applyParsedTextToPembelian(rawText) {
+            const upper = String(rawText || '').toUpperCase();
+            const supEl = document.getElementById('bl-supplier');
+            if (supEl) {
+                const matchedSup = demoSuppliers.find(s => upper.includes(s.nama.toUpperCase()));
+                if (matchedSup) supEl.value = matchedSup.nama;
+            }
+            const items = extractItemsFromRawText(rawText);
+            if (items.length > 0) {
+                pembelianDraftCart = items;
+                renderPembelianDraftCart();
+                const statusEl = document.getElementById('bl-ocr-status');
+                if (statusEl) statusEl.textContent = `Berhasil membaca ${items.length} jenis item dari nota!`;
+                showToast(`${items.length} item berhasil diisi otomatis dari nota!`, 'success');
+            } else {
+                showToast('Tidak ditemukan kode/nama item yang cocok di teks nota. Silakan tambah manual.', 'warning');
+            }
+        }
+
+        function savePembelianDraft() {
+            if (pembelianDraftCart.length === 0) return showToast('Tambahkan minimal 1 item pembelian!', 'warning');
+            const supplier = document.getElementById('bl-supplier')?.value || 'ORDER KUOTA';
+            const gudang = document.getElementById('bl-gudang')?.value || 'UTM';
+            const akunBayar = document.getElementById('bl-akun-bayar')?.value || 'KAS KECIL';
+            const noTx = `${String(demoPurchaseHistory.length + 1352).padStart(4, '0')}/BL/${gudang}/1126`;
+            const tgl = getCurrentDateTimeStr();
+
+            let total = 0;
+            pembelianDraftCart.forEach(row => {
+                total += Number(row.qty) * Number(row.harga_beli);
+                const m = demoItems.find(i => i.kode_item === row.kode_item);
+                if (m) {
+                    if (gudang === 'KSR1') m.stok_ksr1 = Number(m.stok_ksr1 || 0) + Number(row.qty);
+                    else m.stok_utm = Number(m.stok_utm || 0) + Number(row.qty);
+                    if (row.harga_beli > 0) m.harga_pokok = Number(row.harga_beli);
+                }
+                demoKartuStok.push({ kode_item: row.kode_item, no_transaksi: noTx, kantor: gudang, tanggal: tgl, tipe: 'BL', keterangan: 'Pembelian Barang', masuk: row.qty, keluar: 0, relasi: supplier });
+            });
+
+            demoPurchaseHistory.unshift({
+                no_transaksi: noTx,
+                tanggal: tgl,
+                supplier,
+                gudang,
+                akun_bayar: akunBayar,
+                tunai_dp: total,
+                user_buat: 'ADMIN',
+                items: [...pembelianDraftCart]
+            });
+
+            persistAllAppState();
+            closePembelianScanModal();
+            loadDaftarPembelian();
+            updateHomeDashboardStats();
+            showToast(`Faktur Pembelian ${noTx} tersimpan & stok bertambah!`, 'success');
+        }
+
+        // --- 12. AUTO-SCAN ORDER PELANGGAN DI KASIR PENJUALAN (POS) ---
+        async function handleKasirPhotoOrderScan(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            showToast('Memindai catatan order pelanggan...', 'info');
+            try {
+                let rawText = '';
+                if (window.Tesseract) {
+                    const res = await Tesseract.recognize(file, 'ind+eng');
+                    rawText = res?.data?.text || '';
+                }
+                applyParsedOrderToKasir(rawText);
+            } catch (e) {
+                showToast('Gagal memindai foto order.', 'warning');
+            }
+            event.target.value = '';
+        }
+
+        async function pasteOrderToKasirPos() {
+            try {
+                const txt = await navigator.clipboard.readText();
+                if (txt && txt.trim()) return applyParsedOrderToKasir(txt);
+            } catch (e) {}
+            const manual = prompt('Tempel chat pesanan WhatsApp pelanggan di sini (Contoh: AFFA CELL pesan VS71H 10, AON12 2):');
+            if (manual) applyParsedOrderToKasir(manual);
+        }
+
+        function applyParsedOrderToKasir(rawText) {
+            const upper = String(rawText || '').toUpperCase();
+            const custEl = document.getElementById('pos-customer');
+            if (custEl) {
+                const matchedCust = demoCustomers.find(c => c.kode !== 'UMUM' && upper.includes(c.nama.toUpperCase()));
+                if (matchedCust) custEl.value = matchedCust.nama;
+            }
+            const items = extractItemsFromRawText(rawText);
+            if (items.length > 0) {
+                items.forEach(it => {
+                    const ex = kasirCart.find(c => c.kode_item === it.kode_item);
+                    if (ex) ex.qty += it.qty;
+                    else kasirCart.push({ kode_item: it.kode_item, nama_item: it.nama_item, qty: it.qty });
+                });
+                posSelectedRowIdx = kasirCart.length;
+                renderKasirCart();
+                showToast(`${items.length} item pesanan otomatis masuk ke keranjang Kasir!`, 'success');
+            } else {
+                showToast('Tidak ditemukan kode/nama item yang cocok dari teks pesanan.', 'warning');
+            }
+        }
+
+        // --- 13. LOGIKA ITEM, STOK, SUPPLIER, PELANGGAN & KASIR POS ---
         function loadDaftarItem() {
             const tbody = document.getElementById('di-tbody');
             if (!tbody) return;
@@ -2728,7 +3073,6 @@
             `;
         }
 
-        // --- 12. KASIR PENJUALAN (POS) ---
         function getActivePosPrice(itemObj) {
             const selCust = document.getElementById('pos-customer');
             const grup = selCust?.options[selCust.selectedIndex]?.getAttribute('data-grup') || 'General';
@@ -2896,7 +3240,7 @@
             `).join('');
         }
 
-        // --- 13. TOAST & KEYBOARD SHORTCUTS ---
+        // --- 14. TOAST & KEYBOARD SHORTCUTS ---
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             if (!container) return;
