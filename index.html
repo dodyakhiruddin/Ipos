@@ -231,6 +231,21 @@
                         </div>
                     </div>
 
+                    <!-- Form Inline Verifikasi Password Hapus Database -->
+                    <div id="ipos-delete-db-box" class="hidden mt-2 bg-red-50 border border-red-300 rounded p-2.5">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] font-bold text-red-800 flex items-center gap-1">
+                                <i class="fas fa-lock text-red-600"></i> Verifikasi Password Hapus [<span id="ipos-delete-db-target"></span>]
+                            </span>
+                            <button type="button" onclick="cancelDeleteDbForm()" class="text-[10.5px] text-slate-500 hover:text-slate-800"><i class="fas fa-times"></i> Batal</button>
+                        </div>
+                        <p class="text-[10.5px] text-red-700 mb-1.5">Masukkan password akun <b>ADMIN</b> untuk mengonfirmasi penghapusan permanen database ini:</p>
+                        <div class="flex gap-1.5">
+                            <input type="password" id="ipos-delete-db-pass" onkeydown="if(event.key==='Enter'){ event.preventDefault(); confirmDeleteDatabaseWithPassword(); }" placeholder="Masukkan Password Admin..." class="flex-1 bg-white border border-red-300 rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-red-500">
+                            <button type="button" onclick="confirmDeleteDatabaseWithPassword()" class="ipos-btn-danger px-3 py-1 rounded text-xs font-bold shadow-sm">Hapus</button>
+                        </div>
+                    </div>
+
                     <!-- Footer Buttons -->
                     <div class="mt-3 pt-2 border-t border-slate-300/80 flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5">
@@ -1798,9 +1813,11 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
         let selectedDbCandidate = activeDatabaseName;
         let dbFormMode = 'create'; // 'create' | 'edit'
         let dbEditOldName = '';
+        let dbPendingDeleteName = '';
 
         let currentUser = {
             username: 'ADMIN',
+            rawUsername: 'admin',
             role: 'ADMIN',
             location: 'UTM'
         };
@@ -1808,7 +1825,7 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
         function getDefaultUsersSeed() {
             return [
                 { username: 'admin', password: 'admin', role: 'ADMIN', location: 'UTM' },
-                { username: 'kasir', password: 'kasir', role: 'KASIR', location: 'KSR1' }
+                { username: 'kasir', password: '123', role: 'KASIR', location: 'KSR1' }
             ];
         }
 
@@ -1820,11 +1837,13 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
         function openDbModal() {
             selectedDbCandidate = activeDatabaseName;
             cancelDbForm();
+            cancelDeleteDbForm();
             renderDbList();
             document.getElementById('ipos-db-select-modal').classList.remove('hidden');
         }
 
         function closeDbModal() {
+            cancelDeleteDbForm();
             document.getElementById('ipos-db-select-modal').classList.add('hidden');
         }
 
@@ -1868,6 +1887,7 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
         }
 
         function openCreateDbForm() {
+            cancelDeleteDbForm();
             dbFormMode = 'create';
             dbEditOldName = '';
             document.getElementById('ipos-db-form-title').innerText = 'Buat Database Baru:';
@@ -1876,6 +1896,39 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             input.placeholder = 'Nama database baru (mis. DONETCABANG2)';
             document.getElementById('ipos-new-db-box').classList.remove('hidden');
             input.focus();
+        }
+
+        function openEditSelectedDbForm() {
+            if (!selectedDbCandidate) return;
+            openEditDbFormByName(selectedDbCandidate);
+        }
+
+        function openEditDbFormByName(dbName) {
+            cancelDeleteDbForm();
+            dbFormMode = 'edit';
+            dbEditOldName = dbName;
+            document.getElementById('ipos-db-form-title').innerText = `Ubah Nama Database [${dbName}]:`;
+            const input = document.getElementById('ipos-new-db-input');
+            input.value = dbName;
+            input.placeholder = 'Masukkan nama database baru';
+            document.getElementById('ipos-new-db-box').classList.remove('hidden');
+            input.focus();
+            input.select();
+        }
+
+        function cancelDbForm() {
+            document.getElementById('ipos-new-db-box').classList.add('hidden');
+            document.getElementById('ipos-new-db-input').value = '';
+            dbFormMode = 'create';
+            dbEditOldName = '';
+        }
+
+        function cancelDeleteDbForm() {
+            const box = document.getElementById('ipos-delete-db-box');
+            if (box) box.classList.add('hidden');
+            const inp = document.getElementById('ipos-delete-db-pass');
+            if (inp) inp.value = '';
+            dbPendingDeleteName = '';
         }
 
         function openEditSelectedDbForm() {
@@ -1975,26 +2028,53 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 showToast(`Database [${dbName}] sedang aktif dipakai! Pilih & masuk ke database lain terlebih dahulu sebelum menghapus.`, 'error');
                 return;
             }
-            // Konfirmasi hapus tanpa window.confirm
-            const btnConfirm = document.getElementById('db-delete-confirm-banner');
-            if (btnConfirm) btnConfirm.remove();
 
-            const banner = document.createElement('div');
-            banner.id = 'db-delete-confirm-banner';
-            banner.className = 'mt-2 bg-red-50 border border-red-300 rounded p-2 text-[11px] text-red-900 flex items-center justify-between gap-2';
-            banner.innerHTML = `
-                <span>Hapus permanen database <b>[${dbName}]</b>?</span>
-                <div class="flex gap-1.5 shrink-0">
-                    <button type="button" onclick="this.closest('#db-delete-confirm-banner').remove()" class="ipos-btn px-2 py-0.5 rounded font-semibold">Batal</button>
-                    <button type="button" onclick="executeDeleteDatabase('${dbName}')" class="ipos-btn-danger px-2.5 py-0.5 rounded font-bold">Ya, Hapus</button>
-                </div>
-            `;
-            document.getElementById('ipos-db-list').after(banner);
+            cancelDbForm();
+            dbPendingDeleteName = dbName;
+            document.getElementById('ipos-delete-db-target').textContent = dbName;
+            const passInput = document.getElementById('ipos-delete-db-pass');
+            passInput.value = '';
+            document.getElementById('ipos-delete-db-box').classList.remove('hidden');
+            setTimeout(() => passInput.focus(), 50);
+        }
+
+        async function confirmDeleteDatabaseWithPassword() {
+            const dbName = dbPendingDeleteName;
+            if (!dbName) return;
+
+            const enteredPass = document.getElementById('ipos-delete-db-pass').value;
+            if (!enteredPass) {
+                showToast('Masukkan password terlebih dahulu untuk menghapus database!', 'error');
+                document.getElementById('ipos-delete-db-pass').focus();
+                return;
+            }
+
+            // Ambil daftar akun ADMIN dari database target & database aktif sebagai otorisasi
+            const targetState = await loadStateFromIndexedDBForDb(dbName);
+            const targetUsers = (targetState && Array.isArray(targetState.users) && targetState.users.length > 0)
+                ? targetState.users
+                : getDefaultUsersSeed();
+
+            const activeUsers = (Array.isArray(appState.users) && appState.users.length > 0)
+                ? appState.users
+                : getDefaultUsersSeed();
+
+            const validAdminPasswords = [
+                ...targetUsers.filter(u => u.role === 'ADMIN').map(u => u.password),
+                ...activeUsers.filter(u => u.role === 'ADMIN').map(u => u.password)
+            ];
+
+            if (!validAdminPasswords.includes(enteredPass)) {
+                showToast('Password salah atau bukan password akun ADMIN! Penghapusan dibatalkan.', 'error');
+                document.getElementById('ipos-delete-db-pass').select();
+                return;
+            }
+
+            await executeDeleteDatabase(dbName);
         }
 
         async function executeDeleteDatabase(dbName) {
-            const banner = document.getElementById('db-delete-confirm-banner');
-            if (banner) banner.remove();
+            cancelDeleteDbForm();
 
             availableDatabases = availableDatabases.filter(d => d !== dbName);
             await deleteStateFromIndexedDBForDb(dbName);
@@ -2004,7 +2084,7 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             }
             saveAvailableDatabasesList();
             renderDbList();
-            showToast(`Database [${dbName}] berhasil dihapus!`, 'info');
+            showToast(`Database [${dbName}] berhasil dihapus setelah verifikasi password!`, 'info');
         }
 
         async function confirmSelectDatabase() {
