@@ -1007,6 +1007,22 @@
                                         </div>
                                     </div>
 
+                                    <!-- Pilihan Sumber Dana Modal & Penerimaan -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                                        <div>
+                                            <label class="block font-bold text-slate-700 mb-1" id="ppob-source-wallet-label">Sumber Saldo Keluar (Modal)</label>
+                                            <select id="ppob-source-wallet" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-semibold text-slate-800">
+                                                <!-- Populated dynamically -->
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-700 mb-1" id="ppob-dest-wallet-label">Masuk ke Sumber Dana (Bayar Pelanggan)</label>
+                                            <select id="ppob-dest-wallet" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-semibold text-slate-800">
+                                                <!-- Populated dynamically -->
+                                            </select>
+                                        </div>
+                                    </div>
+
                                     <!-- Nominal & Kalkulasi Otomatis Modal vs Harga Jual -->
                                     <div class="bg-sky-50 border border-sky-200 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <div>
@@ -1212,22 +1228,18 @@
                         </div>
 
                         <div class="p-4 space-y-4 text-xs">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <div class="border border-emerald-300 bg-emerald-50/70 rounded-lg p-3.5">
-                                    <div class="font-bold text-emerald-900">1. Kas Tunai Laci Toko</div>
-                                    <div id="sd-kas-toko" class="text-2xl font-extrabold text-emerald-700 my-1 font-mono">Rp 0</div>
-                                    <div class="text-[11px] text-slate-600">Sumber dana uang fisik tunai di laci kasir.</div>
+                            <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                                <div class="text-slate-600">
+                                    <i class="fas fa-info-circle text-teal-600 mr-1"></i> Kelola daftar rekening bank, kas tunai, server pulsa, maupun dompet digital (DANA, OVO, SeaBank, dll).
                                 </div>
-                                <div class="border border-blue-300 bg-blue-50/70 rounded-lg p-3.5">
-                                    <div class="font-bold text-blue-900">2. Rekening Agen BRILink</div>
-                                    <div id="sd-saldo-brilink" class="text-2xl font-extrabold text-blue-700 my-1 font-mono">Rp 0</div>
-                                    <div class="text-[11px] text-slate-600">Sumber dana transfer bank, QRIS & tarik tunai.</div>
-                                </div>
-                                <div class="border border-purple-300 bg-purple-50/70 rounded-lg p-3.5">
-                                    <div class="font-bold text-purple-900">3. Deposit Server Pulsa & PPOB</div>
-                                    <div id="sd-saldo-pulsa" class="text-2xl font-extrabold text-purple-700 my-1 font-mono">Rp 0</div>
-                                    <div class="text-[11px] text-slate-600">Sumber dana pengisian pulsa, kuota, token PLN & e-wallet.</div>
-                                </div>
+                                <button onclick="openWalletModal()" class="ipos-btn-primary px-3 py-1.5 rounded font-bold shadow flex items-center gap-1.5">
+                                    <i class="fas fa-plus-circle"></i> Tambah Sumber Dana Baru
+                                </button>
+                            </div>
+
+                            <!-- Dynamic Wallets Grid -->
+                            <div id="sumberdana-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <!-- Rendered dynamically via JS -->
                             </div>
 
                             <!-- Form Mutasi / Transfer Antar Sumber Dana -->
@@ -1235,19 +1247,13 @@
                                 <div>
                                     <label class="block font-bold mb-1">Dari Sumber Dana</label>
                                     <select id="sd-from" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
-                                        <option value="KAS_TOKO">Kas Tunai Laci Toko</option>
-                                        <option value="SALDO_BRILINK">Rekening Agen BRILink</option>
-                                        <option value="SALDO_PULSA">Deposit Server Pulsa</option>
-                                        <option value="MODAL_LUAR">Setoran Modal Pemilik</option>
+                                        <!-- Populated dynamically -->
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block font-bold mb-1">Ke Tujuan Dana</label>
                                     <select id="sd-to" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
-                                        <option value="SALDO_BRILINK">Rekening Agen BRILink</option>
-                                        <option value="SALDO_PULSA">Deposit Server Pulsa</option>
-                                        <option value="KAS_TOKO">Kas Tunai Laci Toko</option>
-                                        <option value="PRIVE_OWNER">Penarikan / Prive Pemilik</option>
+                                        <!-- Populated dynamically -->
                                     </select>
                                 </div>
                                 <div>
@@ -1256,7 +1262,7 @@
                                 </div>
                                 <div>
                                     <label class="block font-bold mb-1">Keterangan Mutasi</label>
-                                    <input type="text" id="sd-note" placeholder="Contoh: TopUp Deposit Pulsa" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
+                                    <input type="text" id="sd-note" placeholder="Contoh: TopUp DANA / SeaBank" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
                                 </div>
                                 <button type="submit" class="ipos-btn-primary py-2 px-4 rounded font-bold shadow">
                                     <i class="fas fa-exchange-alt mr-1"></i> Proses Mutasi
@@ -1325,9 +1331,8 @@
                                 </div>
                                 <div>
                                     <label class="block font-bold mb-1">Sumber Dana Pembayaran</label>
-                                    <select id="buy-item-source" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
-                                        <option value="KAS_TOKO">Kas Tunai Toko</option>
-                                        <option value="SALDO_BRILINK">Transfer via Rekening BRILink</option>
+                                    <select id="buy-item-source" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                                        <!-- Populated dynamically -->
                                     </select>
                                 </div>
                                 <button type="submit" class="w-full ipos-btn-primary py-2 rounded font-bold shadow">
@@ -1335,17 +1340,15 @@
                                 </button>
                             </form>
 
-                            <!-- Form Deposit Saldo BRILink / Server Pulsa -->
+                            <!-- Form Deposit Saldo BRILink / Server Pulsa / E-Wallet -->
                             <form onsubmit="submitDepositWallet(event)" class="border border-slate-300 rounded-lg p-3.5 bg-sky-50/60 space-y-3">
                                 <div class="font-bold text-sm text-sky-900 border-b border-sky-200 pb-1.5">
-                                    <i class="fas fa-coins mr-1 text-amber-500"></i> Deposit / TopUp Saldo Agen (BRILink / Server)
+                                    <i class="fas fa-coins mr-1 text-amber-500"></i> Deposit / TopUp Saldo Agen (Bank / Server / E-Wallet)
                                 </div>
                                 <div>
                                     <label class="block font-bold mb-1">Tujuan Akun Saldo</label>
                                     <select id="dep-target-wallet" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
-                                        <option value="SALDO_BRILINK">Saldo Rekening Agen BRILink</option>
-                                        <option value="SALDO_PULSA">Saldo Deposit Server Pulsa & PPOB</option>
-                                        <option value="KAS_TOKO">Tambah Modal Kas Laci Toko</option>
+                                        <!-- Populated dynamically -->
                                     </select>
                                 </div>
                                 <div>
@@ -1354,14 +1357,13 @@
                                 </div>
                                 <div>
                                     <label class="block font-bold mb-1">Sumber Dana Deposit</label>
-                                    <select id="dep-source-type" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
-                                        <option value="KAS_TOKO">Ambil dari Uang Tunai Kas Toko (Mutasi Internal)</option>
-                                        <option value="MODAL_OWNER">Setoran Modal Pemilik / Rekening Pribadi</option>
+                                    <select id="dep-source-type" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                                        <!-- Populated dynamically -->
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block font-bold mb-1">Catatan / No. Referensi</label>
-                                    <input type="text" id="dep-note" placeholder="Contoh: Setor tunai ke BRI untuk saldo BRILink" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
+                                    <input type="text" id="dep-note" placeholder="Contoh: TopUp saldo DANA / SeaBank" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
                                 </div>
                                 <button type="submit" class="w-full ipos-btn-success py-2 rounded font-bold shadow">
                                     <i class="fas fa-check mr-1"></i> Proses Deposit Saldo
@@ -1371,7 +1373,6 @@
                     </div>
                 </section>
 
-                <!-- ==================== VIEW 8: KARTU STOK ==================== -->
                 <!-- ==================== MENU 10: LAPORAN PENJUALAN, PPOB & SERVICE ==================== -->
                 <section id="view-laporan" class="hidden p-3 sm:p-4 max-w-7xl mx-auto">
                     <div class="ipos-panel rounded-lg overflow-hidden">
@@ -1453,23 +1454,9 @@
 
                 <!-- ==================== MENU 9: AKUTANSI, SALDO DOMPET & RUGI LABA ==================== -->
                 <section id="view-akuntansi" class="hidden p-3 sm:p-4 max-w-6xl mx-auto space-y-4">
-                    <!-- 3 Saldo Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div class="ipos-panel rounded-lg p-4 border-l-4 border-l-emerald-600">
-                            <div class="text-xs font-bold text-slate-500 uppercase">1101 - Kas Tunai Laci Toko</div>
-                            <div id="acc-kas-toko" class="text-2xl font-extrabold text-emerald-700 mt-1">Rp 0</div>
-                            <div class="text-[11px] text-slate-500 mt-1">Uang fisik hasil penjualan retail & setor tunai BRILink</div>
-                        </div>
-                        <div class="ipos-panel rounded-lg p-4 border-l-4 border-l-blue-600">
-                            <div class="text-xs font-bold text-slate-500 uppercase">1102 - Saldo Rekening Agen BRILink</div>
-                            <div id="acc-saldo-brilink" class="text-2xl font-extrabold text-blue-700 mt-1">Rp 0</div>
-                            <div class="text-[11px] text-slate-500 mt-1">Saldo mutasi transfer antar bank & tarik tunai ATM</div>
-                        </div>
-                        <div class="ipos-panel rounded-lg p-4 border-l-4 border-l-purple-600">
-                            <div class="text-xs font-bold text-slate-500 uppercase">1103 - Deposit Server Pulsa & PPOB</div>
-                            <div id="acc-saldo-pulsa" class="text-2xl font-extrabold text-purple-700 mt-1">Rp 0</div>
-                            <div class="text-[11px] text-slate-500 mt-1">Saldo deposit untuk transaksi pulsa, kuota, token & e-wallet</div>
-                        </div>
+                    <!-- Dynamic Wallet Cards -->
+                    <div id="acc-wallets-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <!-- Rendered dynamically via JS -->
                     </div>
 
                     <!-- Ringkasan Laba Rugi & Perkiraan Akun -->
@@ -1686,13 +1673,31 @@
                         </div>
                     </div>
                     <pre id="sql-schema-box" class="hidden bg-slate-900 text-emerald-300 p-2.5 rounded text-[10px] overflow-x-auto font-mono mt-2">-- Jalankan di SQL Editor Supabase Anda:
+-- 1. Tabel Utama Penyimpanan State Lengkap (termasuk Sumber Dana Dinamis, User, Stok & Transaksi)
 CREATE TABLE IF NOT EXISTS donet_cell_state (
   id TEXT PRIMARY KEY,
   payload JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 2. (Opsional) Tabel Relasional Sumber Dana / Dompet untuk Query Laporan Eksternal
+CREATE TABLE IF NOT EXISTS donet_cell_wallets (
+  tenant_db TEXT NOT NULL,
+  wallet_id TEXT NOT NULL,
+  wallet_name TEXT NOT NULL,
+  wallet_type TEXT DEFAULT 'BANK',
+  balance NUMERIC(15, 2) DEFAULT 0,
+  description TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (tenant_db, wallet_id)
+);
+
+-- Aktifkan RLS & Kebijakan Akses
 ALTER TABLE donet_cell_state ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHECK (true);</pre>
+CREATE POLICY "Allow anon all state" ON donet_cell_state FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE donet_cell_wallets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anon all wallets" ON donet_cell_wallets FOR ALL USING (true) WITH CHECK (true);</pre>
                 </div>
 
                 <!-- Tab 4: Backup & Reset -->
@@ -1937,61 +1942,111 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                     </div>
 
                     <div class="bg-amber-50 border border-amber-200 rounded p-2 text-[11px] text-amber-900">
-                        <b>Tips Akurasi Scan:</b> Pastikan angka nominal, nomor rekening/HP, dan nama bank/barang terlihat jelas dan tidak buram.
+                        <b>Tips:</b> Pastikan foto struk/nota terang dan tegak lurus agar pembacaan nominal otomatis lebih akurat.
                     </div>
                 </div>
 
-                <!-- Right: Hasil Ekstraksi Otomatis & Form Koreksi Cepat -->
-                <div class="md:col-span-7 space-y-3 flex flex-col justify-between">
-                    <div class="space-y-2.5">
-                        <div class="font-bold text-slate-800 border-b border-slate-200 pb-1 flex items-center justify-between">
-                            <span>2. Hasil Deteksi Otomatis (Dapat Diedit Sebelum Dipakai)</span>
-                            <span id="ocr-detected-badge" class="hidden bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px]">Terdeteksi</span>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <div>
-                                <label class="block font-bold text-slate-600 mb-0.5">Bank / Operator / Supplier</label>
-                                <input type="text" id="ocr-ext-provider" placeholder="Contoh: BRI / TELKOMSEL" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
-                            </div>
-                            <div>
-                                <label class="block font-bold text-slate-600 mb-0.5">No. Rekening / No. HP / Kode</label>
-                                <input type="text" id="ocr-ext-target" placeholder="Nomor tujuan / kode" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <div>
-                                <label class="block font-bold text-slate-600 mb-0.5">Nominal / Harga Pokok (Rp)</label>
-                                <input type="number" id="ocr-ext-amount" placeholder="0" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
-                            </div>
-                            <div>
-                                <label class="block font-bold text-slate-600 mb-0.5">Qty (Khusus Pembelian Barang)</label>
-                                <input type="number" id="ocr-ext-qty" value="1" min="1" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono">
-                            </div>
-                        </div>
-
+                <!-- Right: Extracted Result & Raw OCR Text -->
+                <div class="md:col-span-7 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-700">2. Hasil Ekstraksi Otomatis (Bisa Diedit):</span>
+                        <span id="ocr-detected-badge" class="hidden px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Terdeteksi Otomatis</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
                         <div>
-                            <label class="block font-bold text-slate-600 mb-0.5">Keterangan / Nama Barang Terbaca</label>
-                            <input type="text" id="ocr-ext-desc" placeholder="Deskripsi otomatis dari struk/nota" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                            <label class="block font-bold text-slate-600 mb-1">Bank / Operator / Supplier</label>
+                            <input type="text" id="ocr-ext-provider" placeholder="BRI / TELKOMSEL / DANA" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
                         </div>
-
                         <div>
-                            <label class="block font-bold text-slate-600 mb-0.5">Teks Mentah Hasil OCR (Raw Text)</label>
-                            <textarea id="ocr-raw-text" rows="4" placeholder="Hasil pembacaan teks gambar akan muncul di sini..." class="w-full bg-slate-50 border border-slate-300 rounded p-2 font-mono text-[11px] text-slate-700"></textarea>
+                            <label class="block font-bold text-slate-600 mb-1">No. Rekening / HP / Kode</label>
+                            <input type="text" id="ocr-ext-target" placeholder="0812xxxx / No. Rek" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-600 mb-1">Nominal Utama (Rp)</label>
+                            <input type="number" id="ocr-ext-amount" placeholder="0" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-600 mb-1">Qty (Untuk Nota Pembelian)</label>
+                            <input type="number" id="ocr-ext-qty" value="1" min="1" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
                         </div>
                     </div>
-
-                    <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200">
-                        <button type="button" onclick="parseRawOcrTextManual()" class="ipos-btn px-3 py-1.5 rounded font-semibold text-slate-700">
-                            <i class="fas fa-sync-alt mr-1"></i> Analisa Ulang Teks
-                        </button>
-                        <button type="button" onclick="applyOcrResultToSystem()" class="ipos-btn-success px-4 py-1.5 rounded font-bold shadow flex items-center gap-1.5">
-                            <i class="fas fa-check-circle"></i> Masukkan ke Transaksi
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1">Keterangan / Nama Produk</label>
+                        <input type="text" id="ocr-ext-desc" placeholder="Keterangan hasil scan..." class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="font-bold text-slate-600">Teks Mentah Hasil Pembacaan OCR:</label>
+                            <button type="button" onclick="parseRawOcrTextManual()" class="text-sky-700 hover:underline font-semibold text-[11px]">Analisa Ulang Teks</button>
+                        </div>
+                        <textarea id="ocr-raw-text" rows="3" placeholder="Teks dari gambar akan muncul di sini..." class="w-full bg-slate-50 border border-slate-300 rounded p-2 font-mono text-[11px]"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-1">
+                        <button type="button" onclick="closeModal('ocr-scanner-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Tutup</button>
+                        <button type="button" onclick="applyOcrResultToSystem()" class="ipos-btn-success px-4 py-1.5 rounded font-bold shadow">
+                            <i class="fas fa-check-double mr-1"></i> Masukkan ke Form Transaksi
                         </button>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: TAMBAH / EDIT SUMBER DANA ==================== -->
+    <div id="wallet-modal" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between">
+                <span id="wallet-modal-title" class="font-bold text-xs sm:text-sm"><i class="fas fa-wallet mr-1.5 text-teal-600"></i> Tambah Sumber Dana Baru</span>
+                <button onclick="closeModal('wallet-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <form onsubmit="saveWalletAccount(event)" class="p-4 space-y-3 text-xs">
+                <input type="hidden" id="edit-wallet-id" value="">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold mb-1">Kode / ID Akun</label>
+                        <input type="text" id="wallet-code-input" required placeholder="DANA / SEABANK" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono uppercase bg-white">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Kategori / Tipe</label>
+                        <select id="wallet-type-input" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-semibold">
+                            <option value="TUNAI">Kas Tunai / Laci</option>
+                            <option value="BANK">Rekening Bank (BRI, SeaBank, BCA, dll)</option>
+                            <option value="EWALLET">E-Wallet (DANA, OVO, GoPay, dll)</option>
+                            <option value="SERVER">Deposit Server Pulsa / PPOB</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Nama Sumber Dana</label>
+                    <input type="text" id="wallet-name-input" required placeholder="Contoh: Dompet DANA Bisnis / SeaBank" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-semibold">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold mb-1">Saldo Saat Ini (Rp)</label>
+                        <input type="number" id="wallet-balance-input" required min="0" value="0" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-800 bg-white">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Warna Kartu</label>
+                        <select id="wallet-color-input" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white font-semibold">
+                            <option value="emerald">Hijau (Emerald)</option>
+                            <option value="blue">Biru (Blue)</option>
+                            <option value="sky">Biru Langit (Sky / DANA)</option>
+                            <option value="purple">Ungu (Purple / OVO)</option>
+                            <option value="orange">Oranye (Orange / SeaBank)</option>
+                            <option value="teal">Teal / Tosca</option>
+                            <option value="rose">Merah Muda (Rose)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Keterangan / No. Rekening / No. HP</label>
+                    <input type="text" id="wallet-desc-input" placeholder="Contoh: No. HP 0812xxxx a.n Donet Cell" class="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white">
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                    <button type="button" onclick="closeModal('wallet-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
+                    <button type="submit" class="ipos-btn-primary px-4 py-1.5 rounded font-bold">Simpan Sumber Dana</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -2050,9 +2105,46 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             ];
         }
 
-        function saveAvailableDatabasesList() {
-            localStorage.setItem(DB_LIST_STORAGE_KEY, JSON.stringify(availableDatabases));
-            localStorage.setItem(ACTIVE_DB_STORAGE_KEY, activeDatabaseName);
+        function getDefaultWalletListSeed() {
+            return [
+                { id: 'KAS_TOKO', name: 'Kas Tunai Laci Toko', type: 'TUNAI', color: 'emerald', desc: 'Sumber dana uang fisik tunai di laci kasir.' },
+                { id: 'SALDO_BRILINK', name: 'Rekening Agen BRILink', type: 'BANK', color: 'blue', desc: 'Sumber dana transfer bank, QRIS & tarik tunai.' },
+                { id: 'SALDO_PULSA', name: 'Deposit Server Pulsa & PPOB', type: 'SERVER', color: 'purple', desc: 'Sumber dana pengisian pulsa, kuota, token PLN & e-wallet.' }
+            ];
+        }
+
+        function ensureWalletListIntegrity() {
+            if (!appState.wallets || typeof appState.wallets !== 'object') {
+                appState.wallets = {};
+            }
+            if (!Array.isArray(appState.walletList) || appState.walletList.length === 0) {
+                appState.walletList = getDefaultWalletListSeed();
+            }
+            // Pastikan setiap key di appState.wallets terdaftar di appState.walletList
+            Object.keys(appState.wallets).forEach(key => {
+                if (!appState.walletList.some(w => w.id === key)) {
+                    appState.walletList.push({
+                        id: key,
+                        name: key.replace(/_/g, ' '),
+                        type: 'BANK',
+                        color: 'teal',
+                        desc: 'Akun sumber dana tambahan'
+                    });
+                }
+            });
+            // Pastikan setiap item di appState.walletList punya nilai saldo numerik di appState.wallets
+            appState.walletList.forEach(w => {
+                if (typeof appState.wallets[w.id] !== 'number') {
+                    appState.wallets[w.id] = Number(appState.wallets[w.id]) || 0;
+                }
+            });
+        }
+
+        function getWalletNameById(id) {
+            if (id === 'MODAL_LUAR' || id === 'MODAL_OWNER') return 'Setoran Modal Pemilik';
+            if (id === 'PRIVE_OWNER') return 'Penarikan / Prive Pemilik';
+            const found = (appState.walletList || []).find(w => w.id === id);
+            return found ? found.name : id;
         }
 
         function openDbModal() {
@@ -2342,6 +2434,7 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                     SALDO_BRILINK: 15250000,
                     SALDO_PULSA: 4320000
                 },
+                walletList: getDefaultWalletListSeed(),
                 items: [
                     { code: 'VCR-TSEL-3', name: 'Voucher Telkomsel 3GB / 5 Hari', category: 'Voucher Fisik', unit: 'PCS', stock: 45, cost: 11500, price: 14000, wholesalePrice: 12500 },
                     { code: 'VCR-TSEL-7', name: 'Voucher Telkomsel 7GB / 7 Hari', category: 'Voucher Fisik', unit: 'PCS', stock: 30, cost: 21500, price: 25000, wholesalePrice: 23000 },
@@ -2364,6 +2457,21 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                     { code: 'PLG-002', name: 'Berkah Cell (Reseller)', group: 'RESELLER', phone: '0812-3456-7890', address: 'Jl. Melati No. 10' },
                     { code: 'PLG-003', name: 'Bpk. H. Sulaiman', group: 'VIP', phone: '0813-9988-7766', address: 'Perum Griya Asri - Langganan Transfer BRI' }
                 ],
+                serviceTickets: [
+                    {
+                        id: 'SRV-001',
+                        date: new Date().toISOString(),
+                        customer: 'Bpk. Hendra',
+                        phone: '0812-4455-6677',
+                        device: 'Samsung Galaxy A52',
+                        imei: 'Pola Huruf L',
+                        issue: 'Ganti LCD OLED & Tempered Glass',
+                        cost: 280000,
+                        price: 420000,
+                        status: 'PROSES'
+                    }
+                ],
+                fundTransfers: [],
                 transactions: [
                     {
                         id: 'TRF-20250219-001',
@@ -2475,7 +2583,11 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 const base = createDefaultState(activeDatabaseName);
                 appState = { ...base, ...saved };
                 appState.settings = { ...base.settings, ...(saved.settings || {}) };
-                appState.wallets = { ...base.wallets, ...(saved.wallets || {}) };
+                appState.wallets = { ...(saved.wallets || base.wallets) };
+                appState.walletList = Array.isArray(saved.walletList) && saved.walletList.length > 0
+                    ? saved.walletList
+                    : getDefaultWalletListSeed();
+                ensureWalletListIntegrity();
                 if (Array.isArray(appState.items)) {
                     appState.items = appState.items.map(it => ({
                         ...it,
@@ -2491,6 +2603,7 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 if (!Array.isArray(appState.fundTransfers)) appState.fundTransfers = [];
             } else {
                 appState = createDefaultState(activeDatabaseName);
+                ensureWalletListIntegrity();
                 await saveStateToIndexedDB();
             }
             initSupabaseClient();
@@ -2530,6 +2643,23 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 const { error } = await supabaseClient
                     .from('donet_cell_state')
                     .upsert({ id: cloudRowId, payload: appState, updated_at: new Date().toISOString() });
+
+                // Sinkronkan juga daftar Sumber Dana ke tabel relasional donet_cell_wallets (jika tabel sudah dibuat di Supabase)
+                if (Array.isArray(appState.walletList) && appState.walletList.length > 0) {
+                    const walletRows = appState.walletList.map(w => ({
+                        tenant_db: activeDatabaseName,
+                        wallet_id: w.id,
+                        wallet_name: w.name,
+                        wallet_type: w.type || 'BANK',
+                        balance: Number(appState.wallets[w.id]) || 0,
+                        description: w.desc || '',
+                        updated_at: new Date().toISOString()
+                    }));
+                    await supabaseClient
+                        .from('donet_cell_wallets')
+                        .upsert(walletRows, { onConflict: 'tenant_db,wallet_id' });
+                }
+
                 if (!error) {
                     document.getElementById('cloud-status-text').textContent = 'Cloud Tersinkron';
                 }
@@ -2722,12 +2852,13 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
         // 5. DASHBOARD & GLOBAL UI REFRESH
         // =========================================================================
         function refreshAllUI() {
+            ensureWalletListIntegrity();
             const setText = (id, value) => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = value;
             };
 
-            const totalSaldo = (appState.wallets.KAS_TOKO || 0) + (appState.wallets.SALDO_BRILINK || 0) + (appState.wallets.SALDO_PULSA || 0);
+            const totalSaldo = appState.walletList.reduce((sum, w) => sum + (Number(appState.wallets[w.id]) || 0), 0);
             setText('dash-total-saldo', formatRp(totalSaldo));
 
             const voucherItems = appState.items.filter(i => i.category === 'Voucher Fisik' || i.category === 'Kartu Perdana');
@@ -2746,18 +2877,11 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 setText('dash-last-trx-ref', `Ref: ${last.id}`);
             }
 
-            setText('ppob-saldo-brilink', formatRp(appState.wallets.SALDO_BRILINK));
-            setText('ppob-saldo-pulsa', formatRp(appState.wallets.SALDO_PULSA));
-            setText('ppob-saldo-kas', formatRp(appState.wallets.KAS_TOKO));
+            setText('ppob-saldo-brilink', formatRp(appState.wallets.SALDO_BRILINK || 0));
+            setText('ppob-saldo-pulsa', formatRp(appState.wallets.SALDO_PULSA || 0));
+            setText('ppob-saldo-kas', formatRp(appState.wallets.KAS_TOKO || 0));
 
-            setText('acc-kas-toko', formatRp(appState.wallets.KAS_TOKO));
-            setText('acc-saldo-brilink', formatRp(appState.wallets.SALDO_BRILINK));
-            setText('acc-saldo-pulsa', formatRp(appState.wallets.SALDO_PULSA));
-
-            setText('sd-kas-toko', formatRp(appState.wallets.KAS_TOKO));
-            setText('sd-saldo-brilink', formatRp(appState.wallets.SALDO_BRILINK));
-            setText('sd-saldo-pulsa', formatRp(appState.wallets.SALDO_PULSA));
-
+            renderDynamicWalletsUI();
             renderPosQuickGrid();
             renderPosCart();
             renderItemsTable();
@@ -2771,6 +2895,209 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             renderPpobRecentList();
             renderServiceHpTable();
             renderSumberDanaHistory();
+        }
+
+        function renderDynamicWalletsUI() {
+            const colorMap = {
+                emerald: { border: 'border-emerald-300', bg: 'bg-emerald-50/70', title: 'text-emerald-900', amount: 'text-emerald-700', accBorder: 'border-l-emerald-600', badge: 'bg-emerald-100 text-emerald-800' },
+                blue:    { border: 'border-blue-300',    bg: 'bg-blue-50/70',    title: 'text-blue-900',    amount: 'text-blue-700',    accBorder: 'border-l-blue-600',    badge: 'bg-blue-100 text-blue-800' },
+                sky:     { border: 'border-sky-300',     bg: 'bg-sky-50/70',     title: 'text-sky-900',     amount: 'text-sky-700',     accBorder: 'border-l-sky-600',     badge: 'bg-sky-100 text-sky-800' },
+                purple:  { border: 'border-purple-300',  bg: 'bg-purple-50/70',  title: 'text-purple-900',  amount: 'text-purple-700',  accBorder: 'border-l-purple-600',  badge: 'bg-purple-100 text-purple-800' },
+                orange:  { border: 'border-orange-300',  bg: 'bg-orange-50/70',  title: 'text-orange-900',  amount: 'text-orange-700',  accBorder: 'border-l-orange-600',  badge: 'bg-orange-100 text-orange-800' },
+                teal:    { border: 'border-teal-300',    bg: 'bg-teal-50/70',    title: 'text-teal-900',    amount: 'text-teal-700',    accBorder: 'border-l-teal-600',    badge: 'bg-teal-100 text-teal-800' },
+                rose:    { border: 'border-rose-300',    bg: 'bg-rose-50/70',    title: 'text-rose-900',    amount: 'text-rose-700',    accBorder: 'border-l-rose-600',    badge: 'bg-rose-100 text-rose-800' }
+            };
+
+            // 1. Render Cards di Menu Sumber Dana
+            const sdGrid = document.getElementById('sumberdana-cards-grid');
+            if (sdGrid) {
+                sdGrid.innerHTML = appState.walletList.map((w, idx) => {
+                    const c = colorMap[w.color] || colorMap.teal;
+                    const bal = Number(appState.wallets[w.id]) || 0;
+                    return `
+                        <div class="border ${c.border} ${c.bg} rounded-lg p-3.5 flex flex-col justify-between shadow-sm">
+                            <div>
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.badge} uppercase">${w.type || 'AKUN'}</span>
+                                        <div class="font-bold ${c.title} text-sm mt-1">${idx + 1}. ${w.name}</div>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" onclick="openWalletModal('${w.id}')" class="ipos-btn px-2 py-1 rounded text-[11px] text-sky-800" title="Edit Nama / Saldo Sumber Dana">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        ${appState.walletList.length > 1 ? `
+                                            <button type="button" onclick="deleteWalletAccount('${w.id}')" class="ipos-btn px-2 py-1 rounded text-[11px] text-red-600" title="Hapus Sumber Dana">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <div class="text-2xl font-extrabold ${c.amount} my-1.5 font-mono">${formatRp(bal)}</div>
+                            </div>
+                            <div class="text-[11px] text-slate-600 border-t border-slate-200/70 pt-1.5 flex items-center justify-between">
+                                <span class="truncate">${w.desc || '-'}</span>
+                                <span class="font-mono text-[10px] text-slate-400 ml-2 shrink-0">${w.id}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 2. Render Cards di Menu Akuntansi
+            const accGrid = document.getElementById('acc-wallets-grid');
+            if (accGrid) {
+                accGrid.innerHTML = appState.walletList.map((w, idx) => {
+                    const c = colorMap[w.color] || colorMap.teal;
+                    const bal = Number(appState.wallets[w.id]) || 0;
+                    const accCode = 1101 + idx;
+                    return `
+                        <div class="ipos-panel rounded-lg p-4 border-l-4 ${c.accBorder}">
+                            <div class="text-xs font-bold text-slate-500 uppercase">${accCode} - ${w.name}</div>
+                            <div class="text-2xl font-extrabold ${c.amount} mt-1 font-mono">${formatRp(bal)}</div>
+                            <div class="text-[11px] text-slate-500 mt-1">${w.desc || 'Saldo aktif sumber dana'}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 3. Sinkronkan Dropdown Sumber Dana di Seluruh Form
+            const walletOptionsHtml = appState.walletList.map(w =>
+                `<option value="${w.id}">${w.name} (${formatRp(appState.wallets[w.id] || 0)})</option>`
+            ).join('');
+
+            const syncSelect = (elId, extraPrefix = '', extraSuffix = '') => {
+                const el = document.getElementById(elId);
+                if (!el) return;
+                const prev = el.value;
+                el.innerHTML = extraPrefix + walletOptionsHtml + extraSuffix;
+                if (prev && Array.from(el.options).some(o => o.value === prev)) {
+                    el.value = prev;
+                }
+            };
+
+            // Mutasi Sumber Dana
+            syncSelect('sd-from', '', '<option value="MODAL_LUAR">Setoran Modal Pemilik</option>');
+            syncSelect('sd-to', '', '<option value="PRIVE_OWNER">Penarikan / Prive Pemilik</option>');
+
+            // Pembelian & Deposit
+            syncSelect('buy-item-source');
+            syncSelect('dep-target-wallet');
+            syncSelect('dep-source-type', '', '<option value="MODAL_OWNER">Setoran Modal Pemilik / Rekening Pribadi</option>');
+
+            // Kasir POS Metode Bayar
+            const posPayEl = document.getElementById('pos-payment-method');
+            if (posPayEl) {
+                const prevPos = posPayEl.value;
+                posPayEl.innerHTML = appState.walletList.map(w =>
+                    `<option value="${w.id}">${w.type === 'TUNAI' ? 'TUNAI - ' : 'NON-TUNAI - '}${w.name}</option>`
+                ).join('');
+                if (prevPos && Array.from(posPayEl.options).some(o => o.value === prevPos)) {
+                    posPayEl.value = prevPos;
+                }
+            }
+
+            // Loket PPOB & BRILink Sumber Modal & Tujuan Pembayaran
+            syncSelect('ppob-source-wallet');
+            syncSelect('ppob-dest-wallet');
+        }
+
+        function openWalletModal(walletId = null) {
+            const titleEl = document.getElementById('wallet-modal-title');
+            const editIdEl = document.getElementById('edit-wallet-id');
+            const codeEl = document.getElementById('wallet-code-input');
+            const typeEl = document.getElementById('wallet-type-input');
+            const nameEl = document.getElementById('wallet-name-input');
+            const balEl = document.getElementById('wallet-balance-input');
+            const colorEl = document.getElementById('wallet-color-input');
+            const descEl = document.getElementById('wallet-desc-input');
+
+            if (walletId) {
+                const w = appState.walletList.find(item => item.id === walletId);
+                if (!w) return;
+                titleEl.innerHTML = `<i class="fas fa-edit mr-1.5 text-teal-600"></i> Edit Sumber Dana: ${w.name}`;
+                editIdEl.value = w.id;
+                codeEl.value = w.id;
+                codeEl.disabled = true;
+                codeEl.classList.add('bg-slate-100', 'text-slate-500');
+                typeEl.value = w.type || 'BANK';
+                nameEl.value = w.name;
+                balEl.value = Number(appState.wallets[w.id]) || 0;
+                colorEl.value = w.color || 'teal';
+                descEl.value = w.desc || '';
+            } else {
+                titleEl.innerHTML = `<i class="fas fa-plus-circle mr-1.5 text-teal-600"></i> Tambah Sumber Dana Baru`;
+                editIdEl.value = '';
+                codeEl.value = '';
+                codeEl.disabled = false;
+                codeEl.classList.remove('bg-slate-100', 'text-slate-500');
+                typeEl.value = 'EWALLET';
+                nameEl.value = '';
+                balEl.value = 0;
+                colorEl.value = 'sky';
+                descEl.value = '';
+            }
+
+            document.getElementById('wallet-modal').classList.remove('hidden');
+            setTimeout(() => (walletId ? nameEl : codeEl).focus(), 50);
+        }
+
+        async function saveWalletAccount(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-wallet-id').value.trim();
+            const rawCode = document.getElementById('wallet-code-input').value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+            const type = document.getElementById('wallet-type-input').value;
+            const name = document.getElementById('wallet-name-input').value.trim();
+            const balance = Number(document.getElementById('wallet-balance-input').value) || 0;
+            const color = document.getElementById('wallet-color-input').value;
+            const desc = document.getElementById('wallet-desc-input').value.trim();
+
+            if (!name) {
+                showToast('Nama sumber dana wajib diisi!', 'error');
+                return;
+            }
+
+            if (editId) {
+                const idx = appState.walletList.findIndex(w => w.id === editId);
+                if (idx >= 0) {
+                    appState.walletList[idx] = { ...appState.walletList[idx], name, type, color, desc };
+                    appState.wallets[editId] = balance;
+                    showToast(`Sumber dana "${name}" berhasil diperbarui!`, 'success');
+                }
+            } else {
+                if (!rawCode) {
+                    showToast('Kode akun sumber dana wajib diisi!', 'error');
+                    return;
+                }
+                if (appState.walletList.some(w => w.id === rawCode)) {
+                    showToast(`Kode "${rawCode}" sudah digunakan! Gunakan kode lain.`, 'error');
+                    return;
+                }
+                appState.walletList.push({ id: rawCode, name, type, color, desc });
+                appState.wallets[rawCode] = balance;
+                showToast(`Sumber dana baru "${name}" berhasil ditambahkan!`, 'success');
+            }
+
+            await saveAppState();
+            closeModal('wallet-modal');
+        }
+
+        async function deleteWalletAccount(walletId) {
+            if (!isCurrentUserAdmin()) {
+                showToast('Akses ditolak! Hanya role ADMIN yang dapat menghapus Sumber Dana.', 'error');
+                return;
+            }
+            if (appState.walletList.length <= 1) {
+                showToast('Minimal harus tersisa 1 sumber dana aktif!', 'error');
+                return;
+            }
+            const target = appState.walletList.find(w => w.id === walletId);
+            if (!target) return;
+
+            appState.walletList = appState.walletList.filter(w => w.id !== walletId);
+            delete appState.wallets[walletId];
+            await saveAppState();
+            showToast(`Sumber dana "${target.name}" telah dihapus.`, 'info');
         }
 
         // =========================================================================
@@ -2846,27 +3173,6 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                     </div>
                 </div>
             `}).join('');
-        }
-
-        function renderPosQuickGrid() {
-            const grid = document.getElementById('pos-quick-grid');
-            const cat = document.getElementById('pos-quick-cat').value;
-            const filtered = appState.items.filter(i => cat === 'ALL' || i.category === cat);
-
-            grid.innerHTML = filtered.map(item => `
-                <div onclick="addItemToPosCart('${item.code}')" class="cursor-pointer border border-slate-300 hover:border-sky-500 bg-white hover:bg-sky-50 rounded p-2 transition flex flex-col justify-between shadow-sm">
-                    <div>
-                        <div class="flex justify-between items-center text-[10px] text-slate-500">
-                            <span class="font-mono">${item.code}</span>
-                            <span class="${item.stock <= 5 ? 'text-red-600 font-bold' : 'text-emerald-700'}">Stok: ${item.stock}</span>
-                        </div>
-                        <div class="font-bold text-xs text-slate-800 mt-0.5 line-clamp-2">${item.name}</div>
-                    </div>
-                    <div class="mt-2 pt-1 border-t border-slate-100 font-extrabold text-xs text-blue-700 font-mono">
-                        ${formatRp(item.price)}
-                    </div>
-                </div>
-            `).join('');
         }
 
         function handlePosSearchKey(e) {
@@ -3033,10 +3339,10 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 }
             });
 
-            if (payMethod === 'SALDO_BRILINK') {
-                appState.wallets.SALDO_BRILINK += total;
+            if (typeof appState.wallets[payMethod] === 'number') {
+                appState.wallets[payMethod] += total;
             } else {
-                appState.wallets.KAS_TOKO += total;
+                appState.wallets.KAS_TOKO = (appState.wallets.KAS_TOKO || 0) + total;
             }
 
             const profit = total - totalCost;
@@ -3195,6 +3501,22 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 </button>
             `).join('');
 
+            // Set default sumber dana keluar & masuk sesuai mode PPOB/BRILink
+            const srcEl = document.getElementById('ppob-source-wallet');
+            const dstEl = document.getElementById('ppob-dest-wallet');
+            if (srcEl && dstEl) {
+                if (actualMode === 'transfer') {
+                    if (appState.wallets.SALDO_BRILINK !== undefined) srcEl.value = 'SALDO_BRILINK';
+                    if (appState.wallets.KAS_TOKO !== undefined) dstEl.value = 'KAS_TOKO';
+                } else if (actualMode === 'tarik') {
+                    if (appState.wallets.KAS_TOKO !== undefined) srcEl.value = 'KAS_TOKO';
+                    if (appState.wallets.SALDO_BRILINK !== undefined) dstEl.value = 'SALDO_BRILINK';
+                } else {
+                    if (appState.wallets.SALDO_PULSA !== undefined) srcEl.value = 'SALDO_PULSA';
+                    if (appState.wallets.KAS_TOKO !== undefined) dstEl.value = 'KAS_TOKO';
+                }
+            }
+
             if (cfg.presets.length > 0) {
                 applyPpobPreset(cfg.presets[0].label, cfg.presets[0].modal, cfg.presets[0].sell);
             }
@@ -3237,28 +3559,16 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             const sell = Number(document.getElementById('ppob-sell-amount').value) || 0;
             const profit = sell - modal;
 
-            if (mode === 'transfer') {
-                if (appState.wallets.SALDO_BRILINK < modal) {
-                    showToast('Saldo Rekening BRILink tidak mencukupi untuk transfer ini!', 'error');
-                    return;
-                }
-                appState.wallets.SALDO_BRILINK -= modal;
-                appState.wallets.KAS_TOKO += sell;
-            } else if (mode === 'tarik') {
-                if (appState.wallets.KAS_TOKO < modal) {
-                    showToast('Uang Kas Tunai di laci tidak mencukupi untuk Tarik Tunai ini!', 'error');
-                    return;
-                }
-                appState.wallets.KAS_TOKO -= modal;
-                appState.wallets.SALDO_BRILINK += sell;
-            } else {
-                if (appState.wallets.SALDO_PULSA < modal) {
-                    showToast('Saldo Deposit Server Pulsa tidak mencukupi!', 'error');
-                    return;
-                }
-                appState.wallets.SALDO_PULSA -= modal;
-                appState.wallets.KAS_TOKO += sell;
+            const srcWallet = document.getElementById('ppob-source-wallet')?.value || (mode === 'transfer' ? 'SALDO_BRILINK' : mode === 'tarik' ? 'KAS_TOKO' : 'SALDO_PULSA');
+            const dstWallet = document.getElementById('ppob-dest-wallet')?.value || (mode === 'tarik' ? 'SALDO_BRILINK' : 'KAS_TOKO');
+
+            if ((appState.wallets[srcWallet] || 0) < modal) {
+                showToast(`Saldo ${getWalletNameById(srcWallet)} tidak mencukupi untuk transaksi ini!`, 'error');
+                return;
             }
+
+            appState.wallets[srcWallet] -= modal;
+            appState.wallets[dstWallet] = (appState.wallets[dstWallet] || 0) + sell;
 
             const isBri = (mode === 'transfer' || mode === 'tarik');
             const trxId = generateInvoiceId(isBri ? 'BRI' : 'PPB');
@@ -3273,7 +3583,7 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 modal: modal,
                 total: sell,
                 profit: profit,
-                paymentMethod: isBri ? 'SALDO_BRILINK' : 'SALDO_PULSA',
+                paymentMethod: `${srcWallet} -> ${dstWallet}`,
                 items: [
                     { name: `${desc} [${targetNo}]`, qty: 1, price: modal },
                     { name: 'Biaya Admin / Jasa Layanan', qty: 1, price: profit }
@@ -3824,22 +4134,29 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             const amount = Number(document.getElementById('dep-amount').value) || 0;
             const sourceType = document.getElementById('dep-source-type').value;
 
-            if (sourceType === 'KAS_TOKO') {
-                if (target === 'KAS_TOKO') {
-                    showToast('Tujuan dan sumber kas tidak boleh sama!', 'error');
+            if (sourceType !== 'MODAL_OWNER') {
+                if (target === sourceType) {
+                    showToast('Tujuan dan sumber dana tidak boleh sama!', 'error');
                     return;
                 }
-                if (appState.wallets.KAS_TOKO < amount) {
-                    showToast('Uang Kas Tunai di laci toko tidak cukup untuk dipindah!', 'error');
+                if ((appState.wallets[sourceType] || 0) < amount) {
+                    showToast(`Saldo ${getWalletNameById(sourceType)} tidak cukup untuk dipindah!`, 'error');
                     return;
                 }
-                appState.wallets.KAS_TOKO -= amount;
+                appState.wallets[sourceType] -= amount;
             }
 
-            appState.wallets[target] += amount;
+            appState.wallets[target] = (appState.wallets[target] || 0) + amount;
+            appState.fundTransfers.unshift({
+                date: new Date().toISOString(),
+                from: sourceType,
+                to: target,
+                amount,
+                note: document.getElementById('dep-note').value.trim() || `Deposit saldo ke ${getWalletNameById(target)}`
+            });
             await saveAppState();
             document.getElementById('dep-note').value = '';
-            showToast(`Deposit saldo sebesar ${formatRp(amount)} berhasil ditambahkan!`, 'success');
+            showToast(`Deposit saldo sebesar ${formatRp(amount)} ke ${getWalletNameById(target)} berhasil!`, 'success');
         }
 
         function renderStockLedgerTable() {
@@ -4187,39 +4504,40 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             const type = document.getElementById('vcr-print-type').value;
             const title = document.getElementById('vcr-print-title').value.trim();
             const price = Number(document.getElementById('vcr-print-price').value) || 0;
-            const qty = Math.min(30, Math.max(1, Number(document.getElementById('vcr-print-qty').value) || 1));
+            const qty = Math.min(30, Math.max(1, Number(document.getElementById('vcr-print-qty').value) || 6));
             const rawSns = document.getElementById('vcr-print-sns').value.split('\n').map(s => s.trim()).filter(Boolean);
 
-            const grid = document.getElementById('voucher-print-grid');
-            let cardsHtml = '';
+            const cards = [];
             for (let i = 0; i < qty; i++) {
-                const sn = rawSns[i] || `900${Math.floor(100000000 + Math.random() * 900000000)}`;
-                const pin = Math.floor(100000000000 + Math.random() * 900000000000);
-                cardsHtml += `
-                    <div class="bg-white border-2 border-dashed border-slate-400 rounded p-2.5 text-slate-900 shadow-sm">
-                        <div class="flex justify-between items-center border-b border-slate-200 pb-1 mb-1">
-                            <span class="font-extrabold text-[10px] text-sky-800">${appState.settings.storeName}</span>
-                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100">${type}</span>
-                        </div>
-                        <div class="font-extrabold text-xs text-slate-900">${title}</div>
-                        <div class="text-sm font-black text-emerald-700 font-mono my-0.5">${formatRp(price)}</div>
-                        ${type === 'VOUCHER' ? `<div class="bg-slate-100 p-1 rounded font-mono text-[10px] mt-1">Kode: <b>${pin}</b></div>` : ''}
-                        <div class="text-[9px] font-mono text-slate-500 mt-1">SN: ${sn}</div>
-                    </div>
-                `;
+                const sn = rawSns[i] || `${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
+                cards.push({ type, title, price, sn });
             }
-            grid.innerHTML = cardsHtml;
+
+            const grid = document.getElementById('voucher-print-grid');
+            grid.innerHTML = cards.map(c => `
+                <div class="bg-white border-2 border-dashed border-slate-400 rounded p-2.5 text-center shadow-sm">
+                    <div class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">${appState.settings.storeName}</div>
+                    <div class="font-extrabold text-xs text-slate-900 my-1">${c.title}</div>
+                    <div class="bg-slate-100 border border-slate-300 rounded py-1 px-2 font-mono font-bold text-xs tracking-widest text-slate-800">
+                        ${c.type === 'VOUCHER' ? `SN: ${c.sn}` : 'KARTU PERDANA'}
+                    </div>
+                    <div class="mt-1.5 font-extrabold text-sm text-emerald-700 font-mono">${formatRp(c.price)}</div>
+                    <div class="text-[9px] text-slate-400 mt-0.5">${c.type === 'VOUCHER' ? 'Gosok Pelindung & Dial *133*KODE#' : 'Registrasi NIK & KK Sebelum Pakai'}</div>
+                </div>
+            `).join('');
             showToast(`${qty} kartu ${type.toLowerCase()} siap dicetak!`, 'success');
         }
 
         function printGeneratedVouchers() {
-            const grid = document.getElementById('voucher-print-grid');
-            if (!grid || !grid.innerHTML.trim()) {
-                generateVoucherBatch();
+            const content = document.getElementById('voucher-print-grid').innerHTML;
+            if (!content.trim()) {
+                generateVoucherBatch(null);
             }
-            const area = document.getElementById('receipt-print-area');
-            area.innerHTML = `<div class="space-y-2">${grid.innerHTML}</div>`;
-            window.print();
+            document.getElementById('receipt-print-area').innerHTML = `
+                <div class="text-center font-bold border-b border-black pb-1 mb-2">${appState.settings.storeName} - CETAK VOUCHER / LABEL</div>
+                <div class="space-y-2">${document.getElementById('voucher-print-grid').innerHTML}</div>
+            `;
+            document.getElementById('receipt-modal').classList.remove('hidden');
         }
 
         async function submitMutasiSumberDana(e) {
@@ -4227,39 +4545,30 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             const from = document.getElementById('sd-from').value;
             const to = document.getElementById('sd-to').value;
             const amount = Number(document.getElementById('sd-amount').value) || 0;
-            const note = document.getElementById('sd-note').value.trim() || 'Mutasi Sumber Dana';
+            const note = document.getElementById('sd-note').value.trim() || 'Mutasi antar akun dana';
 
             if (from === to) {
-                showToast('Sumber dana asal dan tujuan tidak boleh sama!', 'error');
+                showToast('Sumber dan tujuan dana tidak boleh sama!', 'error');
                 return;
             }
-            if (appState.wallets[from] !== undefined && appState.wallets[from] < amount) {
-                showToast('Saldo sumber dana asal tidak mencukupi!', 'error');
+            if (from !== 'MODAL_LUAR' && (appState.wallets[from] || 0) < amount) {
+                showToast(`Saldo ${from} tidak mencukupi untuk mutasi ini!`, 'error');
                 return;
             }
 
-            if (appState.wallets[from] !== undefined) appState.wallets[from] -= amount;
-            if (appState.wallets[to] !== undefined) appState.wallets[to] += amount;
-
-            const labels = {
-                KAS_TOKO: 'Kas Tunai Laci Toko',
-                SALDO_BRILINK: 'Rekening Agen BRILink',
-                SALDO_PULSA: 'Deposit Server Pulsa',
-                MODAL_LUAR: 'Setoran Modal Pemilik',
-                PRIVE_OWNER: 'Penarikan / Prive Pemilik'
-            };
+            if (from !== 'MODAL_LUAR') appState.wallets[from] -= amount;
+            if (to !== 'PRIVE_OWNER') appState.wallets[to] = (appState.wallets[to] || 0) + amount;
 
             appState.fundTransfers.unshift({
                 date: new Date().toISOString(),
-                from: labels[from] || from,
-                to: labels[to] || to,
+                from,
+                to,
                 amount,
                 note
             });
-
             await saveAppState();
             document.getElementById('sd-note').value = '';
-            showToast(`Mutasi dana ${formatRp(amount)} berhasil dicatat!`, 'success');
+            showToast(`Mutasi dana ${formatRp(amount)} berhasil diproses!`, 'success');
         }
 
         function renderSumberDanaHistory() {
@@ -4273,8 +4582,8 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             tbody.innerHTML = list.map(m => `
                 <tr>
                     <td class="text-xs text-slate-600">${new Date(m.date).toLocaleString('id-ID')}</td>
-                    <td class="font-semibold">${m.from}</td>
-                    <td class="font-semibold text-blue-800">${m.to}</td>
+                    <td class="font-semibold text-red-700">${getWalletNameById(m.from)}</td>
+                    <td class="font-semibold text-emerald-700">${getWalletNameById(m.to)}</td>
                     <td class="text-right font-mono font-bold">${formatRp(m.amount)}</td>
                     <td>${m.note}</td>
                 </tr>
@@ -4290,7 +4599,7 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             const area = document.getElementById('receipt-print-area');
             const itemsHtml = (trx.items || []).map(it => `
                 <div class="flex justify-between">
-                    <span class="truncate pr-2">${it.name} x${it.qty}</span>
+                    <span>${it.name} x${it.qty}</span>
                     <span>${formatNum(it.price * it.qty)}</span>
                 </div>
             `).join('');
@@ -4300,97 +4609,112 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                     <div class="font-bold text-sm">${appState.settings.storeName}</div>
                     <div class="text-[10px]">${appState.settings.storeAddress}</div>
                 </div>
-                <div class="text-[10px] border-b border-dashed border-slate-400 pb-1.5 mb-2 space-y-0.5">
-                    <div>No. Nota : ${trx.id}</div>
-                    <div>Tanggal  : ${new Date(trx.date).toLocaleString('id-ID')}</div>
-                    <div>Kasir    : ${currentUser.username} (${currentUser.location})</div>
-                    <div>Layanan  : ${trx.module}</div>
+                <div class="text-[10px] space-y-0.5 border-b border-dashed border-slate-400 pb-2 mb-2">
+                    <div class="flex justify-between"><span>No.Struk:</span><span>${trx.id}</span></div>
+                    <div class="flex justify-between"><span>Waktu:</span><span>${new Date(trx.date).toLocaleString('id-ID')}</span></div>
+                    <div class="flex justify-between"><span>Layanan:</span><span>${trx.module} (${currentUser.username})</span></div>
+                    <div class="flex justify-between"><span>Pelanggan:</span><span>${trx.customer || 'UMUM'}</span></div>
                 </div>
                 <div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
                     ${itemsHtml}
                 </div>
                 <div class="space-y-0.5 font-bold">
-                    <div class="flex justify-between text-xs">
-                        <span>TOTAL BAYAR</span>
-                        <span>${formatRp(trx.total)}</span>
-                    </div>
-                    ${trx.paid ? `
-                    <div class="flex justify-between font-normal">
-                        <span>Tunai / Bayar</span>
-                        <span>${formatRp(trx.paid)}</span>
-                    </div>
-                    <div class="flex justify-between font-normal">
-                        <span>Kembalian</span>
-                        <span>${formatRp(trx.change || 0)}</span>
-                    </div>` : ''}
+                    <div class="flex justify-between text-xs"><span>TOTAL BAYAR</span><span>${formatRp(trx.total)}</span></div>
+                    ${trx.paid !== undefined ? `<div class="flex justify-between font-normal"><span>Tunai</span><span>${formatRp(trx.paid)}</span></div>` : ''}
+                    ${trx.change !== undefined ? `<div class="flex justify-between font-normal"><span>Kembali</span><span>${formatRp(trx.change)}</span></div>` : ''}
                 </div>
-                <div class="text-center text-[10px] border-t border-dashed border-slate-400 pt-2 mt-3">
+                <div class="text-center text-[10px] mt-3 pt-2 border-t border-dashed border-slate-400">
                     ${appState.settings.storeFooter}
                 </div>
             `;
             document.getElementById('receipt-modal').classList.remove('hidden');
         }
 
+        function exportTransactionsCSV() {
+            const headers = ['No_Transaksi', 'Tanggal', 'Modul', 'Keterangan', 'Modal', 'Total_Jual', 'Laba_Bersih'];
+            const rows = appState.transactions.map(t => [
+                t.id,
+                new Date(t.date).toISOString(),
+                t.module,
+                `"${(t.description || '').replace(/"/g, '""')}"`,
+                t.modal,
+                t.total,
+                t.profit
+            ]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Laporan_${activeDatabaseName}_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            showToast('Laporan CSV berhasil diunduh!', 'success');
+        }
+
         // =========================================================================
-        // 12. SETTINGS, DYNAMIC USER MANAGEMENT & BACKUP
+        // 12. SETTINGS, MANAJEMEN USER & PASSWORD, SUPABASE CONFIG & BACKUP
         // =========================================================================
-        function openSettingsModal(tab = 'general') {
-            document.getElementById('set-store-name').value = appState.settings.storeName;
-            document.getElementById('set-store-address').value = appState.settings.storeAddress;
-            document.getElementById('set-store-footer').value = appState.settings.storeFooter;
+        function openSettingsModal(defaultTab = 'general') {
+            document.getElementById('set-store-name').value = appState.settings.storeName || '';
+            document.getElementById('set-store-address').value = appState.settings.storeAddress || '';
+            document.getElementById('set-store-footer').value = appState.settings.storeFooter || '';
             document.getElementById('set-sb-url').value = appState.settings.supabaseUrl || '';
             document.getElementById('set-sb-key').value = appState.settings.supabaseKey || '';
-            switchSettingsTab(tab);
+            switchSettingsTab(defaultTab);
             document.getElementById('settings-modal').classList.remove('hidden');
         }
 
         function switchSettingsTab(tab) {
             ['general', 'users', 'supabase', 'backup'].forEach(t => {
-                const pane = document.getElementById(`settings-pane-${t}`);
-                const btn = document.getElementById(`stab-${t}`);
-                if (pane) pane.classList.add('hidden');
-                if (btn) btn.classList.remove('active');
+                document.getElementById(`settings-pane-${t}`).classList.add('hidden');
+                document.getElementById(`stab-${t}`).classList.remove('active');
             });
             document.getElementById(`settings-pane-${tab}`).classList.remove('hidden');
             document.getElementById(`stab-${tab}`).classList.add('active');
 
             if (tab === 'users') {
-                renderUsersManagementTable();
+                renderSettingsUsersTable();
             }
         }
 
-        function renderUsersManagementTable() {
+        function renderSettingsUsersTable() {
             document.getElementById('users-modal-db-name').textContent = activeDatabaseName;
             document.getElementById('users-modal-current-user').textContent = currentUser.username;
             document.getElementById('users-modal-current-role').textContent = currentUser.role;
 
-            const isAdmin = isCurrentUserAdmin();
             const addBtn = document.getElementById('btn-show-add-user');
-            if (addBtn) {
-                addBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+            if (isCurrentUserAdmin()) {
+                addBtn.classList.remove('hidden');
+            } else {
+                addBtn.classList.add('hidden');
+                closeUserFormModal();
             }
 
             const tbody = document.getElementById('settings-users-tbody');
-            const users = appState.users || [];
-
+            const users = appState.users || getDefaultUsersSeed();
             tbody.innerHTML = users.map((u, idx) => {
-                const isSelf = u.username.toLowerCase() === (currentUser.rawUsername || currentUser.username).toLowerCase();
-                const canEdit = isAdmin || isSelf;
-                const canDelete = isAdmin && !isSelf;
+                const isSelf = u.username.toLowerCase() === currentUser.rawUsername.toLowerCase();
+                const canEdit = isCurrentUserAdmin() || isSelf;
+                const canDelete = isCurrentUserAdmin() && !isSelf && users.length > 1;
                 return `
                     <tr>
                         <td class="text-center">${idx + 1}</td>
                         <td class="font-bold text-slate-800">
                             ${u.username}
-                            ${isSelf ? '<span class="ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">Sedang Aktif</span>' : ''}
+                            ${isSelf ? '<span class="ml-1 text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-semibold">Anda</span>' : ''}
                         </td>
-                        <td class="font-mono text-slate-500">••••••</td>
+                        <td class="font-mono text-slate-600">
+                            <span id="pwd-mask-${idx}">••••••••</span>
+                            <button type="button" onclick="toggleRowPassword(${idx}, '${u.password.replace(/'/g, "\\'")}')" class="ml-1 text-slate-400 hover:text-sky-700" title="Lihat/Sembunyikan Password">
+                                <i class="fas fa-eye text-[10px]"></i>
+                            </button>
+                        </td>
                         <td class="text-center">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.role === 'ADMIN' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'}">${u.role}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.role === 'ADMIN' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'}">${u.role}</span>
                         </td>
-                        <td class="text-center font-mono font-semibold">${u.location || 'UTM'}</td>
+                        <td class="text-center font-mono text-xs">${u.location || 'UTM'}</td>
                         <td class="text-center space-x-1">
-                            ${canEdit ? `<button type="button" onclick="openUserFormModal(${idx})" class="ipos-btn px-2 py-0.5 rounded text-[11px] text-sky-700 font-semibold" title="Ubah Password / Hak Akses"><i class="fas fa-key"></i> Edit</button>` : '-'}
+                            ${canEdit ? `<button type="button" onclick="openUserFormModal(${idx})" class="ipos-btn px-2 py-0.5 rounded text-[11px] text-sky-700" title="Edit User / Ganti Password"><i class="fas fa-key"></i> Edit</button>` : '<span class="text-slate-400 text-[10px]">Terkunci</span>'}
                             ${canDelete ? `<button type="button" onclick="deleteUserAccount(${idx})" class="ipos-btn px-2 py-0.5 rounded text-[11px] text-red-600" title="Hapus User"><i class="fas fa-trash"></i></button>` : ''}
                         </td>
                     </tr>
@@ -4398,8 +4722,25 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             }).join('');
         }
 
-        function openUserFormModal(index = -1) {
-            const isAdmin = isCurrentUserAdmin();
+        function toggleRowPassword(idx, realPwd) {
+            const el = document.getElementById(`pwd-mask-${idx}`);
+            if (!el) return;
+            el.textContent = el.textContent === '••••••••' ? realPwd : '••••••••';
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                input.type = 'password';
+                btn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        }
+
+        function openUserFormModal(editIndex = -1) {
             const box = document.getElementById('user-form-box');
             const title = document.getElementById('user-form-title');
             const origInput = document.getElementById('uf-original-username');
@@ -4410,21 +4751,27 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
 
             passInput.type = 'password';
 
-            if (index >= 0) {
-                const u = appState.users[index];
-                if (!u) return;
-                title.textContent = `Edit Akun & Password [${u.username}]`;
-                origInput.value = u.username;
-                userInput.value = u.username;
-                passInput.value = u.password;
-                roleSelect.value = u.role || 'KASIR';
-                locSelect.value = u.location || 'UTM';
+            if (editIndex >= 0) {
+                const target = appState.users[editIndex];
+                if (!target) return;
+                title.textContent = `Edit Akun User: ${target.username}`;
+                origInput.value = target.username;
+                userInput.value = target.username;
+                passInput.value = target.password;
+                roleSelect.value = target.role;
+                locSelect.value = target.location || 'UTM';
 
-                userInput.disabled = !isAdmin;
-                roleSelect.disabled = !isAdmin;
+                // Jika bukan ADMIN (Kasir mengedit profil sendiri), role & username dikunci
+                if (!isCurrentUserAdmin()) {
+                    userInput.disabled = true;
+                    roleSelect.disabled = true;
+                } else {
+                    userInput.disabled = false;
+                    roleSelect.disabled = false;
+                }
             } else {
-                if (!isAdmin) {
-                    showToast('Hanya ADMIN yang dapat menambah user baru!', 'error');
+                if (!isCurrentUserAdmin()) {
+                    showToast('Hanya role ADMIN yang dapat menambah user baru!', 'error');
                     return;
                 }
                 title.textContent = 'Tambah User Baru';
@@ -4438,116 +4785,90 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             }
 
             box.classList.remove('hidden');
-            setTimeout(() => (index >= 0 ? passInput.focus() : userInput.focus()), 50);
+            setTimeout(() => (userInput.disabled ? passInput : userInput).focus(), 50);
         }
 
         function closeUserFormModal() {
             document.getElementById('user-form-box').classList.add('hidden');
         }
 
-        function togglePasswordVisibility(inputId, btn) {
-            const inp = document.getElementById(inputId);
-            if (!inp) return;
-            if (inp.type === 'password') {
-                inp.type = 'text';
-                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-            } else {
-                inp.type = 'password';
-                btn.innerHTML = '<i class="fas fa-eye"></i>';
-            }
-        }
-
         async function saveUserAccount() {
             const origUsername = document.getElementById('uf-original-username').value.trim();
-            const newUsername = document.getElementById('uf-username').value.trim();
-            const newPassword = document.getElementById('uf-password').value;
-            const newRole = document.getElementById('uf-role').value;
-            const newLocation = document.getElementById('uf-location').value;
+            const username = document.getElementById('uf-username').value.trim();
+            const password = document.getElementById('uf-password').value;
+            const role = document.getElementById('uf-role').value;
+            const location = document.getElementById('uf-location').value;
 
-            if (!newUsername || !newPassword) {
+            if (!username || !password) {
                 showToast('Username dan Password wajib diisi!', 'error');
                 return;
+            }
+
+            if (!Array.isArray(appState.users)) {
+                appState.users = getDefaultUsersSeed();
             }
 
             if (origUsername) {
                 const idx = appState.users.findIndex(u => u.username.toLowerCase() === origUsername.toLowerCase());
                 if (idx === -1) return;
 
-                const dup = appState.users.some((u, i) => i !== idx && u.username.toLowerCase() === newUsername.toLowerCase());
-                if (dup) {
-                    showToast(`Username "${newUsername}" sudah dipakai akun lain!`, 'error');
+                const duplicate = appState.users.some((u, i) => i !== idx && u.username.toLowerCase() === username.toLowerCase());
+                if (duplicate) {
+                    showToast('Username sudah dipakai akun lain!', 'error');
                     return;
                 }
 
-                if (appState.users[idx].role === 'ADMIN' && newRole !== 'ADMIN') {
+                // Pastikan minimal selalu ada 1 ADMIN aktif
+                if (appState.users[idx].role === 'ADMIN' && role !== 'ADMIN') {
                     const adminCount = appState.users.filter(u => u.role === 'ADMIN').length;
                     if (adminCount <= 1) {
-                        showToast('Tidak dapat mengubah role ADMIN terakhir menjadi KASIR!', 'error');
+                        showToast('Tidak dapat menurunkan role ADMIN terakhir!', 'error');
                         return;
                     }
                 }
 
-                appState.users[idx] = {
-                    username: newUsername,
-                    password: newPassword,
-                    role: newRole,
-                    location: newLocation
-                };
+                appState.users[idx] = { username, password, role, location };
 
-                if ((currentUser.rawUsername || currentUser.username).toLowerCase() === origUsername.toLowerCase()) {
-                    currentUser.username = newUsername.toUpperCase();
-                    currentUser.rawUsername = newUsername;
-                    currentUser.role = newRole;
-                    currentUser.location = newLocation;
+                if (origUsername.toLowerCase() === currentUser.rawUsername.toLowerCase()) {
+                    currentUser = {
+                        username: username.toUpperCase(),
+                        rawUsername: username,
+                        role,
+                        location
+                    };
                     updateDatabaseIdentityUI();
                 }
-
-                showToast(`Akun "${newUsername}" berhasil diperbarui!`, 'success');
+                showToast(`Akun user [${username}] berhasil diperbarui!`, 'success');
             } else {
-                const dup = appState.users.some(u => u.username.toLowerCase() === newUsername.toLowerCase());
-                if (dup) {
-                    showToast(`Username "${newUsername}" sudah terdaftar!`, 'error');
+                const exists = appState.users.some(u => u.username.toLowerCase() === username.toLowerCase());
+                if (exists) {
+                    showToast('Username sudah terdaftar di database ini!', 'error');
                     return;
                 }
-                appState.users.push({
-                    username: newUsername,
-                    password: newPassword,
-                    role: newRole,
-                    location: newLocation
-                });
-                showToast(`User baru "${newUsername}" (${newRole}) berhasil ditambahkan!`, 'success');
+                appState.users.push({ username, password, role, location });
+                showToast(`User baru [${username}] (${role}) berhasil ditambahkan!`, 'success');
             }
 
             await saveAppState();
             closeUserFormModal();
-            renderUsersManagementTable();
+            renderSettingsUsersTable();
         }
 
-        async function deleteUserAccount(index) {
+        async function deleteUserAccount(idx) {
             if (!isCurrentUserAdmin()) {
-                showToast('Hanya role ADMIN yang dapat menghapus user!', 'error');
+                showToast('Akses ditolak! Hanya role ADMIN yang dapat menghapus user.', 'error');
                 return;
             }
-            const target = appState.users[index];
+            const target = appState.users[idx];
             if (!target) return;
-
-            if (target.username.toLowerCase() === (currentUser.rawUsername || currentUser.username).toLowerCase()) {
-                showToast('Tidak dapat menghapus user yang sedang aktif login!', 'error');
+            if (target.username.toLowerCase() === currentUser.rawUsername.toLowerCase()) {
+                showToast('Anda tidak dapat menghapus akun yang sedang aktif login!', 'error');
                 return;
             }
-
-            if (target.role === 'ADMIN') {
-                const adminCount = appState.users.filter(u => u.role === 'ADMIN').length;
-                if (adminCount <= 1) {
-                    showToast('Tidak dapat menghapus satu-satunya akun ADMIN!', 'error');
-                    return;
-                }
-            }
-
-            appState.users.splice(index, 1);
+            appState.users.splice(idx, 1);
             await saveAppState();
-            renderUsersManagementTable();
-            showToast(`User "${target.username}" telah dihapus dari sistem.`, 'info');
+            renderSettingsUsersTable();
+            showToast(`User [${target.username}] telah dihapus.`, 'info');
         }
 
         async function saveStoreSettings() {
@@ -4555,25 +4876,29 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             appState.settings.storeAddress = document.getElementById('set-store-address').value.trim();
             appState.settings.storeFooter = document.getElementById('set-store-footer').value.trim();
             await saveAppState();
-            closeModal('settings-modal');
             showToast('Profil toko & pengaturan struk berhasil disimpan!', 'success');
         }
 
         async function saveSupabaseConfig() {
             appState.settings.supabaseUrl = document.getElementById('set-sb-url').value.trim();
             appState.settings.supabaseKey = document.getElementById('set-sb-key').value.trim();
+            await saveStateToIndexedDB();
             initSupabaseClient();
-            await saveAppState();
-            showToast('Konfigurasi Supabase disimpan & dicoba hubungkan!', 'success');
+            if (supabaseClient) {
+                await pushToSupabase();
+                showToast('Terhubung ke Supabase Cloud & data disinkronkan!', 'success');
+            } else {
+                showToast('Konfigurasi disimpan (Mode Offline Lokal).', 'info');
+            }
         }
 
         async function syncNowWithSupabase() {
             if (!supabaseClient) {
-                showToast('Isi URL dan Anon Key Supabase terlebih dahulu!', 'error');
+                showToast('Masukkan URL & Anon Key Supabase terlebih dahulu!', 'error');
                 return;
             }
             await pushToSupabase();
-            showToast('Sinkronisasi data ke Supabase Cloud selesai!', 'success');
+            showToast(`Sinkronisasi [${activeDatabaseName}] dengan Supabase Cloud selesai!`, 'success');
         }
 
         function showSqlSchemaHelp() {
@@ -4585,24 +4910,9 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Backup_DONETCELL_${activeDatabaseName}_${new Date().toISOString().slice(0, 10)}.json`;
+            a.download = `Backup_iPos5_${activeDatabaseName}_${new Date().toISOString().slice(0, 10)}.json`;
             a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function exportTransactionsCSV() {
-            const headers = ['No_Transaksi', 'Tanggal', 'Modul', 'Keterangan', 'Modal', 'Total_Jual', 'Laba_Bersih'];
-            const rows = appState.transactions.map(t => [
-                t.id, t.date, t.module, `"${t.description.replace(/"/g, '""')}"`, t.modal, t.total, t.profit
-            ]);
-            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Laporan_Transaksi_${activeDatabaseName}_${new Date().toISOString().slice(0, 10)}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
+            showToast(`Backup JSON [${activeDatabaseName}] berhasil diunduh!`, 'success');
         }
 
         async function resetDemoData() {
@@ -4610,50 +4920,47 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
                 showToast('Akses ditolak! Hanya role ADMIN yang dapat mereset database.', 'error');
                 return;
             }
-            const keepUrl = appState.settings.supabaseUrl;
-            const keepKey = appState.settings.supabaseKey;
-            const keepUsers = appState.users;
             appState = createDefaultState(activeDatabaseName);
-            appState.settings.supabaseUrl = keepUrl;
-            appState.settings.supabaseKey = keepKey;
-            appState.users = keepUsers;
-            await saveAppState();
+            posCart = [];
+            await saveStateToIndexedDB();
+            refreshAllUI();
             closeModal('settings-modal');
-            showToast(`Database [${activeDatabaseName}] berhasil dikembalikan ke kondisi awal!`, 'info');
+            showToast(`Database [${activeDatabaseName}] telah direset ke pengaturan awal.`, 'info');
         }
 
         // =========================================================================
-        // 13. CLOCK, NETWORK STATUS & INITIALIZATION
+        // 13. LIVE CLOCK, NETWORK MONITOR & APPLICATION BOOTSTRAP
         // =========================================================================
-        function updateClockAndNetwork() {
+        function updateStatusClock() {
             const now = new Date();
-            document.getElementById('status-clock').textContent = now.toLocaleTimeString('id-ID');
+            document.getElementById('status-clock').textContent = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
 
             const netEl = document.getElementById('footer-internet-status');
             if (navigator.onLine) {
-                netEl.innerHTML = `<i class="fas fa-wifi text-emerald-600"></i> Internet Online (Auto-Sync Aktif)`;
+                netEl.innerHTML = `<i class="fas fa-wifi text-emerald-600"></i> Online (Auto-Sync Siap)`;
             } else {
-                netEl.innerHTML = `<i class="fas fa-plane text-amber-600"></i> Mode Offline (Data Aman di PC Lokal)`;
+                netEl.innerHTML = `<i class="fas fa-plane text-amber-600"></i> Offline (Penyimpanan Lokal Aktif)`;
             }
         }
 
         window.addEventListener('online', () => {
-            updateClockAndNetwork();
+            updateStatusClock();
             pushToSupabase();
         });
-        window.addEventListener('offline', updateClockAndNetwork);
+        window.addEventListener('offline', updateStatusClock);
 
         window.onload = async function () {
-            setInterval(updateClockAndNetwork, 1000);
-            updateClockAndNetwork();
+            setInterval(updateStatusClock, 1000);
+            updateStatusClock();
 
-            initPosHeader();
-            setPpobMode('pulsa');
+            renderDbList();
             await loadDatabaseForActiveTenant();
             updateDatabaseIdentityUI();
+            initPosHeader();
+            setPpobMode('pulsa');
             refreshAllUI();
 
-            // Tampilkan jendela Koneksi Database iPos 5 saat aplikasi pertama dibuka
+            // Tampilkan dialog Koneksi Database iPos 5 saat aplikasi pertama dibuka
             openDbModal();
         };
     </script>
