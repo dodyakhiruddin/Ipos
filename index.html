@@ -373,62 +373,62 @@
                 <div class="py-2 space-y-0.5 text-xs">
                     <button onclick="switchTab('dashboard')" id="nav-dashboard" class="ipos-sidebar-item active w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
                         <i class="fas fa-tachometer-alt w-4 text-center text-amber-400"></i>
-                        <span class="hidden sm:inline">1. DASHBOARD</span>
+                        <span class="hidden sm:inline">Dashboard</span>
                     </button>
 
                     <button onclick="switchTab('masterdata')" id="nav-masterdata" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-database w-4 text-center text-orange-300"></i>
-                        <span class="hidden sm:inline">2. Master data</span>
+                        <span class="hidden sm:inline">Master data</span>
                     </button>
 
                     <button onclick="switchTab('pembelian')" id="nav-pembelian" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-file-invoice w-4 text-center text-indigo-300"></i>
-                        <span class="hidden sm:inline">3. Pembelian</span>
+                        <span class="hidden sm:inline">Pembelian</span>
                     </button>
 
                     <button onclick="switchTab('kasir')" id="nav-kasir" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-shopping-cart w-4 text-center text-emerald-400"></i>
-                        <span class="hidden sm:inline">4. Penjualan</span>
+                        <span class="hidden sm:inline">Penjualan</span>
                     </button>
 
                     <button onclick="switchTab('ppob')" id="nav-ppob" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-bolt w-4 text-center text-yellow-400"></i>
-                        <span class="hidden sm:inline">5. Transaksi PPOB</span>
+                        <span class="hidden sm:inline">Transaksi PPOB</span>
                     </button>
 
                     <button onclick="switchTab('servicehp')" id="nav-servicehp" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-tools w-4 text-center text-rose-400"></i>
-                        <span class="hidden sm:inline">6. Service HP</span>
+                        <span class="hidden sm:inline">Service HP</span>
                     </button>
 
                     <button onclick="switchTab('cetakvoucher')" id="nav-cetakvoucher" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-print w-4 text-center text-cyan-300"></i>
-                        <span class="hidden sm:inline">7. Cetak Voucher dan Perdana</span>
+                        <span class="hidden sm:inline">Cetak Voucher dan Perdana</span>
                     </button>
 
                     <button onclick="switchTab('sumberdana')" id="nav-sumberdana" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-wallet w-4 text-center text-teal-300"></i>
-                        <span class="hidden sm:inline">8. Sumber Dana</span>
+                        <span class="hidden sm:inline">Sumber Dana</span>
                     </button>
 
                     <button onclick="switchTab('akuntansi')" id="nav-akuntansi" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-balance-scale w-4 text-center text-purple-300"></i>
-                        <span class="hidden sm:inline">9. Akutansi</span>
+                        <span class="hidden sm:inline">Akutansi</span>
                     </button>
 
                     <button onclick="switchTab('laporan')" id="nav-laporan" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-chart-bar w-4 text-center text-sky-300"></i>
-                        <span class="hidden sm:inline">10. Laporan</span>
+                        <span class="hidden sm:inline">Laporan</span>
                     </button>
 
                     <button onclick="openSettingsModal('general')" id="nav-pengaturan" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-cogs w-4 text-center text-slate-300"></i>
-                        <span class="hidden sm:inline">11. Pengaturan dan lainnya</span>
+                        <span class="hidden sm:inline">Pengaturan dan lainnya</span>
                     </button>
 
                     <button onclick="switchTab('petunjuk')" id="nav-petunjuk" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-book-open w-4 text-center text-lime-300"></i>
-                        <span class="hidden sm:inline">12. Petunjuk dan pengunaan</span>
+                        <span class="hidden sm:inline">Petunjuk dan pengunaan</span>
                     </button>
                 </div>
             </div>
@@ -454,7 +454,7 @@
             <!-- MDI Tab Bar -->
             <div id="mdi-tab-bar" class="bg-[#d0e1f2] border-b border-[#b5cbe2] px-2 pt-1.5 flex items-center gap-1 overflow-x-auto shrink-0">
                 <button onclick="switchTab('dashboard')" id="tab-dashboard" class="ipos-tab active px-3 py-1 rounded-t text-xs flex items-center gap-2 shrink-0">
-                    <span>1. DASHBOARD</span>
+                    <span>Dashboard</span>
                 </button>
             </div>
 
@@ -509,60 +509,126 @@
                                     <span>Stok Voucher Fisik (<span id="dash-voucher-count">0</span> Item)</span>
                                 </button>
                             </div>
-                        <!-- Quick Shortcut Bar (12 Menu Utama iPos 5) -->
+
+                            <!-- Center Card: Ringkasan Saldo & Laba Hari Ini -->
+                            <div class="lg:col-span-4 ipos-panel rounded-lg p-4 flex flex-col justify-between bg-gradient-to-b from-white to-emerald-50/70">
+                                <div>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">Keuangan & Saldo</span>
+                                        <i class="fas fa-wallet text-emerald-600"></i>
+                                    </div>
+                                    <div class="bg-[#0b2545] text-white rounded-lg p-3.5 shadow-inner mb-3">
+                                        <div class="text-[11px] text-sky-300 uppercase tracking-wider">Total Gabungan Kas & Saldo</div>
+                                        <div id="dash-total-saldo" class="text-2xl font-extrabold font-mono text-emerald-400 mt-0.5">Rp 0</div>
+                                        <div class="text-[10.5px] text-slate-300 mt-1">Kas Laci + Rek BRILink + Server Pulsa</div>
+                                    </div>
+                                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between">
+                                        <div>
+                                            <div class="text-[11px] font-semibold text-emerald-800">Laba Bersih Hari Ini</div>
+                                            <div id="dash-today-profit" class="text-lg font-extrabold font-mono text-emerald-700">Rp 0</div>
+                                        </div>
+                                        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-base">
+                                            <i class="fas fa-chart-line"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button onclick="switchTab('sumberdana')" class="mt-4 w-full ipos-btn-success py-2 rounded font-semibold text-xs shadow flex items-center justify-center gap-2">
+                                    <i class="fas fa-coins"></i>
+                                    <span>Kelola Sumber Dana & Mutasi</span>
+                                </button>
+                            </div>
+
+                            <!-- Right Card: Layanan BRILink & Transaksi Terakhir -->
+                            <div class="lg:col-span-4 ipos-panel rounded-lg p-4 flex flex-col justify-between bg-gradient-to-b from-white to-amber-50/70">
+                                <div>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-xs font-bold uppercase tracking-wider text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full">Agen BRILink</span>
+                                        <i class="fas fa-university text-blue-700"></i>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2.5 mb-3">
+                                        <button onclick="switchTab('ppob', 'transfer')" class="ipos-btn p-2.5 rounded-lg text-left hover:border-blue-500">
+                                            <div class="text-blue-700 text-base mb-1"><i class="fas fa-exchange-alt"></i></div>
+                                            <div class="font-bold text-xs text-slate-800">Transfer Bank</div>
+                                            <div class="text-[10px] text-slate-500">BRI, BCA, Mandiri, BNI</div>
+                                        </button>
+                                        <button onclick="switchTab('ppob', 'tarik')" class="ipos-btn p-2.5 rounded-lg text-left hover:border-emerald-500">
+                                            <div class="text-emerald-700 text-base mb-1"><i class="fas fa-hand-holding-usd"></i></div>
+                                            <div class="font-bold text-xs text-slate-800">Tarik Tunai</div>
+                                            <div class="text-[10px] text-slate-500">EDC / Kartu ATM / PKH</div>
+                                        </button>
+                                    </div>
+                                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs">
+                                        <div class="flex items-center justify-between text-[10px] text-slate-500 mb-0.5">
+                                            <span>Transaksi Terakhir</span>
+                                            <span id="dash-last-trx-ref" class="font-mono font-semibold text-sky-700">-</span>
+                                        </div>
+                                        <div id="dash-last-trx-amount" class="font-extrabold font-mono text-sm text-slate-900">Rp 0</div>
+                                        <div id="dash-last-trx-desc" class="text-[11px] text-slate-600 truncate mt-0.5">Belum ada transaksi</div>
+                                    </div>
+                                </div>
+
+                                <button onclick="openOcrScannerModal('ppob')" class="mt-4 w-full ipos-btn py-2 rounded font-semibold text-xs shadow flex items-center justify-center gap-2 text-sky-900 border-sky-300 bg-sky-50 hover:bg-sky-100">
+                                    <i class="fas fa-camera text-sky-600"></i>
+                                    <span>Auto-Scan Bukti Transfer / Nota</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Shortcut Bar (Menu Utama iPos 5) -->
                         <div class="mt-5 ipos-panel rounded-lg p-3">
                             <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-                                <span><i class="fas fa-th-large mr-1 text-sky-600"></i> 12 Menu Utama Sistem iPos 5</span>
+                                <span><i class="fas fa-th-large mr-1 text-sky-600"></i> Menu Utama Sistem iPos 5</span>
                                 <span class="text-[11px] font-normal text-slate-500">Tekan <b>F2</b> Penjualan &bull; <b>F3</b> Master Data &bull; <b>F4</b> Scan Nota/Struk</span>
                             </div>
                             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 text-xs">
                                 <button onclick="switchTab('dashboard')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-tachometer-alt text-lg text-amber-500"></i>
-                                    <span class="font-semibold">1. Dashboard</span>
+                                    <span class="font-semibold">Dashboard</span>
                                 </button>
                                 <button onclick="switchTab('masterdata')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-database text-lg text-orange-600"></i>
-                                    <span class="font-semibold">2. Master Data</span>
+                                    <span class="font-semibold">Master Data</span>
                                 </button>
                                 <button onclick="switchTab('pembelian')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-file-invoice text-lg text-indigo-600"></i>
-                                    <span class="font-semibold">3. Pembelian</span>
+                                    <span class="font-semibold">Pembelian</span>
                                 </button>
                                 <button onclick="switchTab('kasir')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-shopping-cart text-lg text-emerald-600"></i>
-                                    <span class="font-semibold">4. Penjualan</span>
+                                    <span class="font-semibold">Penjualan</span>
                                 </button>
                                 <button onclick="switchTab('ppob')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-bolt text-lg text-yellow-500"></i>
-                                    <span class="font-semibold">5. Transaksi PPOB</span>
+                                    <span class="font-semibold">Transaksi PPOB</span>
                                 </button>
                                 <button onclick="switchTab('servicehp')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-tools text-lg text-rose-600"></i>
-                                    <span class="font-semibold">6. Service HP</span>
+                                    <span class="font-semibold">Service HP</span>
                                 </button>
                                 <button onclick="switchTab('cetakvoucher')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-print text-lg text-cyan-600"></i>
-                                    <span class="font-semibold">7. Cetak Voucher</span>
+                                    <span class="font-semibold">Cetak Voucher</span>
                                 </button>
                                 <button onclick="switchTab('sumberdana')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-wallet text-lg text-teal-600"></i>
-                                    <span class="font-semibold">8. Sumber Dana</span>
+                                    <span class="font-semibold">Sumber Dana</span>
                                 </button>
                                 <button onclick="switchTab('akuntansi')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-balance-scale text-lg text-purple-600"></i>
-                                    <span class="font-semibold">9. Akutansi</span>
+                                    <span class="font-semibold">Akutansi</span>
                                 </button>
                                 <button onclick="switchTab('laporan')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-chart-bar text-lg text-sky-600"></i>
-                                    <span class="font-semibold">10. Laporan</span>
+                                    <span class="font-semibold">Laporan</span>
                                 </button>
                                 <button onclick="openSettingsModal('general')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-cogs text-lg text-slate-600"></i>
-                                    <span class="font-semibold">11. Pengaturan</span>
+                                    <span class="font-semibold">Pengaturan</span>
                                 </button>
                                 <button onclick="switchTab('petunjuk')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-book-open text-lg text-lime-600"></i>
-                                    <span class="font-semibold">12. Petunjuk</span>
+                                    <span class="font-semibold">Petunjuk</span>
                                 </button>
                             </div>
                         </div>
@@ -580,7 +646,7 @@
                         <div class="ipos-panel-header px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-database text-orange-600"></i>
-                                <h2 class="font-bold text-sm text-slate-800">2. Master Data & Persediaan</h2>
+                                <h2 class="font-bold text-sm text-slate-800">Master Data & Persediaan</h2>
                             </div>
                             <div class="flex flex-wrap gap-1.5 text-xs">
                                 <button onclick="switchMasterSubTab('items')" id="msub-items" class="msub-btn ipos-tab active px-3 py-1 rounded font-semibold"><i class="fas fa-boxes text-amber-600 mr-1"></i> Daftar Item & Voucher</button>
@@ -1003,7 +1069,7 @@
                         <div class="ipos-panel-header px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-tools text-rose-600"></i>
-                                <h2 class="font-bold text-sm text-slate-800">6. Manajemen Service HP & Penerimaan Reparasi</h2>
+                                <h2 class="font-bold text-sm text-slate-800">Manajemen Service HP & Penerimaan Reparasi</h2>
                             </div>
                             <span class="text-xs bg-rose-100 text-rose-800 border border-rose-300 px-2.5 py-0.5 rounded font-semibold">
                                 Tiket Aktif: <span id="srv-active-count">0</span> Unit
@@ -1083,7 +1149,7 @@
                         <div class="ipos-panel-header px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-print text-cyan-700"></i>
-                                <h2 class="font-bold text-sm text-slate-800">7. Cetak Voucher Data Fisik & Label Kartu Perdana</h2>
+                                <h2 class="font-bold text-sm text-slate-800">Cetak Voucher Data Fisik & Label Kartu Perdana</h2>
                             </div>
                             <button onclick="printGeneratedVouchers()" class="ipos-btn-primary px-3 py-1.5 rounded text-xs font-bold shadow flex items-center gap-1.5">
                                 <i class="fas fa-print"></i> Cetak Lembar Voucher / Label
@@ -1141,7 +1207,7 @@
                         <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-wallet text-teal-600"></i>
-                                <h2 class="font-bold text-sm text-slate-800">8. Manajemen Sumber Dana, Kas Toko, Rekening BRILink & Server Pulsa</h2>
+                                <h2 class="font-bold text-sm text-slate-800">Manajemen Sumber Dana, Kas Toko, Rekening BRILink & Server Pulsa</h2>
                             </div>
                         </div>
 
@@ -1312,7 +1378,7 @@
                         <div class="ipos-panel-header px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-chart-bar text-sky-700"></i>
-                                <h2 class="font-bold text-sm text-slate-800">10. Laporan Transaksi Penjualan, PPOB, BRILink & Service HP</h2>
+                                <h2 class="font-bold text-sm text-slate-800">Laporan Transaksi Penjualan, PPOB, BRILink & Service HP</h2>
                             </div>
                             <div class="flex items-center gap-2 text-xs">
                                 <select id="riwayat-filter-type" onchange="renderTransactionsTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1">
@@ -1355,7 +1421,7 @@
                     <div class="ipos-panel rounded-lg overflow-hidden">
                         <div class="ipos-panel-header px-4 py-2.5 flex items-center gap-2">
                             <i class="fas fa-book-open text-lime-700"></i>
-                            <h2 class="font-bold text-sm text-slate-800">12. Petunjuk dan Penggunaan Sistem iPos 5 [DONET CELL]</h2>
+                            <h2 class="font-bold text-sm text-slate-800">Petunjuk dan Penggunaan Sistem iPos 5 [DONET CELL]</h2>
                         </div>
                         <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed">
                             <div class="border border-slate-300 rounded-lg p-3.5 bg-slate-50 space-y-2">
@@ -1956,26 +2022,23 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
     <!-- ==================== JAVASCRIPT APPLICATION LOGIC ==================== -->
     <script>
         // =========================================================================
-        // 0. DATABASE SELECTION, DYNAMIC USER AUTH & LOGIN STATE (IPOS 5)
+        // 0. DATABASE TENANT & SESSION STATE INITIALIZATION
         // =========================================================================
-        const DB_LIST_STORAGE_KEY = 'ipos5_donetcell_databases_v1';
-        const ACTIVE_DB_STORAGE_KEY = 'ipos5_donetcell_active_db_v1';
+        const DB_LIST_STORAGE_KEY = 'donet_cell_ipos5_db_list';
+        const ACTIVE_DB_STORAGE_KEY = 'donet_cell_ipos5_active_db';
 
-        let availableDatabases = JSON.parse(localStorage.getItem(DB_LIST_STORAGE_KEY)) || [
-            'GROSIRDONET',
-            'DONETCELL',
-            'DONETGROSIR'
-        ];
+        let availableDatabases = JSON.parse(localStorage.getItem(DB_LIST_STORAGE_KEY) || 'null') || ['GROSIRDONET', 'DONETCABANG2'];
         let activeDatabaseName = localStorage.getItem(ACTIVE_DB_STORAGE_KEY) || 'GROSIRDONET';
-        if (!availableDatabases.includes(activeDatabaseName) && availableDatabases.length > 0) {
+        if (!availableDatabases.includes(activeDatabaseName)) {
             activeDatabaseName = availableDatabases[0];
         }
-        let selectedDbCandidate = activeDatabaseName;
-        let dbFormMode = 'create'; // 'create' | 'edit'
-        let dbEditOldName = '';
 
+        let selectedDbCandidate = activeDatabaseName;
+        let dbFormMode = 'create';
+        let dbEditOldName = '';
         let currentUser = {
             username: 'ADMIN',
+            rawUsername: 'admin',
             role: 'ADMIN',
             location: 'UTM'
         };
@@ -2507,17 +2570,17 @@ CREATE POLICY "Allow anon all" ON donet_cell_state FOR ALL USING (true) WITH CHE
         // 3. TAB & MDI WORKSPACE NAVIGATION + KEYBOARD SHORTCUTS (12 MENU UTAMA)
         // =========================================================================
         const tabLabels = {
-            dashboard: '1. DASHBOARD',
-            masterdata: '2. Master data',
-            pembelian: '3. Pembelian',
-            kasir: '4. Penjualan',
-            ppob: '5. Transaksi PPOB',
-            servicehp: '6. Service HP',
-            cetakvoucher: '7. Cetak Voucher dan Perdana',
-            sumberdana: '8. Sumber Dana',
-            akuntansi: '9. Akutansi',
-            laporan: '10. Laporan',
-            petunjuk: '12. Petunjuk dan pengunaan'
+            dashboard: 'Dashboard',
+            masterdata: 'Master data',
+            pembelian: 'Pembelian',
+            kasir: 'Penjualan',
+            ppob: 'Transaksi PPOB',
+            servicehp: 'Service HP',
+            cetakvoucher: 'Cetak Voucher dan Perdana',
+            sumberdana: 'Sumber Dana',
+            akuntansi: 'Akutansi',
+            laporan: 'Laporan',
+            petunjuk: 'Petunjuk dan pengunaan'
         };
 
         function switchMasterSubTab(subId) {
