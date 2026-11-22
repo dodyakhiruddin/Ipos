@@ -465,13 +465,35 @@
                 <section id="view-dashboard" class="min-h-full p-4 sm:p-6 flex flex-col justify-between">
                     <div class="max-w-6xl mx-auto w-full my-auto">
                         <!-- Hero Brand Center (Mirip Tampilan Desktop iPos 5) -->
-                        <div class="text-center mb-6">
+                        <div class="text-center mb-5">
                             <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight drop-shadow-sm">
                                 <span class="text-[#0063b1]">DONET</span> <span class="text-[#d97706]">CELL</span>
                             </h1>
                             <p class="text-xs sm:text-sm font-medium text-slate-600 mt-1">
                                 Dashboard BRILink &bull; Transfer Antar Bank &bull; Layanan Pulsa & Data
                             </p>
+                        </div>
+
+                        <!-- Kartu Informasi Identitas Perusahaan (Gaya Desktop iPos 5) -->
+                        <div class="ipos-panel rounded-lg p-4 mb-4 bg-gradient-to-r from-white via-sky-50/40 to-white flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-12 h-12 rounded-lg bg-[#0063b1] text-white flex items-center justify-center text-2xl shadow shrink-0">
+                                    <i class="fas fa-store"></i>
+                                </div>
+                                <div>
+                                    <div id="dash-company-name" class="text-base sm:text-lg font-extrabold text-[#1e3a5f]">DONET CELL [GROSIRDONET]</div>
+                                    <div id="dash-company-address" class="text-xs text-slate-600 mt-0.5">Jl. Raya Utama No. 88 - Agen Resmi BRILink & Grosir Voucher</div>
+                                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 mt-1">
+                                        <span><i class="fas fa-phone-alt text-sky-600 mr-1"></i> Telp/WA: 0812-3456-7890</span>
+                                        <span><i class="fas fa-globe text-amber-600 mr-1"></i> www.donetcell.id</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button onclick="openSettingsModal('general')" class="ipos-btn px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 text-slate-700">
+                                    <i class="fas fa-edit text-sky-600"></i> Edit Profil Toko
+                                </button>
+                            </div>
                         </div>
 
                         <!-- 3-Column Promotional & Action Showcase -->
@@ -2098,6 +2120,15 @@ CREATE POLICY "Allow anon all wallets" ON donet_cell_wallets FOR ALL USING (true
             location: 'UTM'
         };
 
+        function saveAvailableDatabasesList() {
+            try {
+                localStorage.setItem(DB_LIST_STORAGE_KEY, JSON.stringify(availableDatabases));
+                localStorage.setItem(ACTIVE_DB_STORAGE_KEY, activeDatabaseName);
+            } catch (e) {
+                console.warn('Gagal menyimpan daftar database ke localStorage:', e);
+            }
+        }
+
         function getDefaultUsersSeed() {
             return [
                 { username: 'admin', password: 'admin', role: 'ADMIN', location: 'UTM' },
@@ -2857,6 +2888,9 @@ CREATE POLICY "Allow anon all wallets" ON donet_cell_wallets FOR ALL USING (true
                 const el = document.getElementById(id);
                 if (el) el.textContent = value;
             };
+
+            setText('dash-company-name', appState.settings.storeName || `DONET CELL [${activeDatabaseName}]`);
+            setText('dash-company-address', appState.settings.storeAddress || 'Jl. Raya Utama No. 88 - Agen Resmi BRILink & Grosir Voucher');
 
             const totalSaldo = appState.walletList.reduce((sum, w) => sum + (Number(appState.wallets[w.id]) || 0), 0);
             setText('dash-total-saldo', formatRp(totalSaldo));
