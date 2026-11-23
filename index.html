@@ -542,7 +542,7 @@
                                     <div class="bg-[#0b2545] text-white rounded-lg p-3.5 shadow-inner mb-3">
                                         <div class="text-[11px] text-sky-300 uppercase tracking-wider">Total Gabungan Kas & Saldo</div>
                                         <div id="dash-total-saldo" class="text-2xl font-extrabold font-mono text-emerald-400 mt-0.5">Rp 0</div>
-                                        <div class="text-[10.5px] text-slate-300 mt-1">Kas Laci + Rek BRILink + Server Pulsa</div>
+                                        <div class="text-[10.5px] text-slate-300 mt-1">Kas + Rek BRILink + Server Pulsa + Aset Voucher (<span id="dash-voucher-asset-val" class="text-amber-300 font-mono">Rp 0</span>)</div>
                                     </div>
                                     <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between">
                                         <div>
@@ -2277,8 +2277,19 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             });
         }
 
+        function getTotalVoucherAssetValue() {
+            const voucherItems = (appState.items || []).filter(
+                i => i.category === 'Voucher Fisik' || i.category === 'Kartu Perdana'
+            );
+            return voucherItems.reduce(
+                (sum, item) => sum + ((Number(item.stock) || 0) * (Number(item.cost) || 0)),
+                0
+            );
+        }
+
         function getWalletNameById(id) {
             if (!id) return '-';
+            if (id === 'ASET_VOUCHER') return 'Total Nilai Stok Voucher Fisik';
             if (id === 'MODAL_LUAR' || id === 'MODAL_OWNER') return 'Setoran Modal Pemilik';
             if (id === 'PRIVE_OWNER') return 'Penarikan / Prive Pemilik';
             const found = (appState.walletList || []).find(w => w.id === id);
@@ -2997,8 +3008,11 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             setText('dash-company-phone', appState.settings.storePhone || '0812-3456-7890');
             setText('dash-company-website', appState.settings.storeWebsite || 'www.donetcell.id');
 
-            const totalSaldo = appState.walletList.reduce((sum, w) => sum + (Number(appState.wallets[w.id]) || 0), 0);
+            const walletSaldo = appState.walletList.reduce((sum, w) => sum + (Number(appState.wallets[w.id]) || 0), 0);
+            const voucherAssetVal = getTotalVoucherAssetValue();
+            const totalSaldo = walletSaldo + voucherAssetVal;
             setText('dash-total-saldo', formatRp(totalSaldo));
+            setText('dash-voucher-asset-val', formatRp(voucherAssetVal));
 
             const voucherItems = appState.items.filter(i => i.category === 'Voucher Fisik' || i.category === 'Kartu Perdana');
             setText('dash-voucher-count', voucherItems.length);
@@ -3052,7 +3066,11 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
 
             const sdGrid = document.getElementById('sumberdana-cards-grid');
             if (sdGrid) {
-                sdGrid.innerHTML = appState.walletList.map((w, idx) => {
+                const voucherItems = (appState.items || []).filter(i => i.category === 'Voucher Fisik' || i.category === 'Kartu Perdana');
+                const totalVoucherPcs = voucherItems.reduce((s, i) => s + (Number(i.stock) || 0), 0);
+                const totalVoucherVal = getTotalVoucherAssetValue();
+
+                const walletCardsHtml = appState.walletList.map((w, idx) => {
                     const c = colorMap[w.color] || colorMap.teal;
                     const bal = Number(appState.wallets[w.id]) || 0;
                     return `
@@ -3083,11 +3101,35 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                         </div>
                     `;
                 }).join('');
+
+                const voucherCardHtml = `
+                    <div class="border border-amber-300 bg-amber-50/80 rounded-lg p-3.5 flex flex-col justify-between shadow-sm">
+                        <div>
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-900 uppercase">ASET STOK VOUCHER</span>
+                                    <div class="font-bold text-amber-950 text-sm mt-1">${appState.walletList.length + 1}. Total Nilai Stok Voucher</div>
+                                </div>
+                                <button type="button" onclick="switchTab('masterdata')" class="ipos-btn px-2 py-1 rounded text-[11px] text-amber-900 shrink-0" title="Lihat Rincian Stok Voucher">
+                                    <i class="fas fa-sim-card"></i> Rincian
+                                </button>
+                            </div>
+                            <div class="text-2xl font-extrabold text-amber-700 my-1.5 font-mono">${formatRp(totalVoucherVal)}</div>
+                        </div>
+                        <div class="text-[11px] text-slate-600 border-t border-amber-200/80 pt-1.5 flex items-center justify-between">
+                            <span class="truncate">Otomatis dari ${voucherItems.length} jenis (${totalVoucherPcs} PCS)</span>
+                            <span class="font-mono text-[10px] text-amber-700 ml-2 shrink-0">ASET_VOUCHER</span>
+                        </div>
+                    </div>
+                `;
+
+                sdGrid.innerHTML = walletCardsHtml + voucherCardHtml;
             }
 
             const accGrid = document.getElementById('acc-wallets-grid');
             if (accGrid) {
-                accGrid.innerHTML = appState.walletList.map((w, idx) => {
+                const totalVoucherVal = getTotalVoucherAssetValue();
+                const accWalletCardsHtml = appState.walletList.map((w, idx) => {
                     const c = colorMap[w.color] || colorMap.teal;
                     const bal = Number(appState.wallets[w.id]) || 0;
                     const accCode = 1101 + idx;
@@ -3099,6 +3141,16 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                         </div>
                     `;
                 }).join('');
+
+                const accVoucherCardHtml = `
+                    <div class="ipos-panel rounded-lg p-4 border-l-4 border-l-amber-500">
+                        <div class="text-xs font-bold text-slate-500 uppercase">${1101 + appState.walletList.length} - Persediaan & Nilai Stok Voucher</div>
+                        <div class="text-2xl font-extrabold text-amber-700 mt-1 font-mono">${formatRp(totalVoucherVal)}</div>
+                        <div class="text-[11px] text-slate-500 mt-1">Akumulasi nilai HPP stok Voucher Fisik & Kartu Perdana</div>
+                    </div>
+                `;
+
+                accGrid.innerHTML = accWalletCardsHtml + accVoucherCardHtml;
             }
 
             const walletOptionsHtml = appState.walletList.map(w =>
@@ -4116,43 +4168,47 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             });
 
             await saveAppState();
-            showToast(`Kulakan ${qty} ${master.unit} ${master.name} berhasil dicatat!`, 'success');
+            showToast(`Kulakan ${qty} ${master.unit} ${master.name} berhasil disimpan!`, 'success');
         }
 
         async function submitDepositWallet(e) {
             e.preventDefault();
-            const target = document.getElementById('dep-target-wallet').value;
-            const amount = Math.max(1000, Number(document.getElementById('dep-amount').value) || 0);
-            const source = document.getElementById('dep-source-type').value;
-            const note = document.getElementById('dep-note').value.trim() || 'Deposit / TopUp Saldo';
+            const targetWallet = document.getElementById('dep-target-wallet').value;
+            const amount = Number(document.getElementById('dep-amount').value) || 0;
+            const sourceWallet = document.getElementById('dep-source-type').value;
+            const note = document.getElementById('dep-note').value.trim() || 'Deposit Saldo Agen';
 
-            if (source !== 'MODAL_OWNER' && (appState.wallets[source] || 0) < amount) {
-                showToast(`Saldo ${getWalletNameById(source)} tidak cukup!`, 'error');
-                return;
+            if (amount <= 0) return;
+            if (sourceWallet !== 'MODAL_OWNER') {
+                if ((appState.wallets[sourceWallet] || 0) < amount) {
+                    showToast(`Saldo ${getWalletNameById(sourceWallet)} tidak mencukupi!`, 'error');
+                    return;
+                }
+                appState.wallets[sourceWallet] -= amount;
             }
-
-            if (source !== 'MODAL_OWNER') appState.wallets[source] -= amount;
-            appState.wallets[target] = (appState.wallets[target] || 0) + amount;
+            appState.wallets[targetWallet] = (appState.wallets[targetWallet] || 0) + amount;
 
             appState.fundTransfers.unshift({
                 date: new Date().toISOString(),
-                from: getWalletNameById(source),
-                to: getWalletNameById(target),
+                from: getWalletNameById(sourceWallet),
+                to: getWalletNameById(targetWallet),
                 amount: amount,
                 note: note
             });
 
+            document.getElementById('dep-note').value = '';
             await saveAppState();
-            showToast(`Deposit ${formatRp(amount)} ke ${getWalletNameById(target)} berhasil!`, 'success');
+            showToast(`Deposit ${formatRp(amount)} ke ${getWalletNameById(targetWallet)} berhasil!`, 'success');
         }
 
         function populateVoucherAssemblyForm() {
             const zeroSel = document.getElementById('vf-zero-item');
             const targetSel = document.getElementById('vf-target-item');
             if (!zeroSel || !targetSel) return;
-            const vouchers = (appState.items || []).filter(i => i.category === 'Voucher Fisik');
+            const vouchers = (appState.items || []).filter(i => i.category === 'Voucher Fisik' || i.category === 'Kartu Perdana');
             zeroSel.innerHTML = vouchers.map(v => `<option value="${v.code}">${v.code} - ${v.name} (Stok: ${v.stock})</option>`).join('');
-            targetSel.innerHTML = vouchers.filter(v => v.code !== 'VCR-ZERO-ALL').map(v => `<option value="${v.code}">${v.code} - ${v.name} (Stok: ${v.stock})</option>`).join('');
+            targetSel.innerHTML = vouchers.map(v => `<option value="${v.code}">${v.code} - ${v.name} (Stok: ${v.stock})</option>`).join('');
+            if (vouchers.length > 1) targetSel.selectedIndex = 1;
         }
 
         async function submitVoucherAssembly(e) {
@@ -4167,161 +4223,66 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             const targetItem = appState.items.find(i => i.code === targetCode);
             if (!zeroItem || !targetItem) return;
 
-            const totalInject = qty * injectCost;
             if (zeroItem.stock < qty) {
-                showToast(`Stok bahan baku ${zeroItem.name} tidak mencukupi!`, 'error');
+                showToast(`Stok ${zeroItem.name} tidak mencukupi (tersisa ${zeroItem.stock})!`, 'error');
                 return;
             }
+            const totalInject = qty * injectCost;
             if ((appState.wallets[srcWallet] || 0) < totalInject) {
-                showToast(`Saldo ${getWalletNameById(srcWallet)} tidak mencukupi!`, 'error');
+                showToast(`Saldo ${getWalletNameById(srcWallet)} tidak cukup untuk inject!`, 'error');
                 return;
             }
 
-            const nowIso = new Date().toISOString();
-            const refNo = generateInvoiceId('VCR');
             zeroItem.stock -= qty;
             targetItem.stock += qty;
-            targetItem.cost = (Number(zeroItem.cost) || 0) + injectCost;
             appState.wallets[srcWallet] -= totalInject;
 
-            appState.stockLedger.unshift({ date: nowIso, ref: refNo, code: zeroItem.code, name: zeroItem.name, type: 'BAHAN INJECT VOUCHER', inQty: 0, outQty: qty, balance: zeroItem.stock });
-            appState.stockLedger.unshift({ date: nowIso, ref: refNo, code: targetItem.code, name: targetItem.name, type: 'HASIL INJECT VOUCHER', inQty: qty, outQty: 0, balance: targetItem.stock });
-
+            const ref = generateInvoiceId('INJ');
+            const nowIso = new Date().toISOString();
+            appState.stockLedger.unshift(
+                { date: nowIso, ref, code: zeroItem.code, name: zeroItem.name, type: 'BAHAN INJECT VOUCHER', inQty: 0, outQty: qty, balance: zeroItem.stock },
+                { date: nowIso, ref, code: targetItem.code, name: targetItem.name, type: 'HASIL INJECT VOUCHER', inQty: qty, outQty: 0, balance: targetItem.stock }
+            );
             appState.voucherProductions.unshift({
                 date: nowIso,
-                name: targetItem.name,
-                qty: qty,
-                totalCost: totalInject + (qty * (Number(zeroItem.cost) || 0))
+                targetName: targetItem.name,
+                qty,
+                totalModal: totalInject + (qty * (zeroItem.cost || 0))
             });
 
             await saveAppState();
-            showToast(`${qty} PCS ${targetItem.name} berhasil dirakit!`, 'success');
+            showToast(`Berhasil merakit ${qty} PCS ${targetItem.name}!`, 'success');
         }
 
         function renderVoucherAssemblyHistory() {
             const tbody = document.getElementById('vf-history-tbody');
             if (!tbody) return;
-            if (!appState.voucherProductions || appState.voucherProductions.length === 0) {
+            const list = appState.voucherProductions || [];
+            if (list.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-400 italic">Belum ada riwayat perakitan voucher fisik.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = appState.voucherProductions.map(v => `
+            tbody.innerHTML = list.map(v => `
                 <tr>
                     <td class="font-mono text-[11px]">${new Date(v.date).toLocaleString('id-ID')}</td>
-                    <td class="font-semibold">${v.name}</td>
+                    <td class="font-semibold">${v.targetName}</td>
                     <td class="text-right font-mono font-bold">${v.qty} PCS</td>
-                    <td class="text-right font-mono">${formatRp(v.totalCost)}</td>
+                    <td class="text-right font-mono">${formatRp(v.totalModal)}</td>
                 </tr>
             `).join('');
         }
 
         // =========================================================================
-        // 10. AUTO-SCAN / OCR SCANNER MODAL
-        // =========================================================================
-        function openOcrScannerModal(mode = 'ppob') {
-            if (mode !== 'auto') {
-                const sel = document.getElementById('ocr-target-mode');
-                if (sel) sel.value = mode;
-            }
-            document.getElementById('ocr-scanner-modal').classList.remove('hidden');
-        }
-
-        async function handleOcrImageUpload(e) {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            const imgEl = document.getElementById('ocr-preview-img');
-            imgEl.src = URL.createObjectURL(file);
-            imgEl.classList.remove('hidden');
-            document.getElementById('ocr-upload-placeholder').classList.add('hidden');
-
-            if (!window.Tesseract) {
-                showToast('Library OCR belum siap, silakan isi manual.', 'error');
-                return;
-            }
-
-            const progBox = document.getElementById('ocr-progress-box');
-            progBox.classList.remove('hidden');
-
-            try {
-                const res = await Tesseract.recognize(file, 'ind+eng', {
-                    logger: m => {
-                        if (m.status === 'recognizing text') {
-                            const pct = Math.round((m.progress || 0) * 100);
-                            document.getElementById('ocr-percent-label').textContent = pct + '%';
-                            document.getElementById('ocr-progress-bar').style.width = pct + '%';
-                        }
-                    }
-                });
-                document.getElementById('ocr-raw-text').value = res.data.text || '';
-                parseRawOcrTextManual();
-                document.getElementById('ocr-detected-badge').classList.remove('hidden');
-            } catch (err) {
-                showToast('Gagal memindai gambar OCR.', 'error');
-            } finally {
-                progBox.classList.add('hidden');
-            }
-        }
-
-        function parseRawOcrTextManual() {
-            const raw = document.getElementById('ocr-raw-text')?.value || '';
-            const amounts = raw.match(/\d{1,3}(?:[.,]\d{3})+/g) || [];
-            let maxAmt = 0;
-            amounts.forEach(a => {
-                const num = Number(a.replace(/[.,]/g, ''));
-                if (num > maxAmt && num < 500000000) maxAmt = num;
-            });
-            if (maxAmt > 0) document.getElementById('ocr-ext-amount').value = maxAmt;
-
-            const phoneOrRek = raw.match(/(08\d{8,12}|\d{10,16})/);
-            if (phoneOrRek) document.getElementById('ocr-ext-target').value = phoneOrRek[0];
-
-            const upper = raw.toUpperCase();
-            if (upper.includes('BRI')) document.getElementById('ocr-ext-provider').value = 'BRI -> BRI';
-            else if (upper.includes('BCA')) document.getElementById('ocr-ext-provider').value = 'BRI -> BCA';
-            else if (upper.includes('MANDIRI')) document.getElementById('ocr-ext-provider').value = 'BRI -> MANDIRI';
-            else if (upper.includes('DANA')) document.getElementById('ocr-ext-provider').value = 'DANA';
-            else if (upper.includes('TELKOMSEL')) document.getElementById('ocr-ext-provider').value = 'TELKOMSEL';
-
-            document.getElementById('ocr-ext-desc').value = raw.split('\n').filter(Boolean).slice(0, 2).join(' • ').slice(0, 80);
-        }
-
-        function applyOcrResultToSystem() {
-            const mode = document.getElementById('ocr-target-mode').value;
-            const amt = Number(document.getElementById('ocr-ext-amount').value) || 0;
-            const target = document.getElementById('ocr-ext-target').value;
-            const desc = document.getElementById('ocr-ext-desc').value;
-            closeModal('ocr-scanner-modal');
-
-            if (mode === 'pembelian') {
-                switchTab('pembelian');
-                if (amt > 0) document.getElementById('buy-item-cost').value = amt;
-            } else if (mode === 'pos') {
-                switchTab('kasir');
-                document.getElementById('pos-barcode-input').value = target || desc;
-            } else {
-                switchTab('ppob', 'transfer');
-                document.getElementById('ppob-target-number').value = target;
-                if (desc) document.getElementById('ppob-product-desc').value = desc;
-                if (amt > 0) {
-                    document.getElementById('ppob-modal-amount').value = amt;
-                    document.getElementById('ppob-sell-amount').value = amt + 6500;
-                    recalcPpobProfit();
-                }
-            }
-            showToast('Data hasil scan OCR diterapkan ke form!', 'success');
-        }
-
-        // =========================================================================
-        // 11. SERVICE HP, SUMBER DANA MUTASI, LAPORAN & STRUK THERMAL
+        // 10. SERVICE HP, MUTASI SUMBER DANA, RIWAYAT, KARTU STOK & LABA RUGI
         // =========================================================================
         function initServiceFormHeader() {
-            const trxEl = document.getElementById('srv-trx-no');
-            const dateEl = document.getElementById('srv-date-display');
-            if (trxEl) trxEl.value = generateInvoiceId('SRV');
-            if (dateEl) {
-                const now = new Date();
-                dateEl.value = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
-                    now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const trxInput = document.getElementById('srv-trx-no');
+            const dateInput = document.getElementById('srv-date-display');
+            if (trxInput) trxInput.value = generateInvoiceId('SRV');
+            if (dateInput) {
+                dateInput.value = new Date().toLocaleDateString('id-ID', {
+                    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
             }
         }
 
@@ -4333,7 +4294,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 id: trxNo,
                 date: nowIso,
                 customer: document.getElementById('srv-cust-name').value.trim(),
-                phone: document.getElementById('srv-cust-phone').value.trim(),
+                phone: document.getElementById('srv-cust-phone').value.trim() || '-',
                 device: document.getElementById('srv-device').value.trim(),
                 issue: document.getElementById('srv-issue').value.trim(),
                 sparepartCode: '',
@@ -4348,310 +4309,284 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             initServiceFormHeader();
             await saveAppState();
             showServiceIntakeReceipt(ticket);
-            showToast(`Tanda terima ${ticket.id} disimpan & siap cetak!`, 'success');
+            showToast(`Tanda terima ${ticket.id} berhasil disimpan & siap dicetak!`, 'success');
         }
 
         function showServiceIntakeReceipt(ticket) {
             const area = document.getElementById('receipt-print-area');
             if (!area) return;
+            const dateStr = new Date(ticket.date).toLocaleString('id-ID', {
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
             area.innerHTML = `
                 <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="font-extrabold text-sm">${appState.settings.storeName}</div>
+                    <div class="font-bold text-sm">${appState.settings.storeName}</div>
                     <div class="text-[10px]">${appState.settings.storeAddress}</div>
-                    <div class="text-[10px]">Telp/WA: ${appState.settings.storePhone || '-'} ${appState.settings.storeWebsite ? '• ' + appState.settings.storeWebsite : ''}</div>
-                    <div class="font-bold text-xs mt-1 bg-slate-100 py-0.5">TANDA TERIMA SERVICE HP</div>
+                    <div class="text-[10px]">Telp/WA: ${appState.settings.storePhone || '-'}</div>
+                    <div class="mt-1.5 pt-1 border-t border-slate-300 font-bold text-xs tracking-wide">TANDA TERIMA SERVICE HP</div>
                 </div>
                 <div class="text-[10.5px] space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
                     <div class="flex justify-between"><span>No. Transaksi:</span><span class="font-bold">${ticket.id}</span></div>
-                    <div class="flex justify-between"><span>Tanggal Masuk:</span><span>${new Date(ticket.date).toLocaleString('id-ID')}</span></div>
-                    <div class="flex justify-between"><span>Pelanggan:</span><span class="font-bold">${ticket.customer}</span></div>
-                    <div class="flex justify-between"><span>No. HP / WA:</span><span>${ticket.phone || '-'}</span></div>
+                    <div class="flex justify-between"><span>Tanggal Masuk:</span><span>${dateStr}</span></div>
+                    <div class="flex justify-between"><span>Kasir/Penerima:</span><span>${currentUser.username}</span></div>
                 </div>
-                <div class="text-[10.5px] space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div><span class="text-slate-500">Merk & Tipe HP:</span><br><span class="font-bold text-xs">${ticket.device}</span></div>
-                    <div class="pt-1"><span class="text-slate-500">Keluhan / Kerusakan:</span><br><span>${ticket.issue}</span></div>
+                <div class="text-[10.5px] space-y-1.5 border-b border-dashed border-slate-400 pb-2 mb-2">
+                    <div>
+                        <span class="text-slate-500 block text-[9.5px]">Nama Pelanggan:</span>
+                        <span class="font-bold">${ticket.customer} (${ticket.phone})</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block text-[9.5px]">Merk & Tipe HP:</span>
+                        <span class="font-bold">${ticket.device}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block text-[9.5px]">Keluhan / Kerusakan:</span>
+                        <span class="font-semibold">${ticket.issue}</span>
+                    </div>
                 </div>
-                <div class="text-center text-[10px] space-y-1">
-                    <div class="font-bold">Harap bawa nota ini saat pengambilan HP.</div>
-                    <div>${appState.settings.storeFooter}</div>
+                <div class="text-center text-[9.5px] text-slate-600 space-y-1">
+                    <div>Harap bawa tanda terima ini saat pengambilan unit HP.</div>
+                    <div class="font-semibold">${appState.settings.storeFooter}</div>
                 </div>
             `;
             document.getElementById('receipt-modal').classList.remove('hidden');
         }
 
-        function printServiceReceiptById(id) {
-            const t = appState.serviceTickets.find(x => x.id === id);
-            if (t) showServiceIntakeReceipt(t);
+        function showServiceIntakeReceiptById(id) {
+            const ticket = (appState.serviceTickets || []).find(t => t.id === id);
+            if (ticket) showServiceIntakeReceipt(ticket);
         }
 
-        function renderServiceHpTable() {
-            const tbody = document.getElementById('service-hp-tbody');
-            const activeCountEl = document.getElementById('srv-active-count');
-            const list = appState.serviceTickets || [];
+        function openCompleteServiceModal(id) {
+            const ticket = (appState.serviceTickets || []).find(t => t.id === id);
+            if (!ticket) return;
 
-            if (activeCountEl) {
-                activeCountEl.textContent = list.filter(t => t.status === 'PROSES').length;
-            }
-            if (!tbody) return;
+            document.getElementById('sc-ticket-id').value = ticket.id;
+            document.getElementById('sc-display-id').textContent = ticket.id;
+            document.getElementById('sc-display-device').textContent = `${ticket.customer} • ${ticket.device}`;
+            document.getElementById('sc-display-issue').textContent = ticket.issue;
 
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 italic">Belum ada data service HP masuk.</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = list.map(t => {
-                const profit = (Number(t.price) || 0) - (Number(t.cost) || 0);
-                const internalDetail = t.status === 'SELESAI'
-                    ? `<div class="text-[10.5px] mt-1 pt-1 border-t border-slate-200 text-slate-600">
-                        <div>Modal Part: <b class="font-mono text-amber-800">${formatRp(t.cost)}</b> ${t.sparepartCode ? `(${t.sparepartCode} x${t.sparepartQty})` : ''}</div>
-                        <div>Biaya Konsumen: <b class="font-mono text-blue-800">${formatRp(t.price)}</b> &bull; Laba: <b class="font-mono text-emerald-700">${formatRp(profit)}</b></div>
-                        <div class="text-[10px] text-teal-700">Masuk: ${getWalletNameById(t.destWallet)}</div>
-                       </div>`
-                    : '';
-
-                return `
-                    <tr>
-                        <td class="font-mono font-bold text-rose-900 align-top">${t.id}</td>
-                        <td class="font-mono text-[11px] align-top">${new Date(t.date).toLocaleDateString('id-ID')}</td>
-                        <td class="align-top">
-                            <div class="font-bold text-slate-800">${t.customer} <span class="font-normal text-slate-500">(${t.phone || '-'})</span></div>
-                            <div class="text-[11px] font-semibold text-sky-900">${t.device}</div>
-                        </td>
-                        <td class="align-top">
-                            <div class="text-slate-700">${t.issue}</div>
-                            ${internalDetail}
-                        </td>
-                        <td class="text-center align-top">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'SELESAI' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${t.status}</span>
-                        </td>
-                        <td class="text-center align-top space-y-1">
-                            <div class="flex items-center justify-center gap-1">
-                                <button type="button" onclick="printServiceReceiptById('${t.id}')" class="ipos-btn px-2 py-0.5 rounded text-[10.5px] font-semibold" title="Cetak Tanda Terima Pelanggan">
-                                    <i class="fas fa-print"></i> Nota
-                                </button>
-                                ${t.status === 'PROSES' ? `
-                                    <button type="button" onclick="openServiceCompleteModal('${t.id}')" class="ipos-btn-success px-2 py-0.5 rounded text-[10.5px] font-bold" title="Input Biaya Sparepart & Penyelesaian">
-                                        <i class="fas fa-check"></i> Input Biaya
-                                    </button>
-                                ` : `
-                                    <button type="button" onclick="openServiceCompleteModal('${t.id}')" class="ipos-btn px-2 py-0.5 rounded text-[10.5px] text-sky-800" title="Edit Biaya Internal">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                `}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function openServiceCompleteModal(id) {
-            const t = appState.serviceTickets.find(x => x.id === id);
-            if (!t) return;
-
-            document.getElementById('sc-ticket-id').value = t.id;
-            document.getElementById('sc-display-id').textContent = t.id;
-            document.getElementById('sc-display-device').textContent = `${t.customer} — ${t.device}`;
-            document.getElementById('sc-display-issue').textContent = t.issue;
-
+            // Populate dropdown sparepart dari stok barang fisik
             const spSel = document.getElementById('sc-sparepart-item');
-            const stockItems = (appState.items || []).filter(i => i.category !== 'Jasa Servis');
-            spSel.innerHTML = `<option value="" data-cost="0">-- Tanpa Sparepart Stok / Jasa Murni --</option>` +
-                stockItems.map(i => `<option value="${i.code}" data-cost="${i.cost}">${i.code} - ${i.name} (Stok: ${i.stock} | HPP: ${formatRp(i.cost)})</option>`).join('');
+            const physicalItems = (appState.items || []).filter(i => i.category !== 'Jasa Servis');
+            spSel.innerHTML = `<option value="" data-cost="0">-- Tanpa Sparepart Stok Toko --</option>` +
+                physicalItems.map(i => `<option value="${i.code}" data-cost="${i.cost}">${i.code} - ${i.name} (Stok: ${i.stock} | HPP: ${formatRp(i.cost)})</option>`).join('');
 
-            spSel.value = t.sparepartCode || '';
-            document.getElementById('sc-sparepart-qty').value = t.sparepartQty || (t.sparepartCode ? 1 : 0);
-            document.getElementById('sc-modal-cost').value = t.cost || 0;
-            document.getElementById('sc-service-price').value = t.price || 0;
+            spSel.value = ticket.sparepartCode || '';
+            document.getElementById('sc-sparepart-qty').value = ticket.sparepartQty || 0;
+            document.getElementById('sc-modal-cost').value = ticket.cost || 0;
+            document.getElementById('sc-service-price').value = ticket.price || 0;
 
             const destSel = document.getElementById('sc-dest-wallet');
-            if (destSel) {
-                destSel.innerHTML = appState.walletList.map(w =>
-                    `<option value="${w.id}">${w.name} (${formatRp(appState.wallets[w.id] || 0)})</option>`
-                ).join('');
-                if (t.destWallet && appState.wallets[t.destWallet] !== undefined) {
-                    destSel.value = t.destWallet;
-                }
+            if (ticket.destWallet && appState.wallets[ticket.destWallet] !== undefined) {
+                destSel.value = ticket.destWallet;
+            } else if (appState.wallets.KAS_TOKO !== undefined) {
+                destSel.value = 'KAS_TOKO';
             }
 
-            recalcServiceCompletion(false);
+            recalcServiceCompletion(true);
             document.getElementById('service-complete-modal').classList.remove('hidden');
         }
 
-        function recalcServiceCompletion(autoFillCost = true) {
+        function recalcServiceCompletion(skipAutoCost = false) {
             const spSel = document.getElementById('sc-sparepart-item');
-            const qtyEl = document.getElementById('sc-sparepart-qty');
-            const costEl = document.getElementById('sc-modal-cost');
-            const priceEl = document.getElementById('sc-service-price');
-            const profitEl = document.getElementById('sc-profit-preview');
+            const qtyInput = document.getElementById('sc-sparepart-qty');
+            const costInput = document.getElementById('sc-modal-cost');
+            const priceInput = document.getElementById('sc-service-price');
+            const profitPreview = document.getElementById('sc-profit-preview');
 
-            if (autoFillCost && spSel && spSel.value) {
-                const opt = spSel.options[spSel.selectedIndex];
-                const unitCost = Number(opt?.dataset?.cost) || 0;
-                if (Number(qtyEl.value) <= 0) qtyEl.value = 1;
-                costEl.value = unitCost * (Number(qtyEl.value) || 0);
-            } else if (autoFillCost && spSel && !spSel.value) {
-                qtyEl.value = 0;
-                costEl.value = 0;
+            const selectedOpt = spSel?.options[spSel.selectedIndex];
+            const unitCost = Number(selectedOpt?.getAttribute('data-cost')) || 0;
+            let qty = Math.max(0, Number(qtyInput?.value) || 0);
+
+            if (spSel && spSel.value && qty === 0 && !skipAutoCost) {
+                qty = 1;
+                qtyInput.value = 1;
             }
 
-            const modal = Number(costEl.value) || 0;
-            const sell = Number(priceEl.value) || 0;
-            const profit = sell - modal;
-            if (profitEl) {
-                profitEl.textContent = formatRp(profit);
-                profitEl.className = `border rounded px-2.5 py-1.5 font-mono font-extrabold ${
-                    profit >= 0 ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-red-100 border-red-300 text-red-700'
-                }`;
+            if (spSel && spSel.value && !skipAutoCost) {
+                costInput.value = unitCost * qty;
+            } else if (!spSel?.value && !skipAutoCost) {
+                qtyInput.value = 0;
+                costInput.value = 0;
+            }
+
+            const totalCost = Number(costInput?.value) || 0;
+            const totalPrice = Number(priceInput?.value) || 0;
+            const profit = totalPrice - totalCost;
+            if (profitPreview) {
+                profitPreview.textContent = formatRp(profit);
+                profitPreview.className = profit >= 0
+                    ? 'bg-emerald-100 border border-emerald-300 rounded px-2.5 py-1.5 font-mono font-extrabold text-emerald-800'
+                    : 'bg-red-100 border border-red-300 rounded px-2.5 py-1.5 font-mono font-extrabold text-red-800';
             }
         }
 
         async function submitCompleteServiceHp(e) {
             e.preventDefault();
             const id = document.getElementById('sc-ticket-id').value;
-            const t = appState.serviceTickets.find(x => x.id === id);
-            if (!t) return;
+            const ticket = (appState.serviceTickets || []).find(t => t.id === id);
+            if (!ticket) return;
 
             const spCode = document.getElementById('sc-sparepart-item').value;
             const spQty = Math.max(0, Number(document.getElementById('sc-sparepart-qty').value) || 0);
             const modalCost = Math.max(0, Number(document.getElementById('sc-modal-cost').value) || 0);
-            const sellPrice = Math.max(0, Number(document.getElementById('sc-service-price').value) || 0);
+            const servicePrice = Math.max(0, Number(document.getElementById('sc-service-price').value) || 0);
             const destWallet = document.getElementById('sc-dest-wallet').value;
-            const nowIso = new Date().toISOString();
 
-            if (t.status === 'SELESAI') {
-                if (t.sparepartCode && t.sparepartQty > 0) {
-                    const prevMaster = appState.items.find(i => i.code === t.sparepartCode);
-                    if (prevMaster) prevMaster.stock += t.sparepartQty;
-                }
-                if (t.destWallet && appState.wallets[t.destWallet] !== undefined) {
-                    appState.wallets[t.destWallet] -= (Number(t.price) || 0);
-                }
-                appState.transactions = appState.transactions.filter(tr => tr.id !== t.id);
-            }
-
+            let spName = '';
             if (spCode && spQty > 0) {
                 const master = appState.items.find(i => i.code === spCode);
-                if (master) {
-                    if (master.stock < spQty) {
-                        showToast(`Stok sparepart ${master.name} hanya tersisa ${master.stock}!`, 'error');
-                        return;
-                    }
-                    master.stock -= spQty;
-                    appState.stockLedger.unshift({
-                        date: nowIso,
-                        ref: t.id,
-                        code: master.code,
-                        name: master.name,
-                        type: `SERVICE HP (${t.device})`,
-                        inQty: 0,
-                        outQty: spQty,
-                        balance: master.stock
-                    });
+                if (!master) {
+                    showToast('Item sparepart tidak ditemukan di Master Data!', 'error');
+                    return;
                 }
+                if (master.stock < spQty) {
+                    showToast(`Stok ${master.name} hanya tersisa ${master.stock}!`, 'error');
+                    return;
+                }
+                master.stock -= spQty;
+                spName = `${master.name} (${spQty}x)`;
+                appState.stockLedger.unshift({
+                    date: new Date().toISOString(),
+                    ref: ticket.id,
+                    code: master.code,
+                    name: master.name,
+                    type: `SPAREPART SERVICE (${ticket.device})`,
+                    inQty: 0,
+                    outQty: spQty,
+                    balance: master.stock
+                });
             }
 
-            t.sparepartCode = spCode;
-            t.sparepartQty = spQty;
-            t.cost = modalCost;
-            t.price = sellPrice;
-            t.destWallet = destWallet;
-            t.status = 'SELESAI';
-            t.completedAt = nowIso;
+            ticket.sparepartCode = spCode;
+            ticket.sparepartQty = spQty;
+            ticket.cost = modalCost;
+            ticket.price = servicePrice;
+            ticket.destWallet = destWallet;
+            ticket.status = 'SELESAI';
+            ticket.completedAt = new Date().toISOString();
 
-            appState.wallets[destWallet] = (appState.wallets[destWallet] || 0) + sellPrice;
-
+            appState.wallets[destWallet] = (appState.wallets[destWallet] || 0) + servicePrice;
             appState.transactions.unshift({
-                id: t.id,
-                date: nowIso,
+                id: ticket.id,
+                date: new Date().toISOString(),
                 module: 'SERVICE',
-                description: `Service HP ${t.device} - ${t.issue}${spCode ? ` [Part: ${spCode} x${spQty}]` : ''}`,
-                customer: t.customer,
+                description: `Service HP • ${ticket.device} (${ticket.issue})${spName ? ' + Part: ' + spName : ''}`,
+                customer: ticket.customer,
                 modal: modalCost,
-                total: sellPrice,
-                profit: sellPrice - modalCost,
+                total: servicePrice,
+                profit: servicePrice - modalCost,
                 paymentMethod: destWallet,
-                items: [{ name: `Biaya Service ${t.device}`, qty: 1, price: sellPrice }]
+                items: [
+                    { name: `Jasa & Perbaikan ${ticket.device}`, qty: 1, price: servicePrice - modalCost },
+                    ...(spName ? [{ name: `Sparepart: ${spName}`, qty: spQty, price: modalCost }] : [])
+                ]
             });
 
             closeModal('service-complete-modal');
             await saveAppState();
-            showToast(`Biaya Service ${t.id} dicatat & saldo ${getWalletNameById(destWallet)} bertambah ${formatRp(sellPrice)}!`, 'success');
+            showToast(`Biaya internal service ${ticket.id} tersimpan ke pembukuan & ${getWalletNameById(destWallet)}!`, 'success');
+        }
+
+        function renderServiceHpTable() {
+            const tbody = document.getElementById('service-hp-tbody');
+            const activeCountEl = document.getElementById('srv-active-count');
+            if (!tbody) return;
+            const list = appState.serviceTickets || [];
+            if (activeCountEl) activeCountEl.textContent = list.filter(t => t.status === 'PROSES').length;
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 italic">Belum ada data service HP masuk.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = list.map(t => {
+                const dateFmt = new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                const isDone = t.status === 'SELESAI';
+                const internalSummary = isDone
+                    ? `<div class="mt-1 pt-1 border-t border-slate-200 text-[10.5px] font-mono text-emerald-800">
+                         Terima: <b>${formatRp(t.price)}</b> &bull; Modal Part: ${formatRp(t.cost)} &bull; Laba: <b>${formatRp((t.price || 0) - (t.cost || 0))}</b> (${getWalletNameById(t.destWallet)})
+                       </div>`
+                    : `<div class="mt-0.5 text-[10px] text-amber-700 italic">Belum input biaya internal</div>`;
+                return `
+                    <tr>
+                        <td class="font-mono font-bold text-rose-900">${t.id}</td>
+                        <td class="font-mono text-[11px] text-slate-600">${dateFmt}</td>
+                        <td>
+                            <div class="font-bold text-slate-800">${t.customer} <span class="font-normal text-slate-500">(${t.phone})</span></div>
+                            <div class="text-[11px] font-semibold text-sky-900">${t.device}</div>
+                        </td>
+                        <td>
+                            <div class="text-slate-700">${t.issue}</div>
+                            ${internalSummary}
+                        </td>
+                        <td class="text-center">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isDone ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${t.status}</span>
+                        </td>
+                        <td class="text-center space-x-1">
+                            <button type="button" onclick="showServiceIntakeReceiptById('${t.id}')" class="ipos-btn px-2 py-1 rounded text-[10.5px] font-semibold text-slate-700" title="Cetak Ulang Tanda Terima Pelanggan">
+                                <i class="fas fa-print"></i> Nota
+                            </button>
+                            ${!isDone ? `
+                                <button type="button" onclick="openCompleteServiceModal('${t.id}')" class="ipos-btn-success px-2 py-1 rounded text-[10.5px] font-bold" title="Input Modal Sparepart & Biaya Service Internal">
+                                    <i class="fas fa-coins"></i> Input Biaya
+                                </button>
+                            ` : `<span class="text-[10px] text-emerald-700 font-bold"><i class="fas fa-check-circle"></i> Lunas</span>`}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         async function submitMutasiSumberDana(e) {
             e.preventDefault();
             const from = document.getElementById('sd-from').value;
             const to = document.getElementById('sd-to').value;
-            const amt = Math.max(1000, Number(document.getElementById('sd-amount').value) || 0);
-            const note = document.getElementById('sd-note').value.trim() || 'Mutasi Antar Sumber Dana';
+            const amount = Number(document.getElementById('sd-amount').value) || 0;
+            const note = document.getElementById('sd-note').value.trim() || 'Mutasi antar sumber dana';
 
-            if (from === to) {
-                showToast('Sumber dan tujuan mutasi tidak boleh sama!', 'error');
+            if (from === to || amount <= 0) {
+                showToast('Sumber dan tujuan dana tidak boleh sama!', 'error');
                 return;
             }
-            if (from !== 'MODAL_LUAR' && (appState.wallets[from] || 0) < amt) {
-                showToast(`Saldo ${getWalletNameById(from)} tidak mencukupi!`, 'error');
-                return;
+            if (from !== 'MODAL_LUAR') {
+                if ((appState.wallets[from] || 0) < amount) {
+                    showToast(`Saldo ${getWalletNameById(from)} tidak mencukupi!`, 'error');
+                    return;
+                }
+                appState.wallets[from] -= amount;
             }
-
-            if (from !== 'MODAL_LUAR') appState.wallets[from] -= amt;
-            if (to !== 'PRIVE_OWNER') appState.wallets[to] = (appState.wallets[to] || 0) + amt;
+            if (to !== 'PRIVE_OWNER') {
+                appState.wallets[to] = (appState.wallets[to] || 0) + amount;
+            }
 
             appState.fundTransfers.unshift({
                 date: new Date().toISOString(),
                 from: getWalletNameById(from),
                 to: getWalletNameById(to),
-                amount: amt,
-                note: note
+                amount,
+                note
             });
-
+            document.getElementById('sd-note').value = '';
             await saveAppState();
-            showToast(`Mutasi ${formatRp(amt)} berhasil diproses!`, 'success');
+            showToast(`Mutasi dana ${formatRp(amount)} berhasil dicatat!`, 'success');
         }
 
         function renderSumberDanaHistory() {
             const tbody = document.getElementById('sumberdana-history-tbody');
             if (!tbody) return;
-            if (!appState.fundTransfers || appState.fundTransfers.length === 0) {
+            const list = appState.fundTransfers || [];
+            if (list.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-400 italic">Belum ada riwayat mutasi sumber dana.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = appState.fundTransfers.map(m => `
+            tbody.innerHTML = list.map(m => `
                 <tr>
                     <td class="font-mono text-[11px]">${new Date(m.date).toLocaleString('id-ID')}</td>
                     <td class="font-semibold">${m.from}</td>
-                    <td class="font-semibold">${m.to}</td>
-                    <td class="text-right font-mono font-bold text-teal-800">${formatRp(m.amount)}</td>
+                    <td class="font-semibold text-sky-800">${m.to}</td>
+                    <td class="text-right font-mono font-bold">${formatRp(m.amount)}</td>
                     <td>${m.note}</td>
-                </tr>
-            `).join('');
-        }
-
-        function renderStockLedgerTable() {
-            const tbody = document.getElementById('kartustok-tbody');
-            if (!tbody) return;
-            const filterCat = document.getElementById('kartustok-filter-category')?.value || 'ALL';
-            const filterCode = document.getElementById('kartustok-filter-item')?.value || 'ALL';
-            const itemCatMap = {};
-            (appState.items || []).forEach(it => { itemCatMap[it.code] = it.category; });
-
-            const list = (appState.stockLedger || []).filter(l => {
-                const itemCategory = itemCatMap[l.code] || '';
-                const matchCat = filterCat === 'ALL' || itemCategory === filterCat;
-                const matchCode = filterCode === 'ALL' || l.code === filterCode;
-                return matchCat && matchCode;
-            });
-            tbody.innerHTML = list.map(l => `
-                <tr>
-                    <td class="font-mono text-[11px]">${new Date(l.date).toLocaleString('id-ID')}</td>
-                    <td class="font-mono font-semibold">${l.ref}</td>
-                    <td class="font-mono">${l.code}</td>
-                    <td>${l.name}</td>
-                    <td class="text-center text-[11px]">${l.type}</td>
-                    <td class="text-right font-mono text-emerald-700">${l.inQty > 0 ? '+' + l.inQty : '-'}</td>
-                    <td class="text-right font-mono text-red-700">${l.outQty > 0 ? '-' + l.outQty : '-'}</td>
-                    <td class="text-right font-mono font-bold">${l.balance}</td>
                 </tr>
             `).join('');
         }
@@ -4661,17 +4596,20 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             if (!tbody) return;
             const filter = document.getElementById('riwayat-filter-type')?.value || 'ALL';
             const list = (appState.transactions || []).filter(t => filter === 'ALL' || t.module === filter);
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 italic">Tidak ada data transaksi.</td></tr>`;
+                return;
+            }
+
             tbody.innerHTML = list.map(t => `
                 <tr>
                     <td class="font-mono text-[11px]">${new Date(t.date).toLocaleString('id-ID')}</td>
                     <td class="font-mono font-bold text-sky-900">${t.id}</td>
-                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[10px] font-bold">${t.module}</span></td>
-                    <td>
-                        <div class="font-semibold">${t.description}</div>
-                        <div class="text-[10px] text-slate-500">Pelanggan: ${t.customer || 'UMUM'}</div>
-                    </td>
+                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-slate-200 font-bold text-[10px]">${t.module}</span></td>
+                    <td>${t.description}</td>
                     <td class="text-right font-mono">${formatNum(t.modal)}</td>
-                    <td class="text-right font-mono font-bold text-blue-800">${formatNum(t.total)}</td>
+                    <td class="text-right font-mono font-bold">${formatNum(t.total)}</td>
                     <td class="text-right font-mono font-bold text-emerald-700">${formatNum(t.profit)}</td>
                     <td class="text-center space-x-1">
                         <button type="button" onclick="showReceiptModalById('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]" title="Cetak Struk"><i class="fas fa-print"></i></button>
@@ -4682,21 +4620,52 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             `).join('');
         }
 
+        function renderStockLedgerTable() {
+            const tbody = document.getElementById('kartustok-tbody');
+            if (!tbody) return;
+            const catFilter = document.getElementById('kartustok-filter-category')?.value || 'ALL';
+            const filter = document.getElementById('kartustok-filter-item')?.value || 'ALL';
+            const itemCatMap = {};
+            (appState.items || []).forEach(it => { itemCatMap[it.code] = it.category; });
+
+            const list = (appState.stockLedger || []).filter(s => {
+                const matchItem = filter === 'ALL' || s.code === filter;
+                const matchCat = catFilter === 'ALL' || itemCatMap[s.code] === catFilter;
+                return matchItem && matchCat;
+            });
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 italic">Belum ada riwayat mutasi kartu stok pada filter ini.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = list.map(s => `
+                <tr>
+                    <td class="font-mono text-[11px]">${new Date(s.date).toLocaleString('id-ID')}</td>
+                    <td class="font-mono font-semibold">${s.ref}</td>
+                    <td class="font-mono font-bold">${s.code}</td>
+                    <td>${s.name}</td>
+                    <td class="text-center text-[11px] font-semibold">${s.type}</td>
+                    <td class="text-right font-mono text-emerald-700 font-bold">${s.inQty || '-'}</td>
+                    <td class="text-right font-mono text-red-600 font-bold">${s.outQty || '-'}</td>
+                    <td class="text-right font-mono font-extrabold">${s.balance}</td>
+                </tr>
+            `).join('');
+        }
+
         function renderProfitLossSummary() {
             const trxs = appState.transactions || [];
-            const sumMod = (mod) => trxs.filter(t => t.module === mod).reduce((s, t) => s + (Number(t.total) || 0), 0);
-            const revPos = sumMod('POS') + sumMod('SERVICE');
-            const revPpob = sumMod('PPOB');
-            const revBri = sumMod('BRILINK');
-            const cogs = trxs.reduce((s, t) => s + (Number(t.modal) || 0), 0);
-            const net = trxs.reduce((s, t) => s + (Number(t.profit) || 0), 0);
+            const revPos = trxs.filter(t => t.module === 'POS' || t.module === 'SERVICE').reduce((s, t) => s + (Number(t.total) || 0), 0);
+            const revPpob = trxs.filter(t => t.module === 'PPOB').reduce((s, t) => s + (Number(t.total) || 0), 0);
+            const revBri = trxs.filter(t => t.module === 'BRILINK').reduce((s, t) => s + (Number(t.profit) || 0), 0);
+            const cogs = trxs.filter(t => t.module !== 'BRILINK').reduce((s, t) => s + (Number(t.modal) || 0), 0);
+            const netProfit = trxs.reduce((s, t) => s + (Number(t.profit) || 0), 0);
 
-            const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-            set('pl-rev-pos', formatRp(revPos));
-            set('pl-rev-ppob', formatRp(revPpob));
-            set('pl-rev-brilink', formatRp(revBri));
-            set('pl-cogs', `(${formatRp(cogs)})`);
-            set('pl-net-profit', formatRp(net));
+            const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            setText('pl-rev-pos', formatRp(revPos));
+            setText('pl-rev-ppob', formatRp(revPpob));
+            setText('pl-rev-brilink', formatRp(revBri));
+            setText('pl-cogs', `(${formatRp(cogs)})`);
+            setText('pl-net-profit', formatRp(netProfit));
         }
 
         function showReceiptModalById(id) {
@@ -4707,120 +4676,525 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         function showReceiptModal(trx) {
             const area = document.getElementById('receipt-print-area');
             if (!area) return;
-            const itemsHtml = (trx.items || []).map(it => `
-                <div class="flex justify-between">
-                    <span class="truncate pr-2">${it.name} x${it.qty}</span>
-                    <span class="shrink-0">${formatNum(it.qty * it.price)}</span>
-                </div>
-            `).join('');
-
             area.innerHTML = `
                 <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="font-extrabold text-sm">${appState.settings.storeName}</div>
+                    <div class="font-bold text-sm">${appState.settings.storeName}</div>
                     <div class="text-[10px]">${appState.settings.storeAddress}</div>
-                    <div class="text-[10px]">Telp/WA: ${appState.settings.storePhone || '-'} ${appState.settings.storeWebsite ? '• ' + appState.settings.storeWebsite : ''}</div>
+                    <div class="text-[10px]">Telp/WA: ${appState.settings.storePhone || '-'}</div>
                 </div>
-                <div class="text-[10px] space-y-0.5 border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div>No. Ref : ${trx.id}</div>
+                <div class="text-[10px] space-y-0.5 border-b border-dashed border-slate-400 pb-1.5 mb-2">
+                    <div>No. Ref : <b>${trx.id}</b></div>
                     <div>Waktu   : ${new Date(trx.date).toLocaleString('id-ID')}</div>
-                    <div>Kasir   : ${currentUser.username}</div>
-                    <div>Pelanggan: ${trx.customer || 'UMUM'}</div>
+                    <div>Kasir   : ${currentUser.username} (${trx.module})</div>
+                    <div>Plg/Tjn : ${trx.customer || 'Umum'}</div>
                 </div>
                 <div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
-                    ${itemsHtml || `<div>${trx.description}</div>`}
+                    ${(trx.items || [{ name: trx.description, qty: 1, price: trx.total }]).map(it => `
+                        <div>
+                            <div class="font-semibold">${it.name}</div>
+                            <div class="flex justify-between text-[10px]">
+                                <span>${it.qty} x ${formatNum(it.price)}</span>
+                                <span>${formatNum(it.qty * it.price)}</span>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
                 <div class="space-y-0.5 font-bold text-xs border-b border-dashed border-slate-400 pb-2 mb-2">
                     <div class="flex justify-between"><span>TOTAL</span><span>${formatRp(trx.total)}</span></div>
-                    ${trx.paid ? `<div class="flex justify-between font-normal text-[10.5px]"><span>Bayar</span><span>${formatRp(trx.paid)}</span></div>` : ''}
-                    ${trx.change !== undefined ? `<div class="flex justify-between font-normal text-[10.5px]"><span>Kembali</span><span>${formatRp(trx.change)}</span></div>` : ''}
+                    ${trx.paid ? `<div class="flex justify-between text-[10px] font-normal"><span>TUNAI</span><span>${formatRp(trx.paid)}</span></div>` : ''}
+                    ${trx.change !== undefined ? `<div class="flex justify-between text-[10px] font-normal"><span>KEMBALI</span><span>${formatRp(trx.change)}</span></div>` : ''}
                 </div>
-                <div class="text-center text-[10px]">${appState.settings.storeFooter}</div>
+                <div class="text-center text-[9.5px] text-slate-600">${appState.settings.storeFooter}</div>
             `;
             document.getElementById('receipt-modal').classList.remove('hidden');
         }
 
-        function openEditTransactionModal(id) {
-            const trx = appState.transactions.find(t => t.id === id);
-            if (!trx) return;
+        // =========================================================================
+        // 11. EDIT & HAPUS TRANSAKSI + EXPORT LAPORAN EXCEL/CSV
+        // =========================================================================
+        function toLocalDatetimeInputValue(isoString) {
+            const d = isoString ? new Date(isoString) : new Date();
+            if (isNaN(d.getTime())) return '';
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function openEditTransactionModal(trxId) {
+            const idx = appState.transactions.findIndex(t => t.id === trxId);
+            if (idx < 0) return;
+            const trx = appState.transactions[idx];
+
             document.getElementById('edit-trx-id').value = trx.id;
             document.getElementById('edit-trx-code').value = trx.id;
             document.getElementById('edit-trx-module').value = trx.module;
-            document.getElementById('edit-trx-date').value = new Date(trx.date).toISOString().slice(0, 16);
-            document.getElementById('edit-trx-customer').value = trx.customer || '';
+            document.getElementById('edit-trx-date').value = toLocalDatetimeInputValue(trx.date);
+            document.getElementById('edit-trx-customer').value = trx.customer || 'Pelanggan Umum';
             document.getElementById('edit-trx-desc').value = trx.description || '';
-            document.getElementById('edit-trx-modal').value = trx.modal || 0;
-            document.getElementById('edit-trx-total').value = trx.total || 0;
+            document.getElementById('edit-trx-modal').value = Number(trx.modal) || 0;
+            document.getElementById('edit-trx-total').value = Number(trx.total) || 0;
+
+            const itemsBox = document.getElementById('edit-trx-items-box');
+            const itemsList = document.getElementById('edit-trx-items-list');
+            if (trx.module === 'POS' && Array.isArray(trx.items) && trx.items.length > 0) {
+                itemsBox.classList.remove('hidden');
+                itemsList.innerHTML = trx.items.map((it, i) => `
+                    <div class="grid grid-cols-12 gap-1.5 items-center bg-white border border-slate-200 rounded px-2 py-1">
+                        <div class="col-span-6 truncate font-semibold text-slate-700" title="${it.name}">${it.name}</div>
+                        <div class="col-span-2">
+                            <input type="number" min="1" value="${it.qty}" data-item-idx="${i}" onchange="onEditPosItemRowChange()" class="edit-pos-qty w-full border border-slate-300 rounded px-1 py-0.5 text-center font-mono">
+                        </div>
+                        <div class="col-span-4">
+                            <input type="number" min="0" value="${it.price}" data-item-idx="${i}" onchange="onEditPosItemRowChange()" class="edit-pos-price w-full border border-slate-300 rounded px-1 py-0.5 text-right font-mono">
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                itemsBox.classList.add('hidden');
+                itemsList.innerHTML = '';
+            }
+
             recalcEditTrxProfit();
             document.getElementById('edit-trx-modal').classList.remove('hidden');
         }
 
+        function onEditPosItemRowChange() {
+            const trxId = document.getElementById('edit-trx-id').value;
+            const trx = appState.transactions.find(t => t.id === trxId);
+            if (!trx || !Array.isArray(trx.items)) return;
+
+            const qtyInputs = document.querySelectorAll('.edit-pos-qty');
+            const priceInputs = document.querySelectorAll('.edit-pos-price');
+            let newTotal = 0;
+            let newModal = 0;
+
+            qtyInputs.forEach((qEl, idx) => {
+                const qty = Math.max(1, Number(qEl.value) || 1);
+                const price = Math.max(0, Number(priceInputs[idx]?.value) || 0);
+                const origItem = trx.items[idx];
+                const master = appState.items.find(m => m.code === origItem?.code || m.name === origItem?.name);
+                const unitCost = master ? (Number(master.cost) || 0) : (origItem && origItem.qty > 0 ? Math.round((Number(trx.modal) || 0) / origItem.qty) : 0);
+
+                newTotal += qty * price;
+                newModal += qty * unitCost;
+            });
+
+            document.getElementById('edit-trx-total').value = newTotal;
+            document.getElementById('edit-trx-modal').value = newModal;
+            recalcEditTrxProfit();
+        }
+
         function recalcEditTrxProfit() {
-            const m = Number(document.getElementById('edit-trx-modal').value) || 0;
-            const t = Number(document.getElementById('edit-trx-total').value) || 0;
-            document.getElementById('edit-trx-profit-display').textContent = formatRp(t - m);
+            const modal = Number(document.getElementById('edit-trx-modal').value) || 0;
+            const total = Number(document.getElementById('edit-trx-total').value) || 0;
+            const profit = total - modal;
+            const disp = document.getElementById('edit-trx-profit-display');
+            if (disp) {
+                disp.textContent = formatRp(profit);
+                disp.className = profit >= 0
+                    ? 'bg-emerald-50 border border-emerald-300 rounded px-2 py-1 font-mono font-extrabold text-emerald-700'
+                    : 'bg-red-50 border border-red-300 rounded px-2 py-1 font-mono font-extrabold text-red-700';
+            }
         }
 
         async function saveEditedTransaction(e) {
             e.preventDefault();
-            const id = document.getElementById('edit-trx-id').value;
-            const trx = appState.transactions.find(t => t.id === id);
-            if (!trx) return;
-            const oldTotal = Number(trx.total) || 0;
-            const newTotal = Number(document.getElementById('edit-trx-total').value) || 0;
-            const newModal = Number(document.getElementById('edit-trx-modal').value) || 0;
+            const trxId = document.getElementById('edit-trx-id').value;
+            const idx = appState.transactions.findIndex(t => t.id === trxId);
+            if (idx < 0) return;
 
-            if (trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined) {
-                appState.wallets[trx.paymentMethod] += (newTotal - oldTotal);
+            const trx = appState.transactions[idx];
+            const oldTotal = Number(trx.total) || 0;
+            const oldModal = Number(trx.modal) || 0;
+
+            const newDateVal = document.getElementById('edit-trx-date').value;
+            const newCustomer = document.getElementById('edit-trx-customer').value.trim() || 'Pelanggan Umum';
+            const newDesc = document.getElementById('edit-trx-desc').value.trim();
+            const newModal = Number(document.getElementById('edit-trx-modal').value) || 0;
+            const newTotal = Number(document.getElementById('edit-trx-total').value) || 0;
+            const newProfit = newTotal - newModal;
+
+            if (trx.module === 'POS' && Array.isArray(trx.items) && trx.items.length > 0) {
+                const qtyInputs = document.querySelectorAll('.edit-pos-qty');
+                const priceInputs = document.querySelectorAll('.edit-pos-price');
+                const updatedDescParts = [];
+
+                trx.items.forEach((it, i) => {
+                    const oldQty = Number(it.qty) || 0;
+                    const newQty = Math.max(1, Number(qtyInputs[i]?.value) || oldQty);
+                    const newPrice = Math.max(0, Number(priceInputs[i]?.value) || Number(it.price) || 0);
+                    const diffQty = newQty - oldQty;
+
+                    if (diffQty !== 0) {
+                        const master = appState.items.find(m => m.code === it.code || m.name === it.name);
+                        if (master && master.category !== 'Jasa Servis') {
+                            master.stock = Math.max(0, (Number(master.stock) || 0) - diffQty);
+                            appState.stockLedger.unshift({
+                                date: new Date().toISOString(),
+                                ref: `${trx.id}-EDIT`,
+                                code: master.code,
+                                name: master.name,
+                                type: 'KOREKSI EDIT POS',
+                                inQty: diffQty < 0 ? Math.abs(diffQty) : 0,
+                                outQty: diffQty > 0 ? diffQty : 0,
+                                balance: master.stock
+                            });
+                        }
+                    }
+
+                    it.qty = newQty;
+                    it.price = newPrice;
+                    updatedDescParts.push(`${it.name} (${newQty}x)`);
+                });
+
+                if (updatedDescParts.length > 0) {
+                    trx.description = updatedDescParts.join(', ');
+                }
+            } else {
+                trx.description = newDesc;
             }
 
-            trx.customer = document.getElementById('edit-trx-customer').value;
-            trx.description = document.getElementById('edit-trx-desc').value;
+            if (trx.module === 'POS' || trx.module === 'SERVICE') {
+                const payWallet = trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined ? trx.paymentMethod : 'KAS_TOKO';
+                appState.wallets[payWallet] += (newTotal - oldTotal);
+            } else if (trx.module === 'PPOB') {
+                appState.wallets.SALDO_PULSA -= (newModal - oldModal);
+                appState.wallets.KAS_TOKO += (newTotal - oldTotal);
+            } else if (trx.module === 'BRILINK') {
+                const isTarik = (trx.description || '').toLowerCase().includes('tarik');
+                if (isTarik) {
+                    appState.wallets.KAS_TOKO -= (newModal - oldModal);
+                    appState.wallets.SALDO_BRILINK += (newTotal - oldTotal);
+                } else {
+                    appState.wallets.SALDO_BRILINK -= (newModal - oldModal);
+                    appState.wallets.KAS_TOKO += (newTotal - oldTotal);
+                }
+            }
+
+            if (newDateVal) {
+                const parsedDate = new Date(newDateVal);
+                if (!isNaN(parsedDate.getTime())) trx.date = parsedDate.toISOString();
+            }
+            trx.customer = newCustomer;
+            if (trx.module !== 'POS' || !Array.isArray(trx.items) || trx.items.length === 0) {
+                trx.description = newDesc;
+            }
             trx.modal = newModal;
             trx.total = newTotal;
-            trx.profit = newTotal - newModal;
+            trx.profit = newProfit;
 
             closeModal('edit-trx-modal');
             await saveAppState();
-            showToast('Transaksi berhasil diperbarui!', 'success');
+            showToast(`Transaksi ${trx.id} berhasil diperbarui!`, 'success');
         }
 
-        function openDeleteTransactionModal(id) {
-            document.getElementById('delete-trx-id').value = id;
-            document.getElementById('delete-trx-label').textContent = id;
+        function openDeleteTransactionModal(trxId) {
+            const trx = appState.transactions.find(t => t.id === trxId);
+            if (!trx) return;
+            document.getElementById('delete-trx-id').value = trx.id;
+            document.getElementById('delete-trx-label').textContent = `${trx.id} (${trx.description} - ${formatRp(trx.total)})`;
             document.getElementById('delete-trx-modal').classList.remove('hidden');
         }
 
         async function confirmDeleteTransaction() {
-            const id = document.getElementById('delete-trx-id').value;
-            const idx = appState.transactions.findIndex(t => t.id === id);
-            if (idx >= 0) {
-                const trx = appState.transactions[idx];
-                if (trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined) {
-                    appState.wallets[trx.paymentMethod] -= (Number(trx.total) || 0);
-                }
-                if (trx.module === 'POS' && Array.isArray(trx.items)) {
+            const trxId = document.getElementById('delete-trx-id').value;
+            const idx = appState.transactions.findIndex(t => t.id === trxId);
+            if (idx < 0) return;
+
+            const trx = appState.transactions[idx];
+            const total = Number(trx.total) || 0;
+            const modal = Number(trx.modal) || 0;
+
+            if (trx.module === 'POS') {
+                const payWallet = trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined ? trx.paymentMethod : 'KAS_TOKO';
+                appState.wallets[payWallet] = Math.max(0, (appState.wallets[payWallet] || 0) - total);
+
+                if (Array.isArray(trx.items)) {
                     trx.items.forEach(it => {
-                        const master = appState.items.find(m => m.code === it.code);
-                        if (master) master.stock += (Number(it.qty) || 0);
+                        const master = appState.items.find(m => m.code === it.code || m.name === it.name);
+                        if (master && master.category !== 'Jasa Servis') {
+                            master.stock = (Number(master.stock) || 0) + (Number(it.qty) || 0);
+                            appState.stockLedger.unshift({
+                                date: new Date().toISOString(),
+                                ref: `${trx.id}-BATAL`,
+                                code: master.code,
+                                name: master.name,
+                                type: 'PEMBATALAN POS (RETUR)',
+                                inQty: Number(it.qty) || 0,
+                                outQty: 0,
+                                balance: master.stock
+                            });
+                        }
                     });
                 }
-                appState.transactions.splice(idx, 1);
-                await saveAppState();
-                showToast(`Transaksi ${id} berhasil dihapus!`, 'info');
+            } else if (trx.module === 'SERVICE') {
+                const payWallet = trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined ? trx.paymentMethod : 'KAS_TOKO';
+                appState.wallets[payWallet] = Math.max(0, (appState.wallets[payWallet] || 0) - total);
+            } else if (trx.module === 'PPOB') {
+                appState.wallets.SALDO_PULSA += modal;
+                appState.wallets.KAS_TOKO = Math.max(0, appState.wallets.KAS_TOKO - total);
+            } else if (trx.module === 'BRILINK') {
+                const isTarik = (trx.description || '').toLowerCase().includes('tarik');
+                if (isTarik) {
+                    appState.wallets.KAS_TOKO += modal;
+                    appState.wallets.SALDO_BRILINK = Math.max(0, appState.wallets.SALDO_BRILINK - total);
+                } else {
+                    appState.wallets.SALDO_BRILINK += modal;
+                    appState.wallets.KAS_TOKO = Math.max(0, appState.wallets.KAS_TOKO - total);
+                }
             }
+
+            appState.transactions.splice(idx, 1);
             closeModal('delete-trx-modal');
+            await saveAppState();
+            showToast(`Transaksi ${trx.id} dihapus & saldo/stok telah dikembalikan.`, 'info');
         }
 
         function exportTransactionsCSV() {
-            if (!window.XLSX) return;
-            const ws = XLSX.utils.json_to_sheet(appState.transactions);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Laporan_Transaksi');
-            XLSX.writeFile(wb, `Laporan_Transaksi_${activeDatabaseName}.xlsx`);
+            const headers = ['No_Transaksi', 'Tanggal', 'Modul', 'Keterangan', 'Pelanggan', 'Modal', 'Total_Jual', 'Laba_Bersih'];
+            const rows = appState.transactions.map(t => [
+                t.id,
+                new Date(t.date).toLocaleString('id-ID'),
+                t.module,
+                `"${t.description.replace(/"/g, '""')}"`,
+                `"${(t.customer || '').replace(/"/g, '""')}"`,
+                t.modal,
+                t.total,
+                t.profit
+            ]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Laporan_DONET_CELL_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
         }
 
         // =========================================================================
-        // 12. PENGATURAN SISTEM, USER & BACKUP
+        // 12. AUTO-SCAN / OCR NOTA KULAKAN, BUKTI TRANSFER BANK & STRUK PPOB
+        // =========================================================================
+        function openOcrScannerModal(defaultTarget = 'auto') {
+            const targetSel = document.getElementById('ocr-target-mode');
+            if (defaultTarget !== 'auto') {
+                targetSel.value = defaultTarget;
+            } else if (activeTab === 'pembelian') {
+                targetSel.value = 'pembelian';
+            } else if (activeTab === 'kasir') {
+                targetSel.value = 'pos';
+            } else {
+                targetSel.value = 'ppob';
+            }
+            document.getElementById('ocr-scanner-modal').classList.remove('hidden');
+        }
+
+        const ocrDropZone = document.getElementById('ocr-drop-zone');
+        if (ocrDropZone) {
+            ocrDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                ocrDropZone.classList.add('drop-zone-active');
+            });
+            ocrDropZone.addEventListener('dragleave', () => ocrDropZone.classList.remove('drop-zone-active'));
+            ocrDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                ocrDropZone.classList.remove('drop-zone-active');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    processOcrImageFile(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        document.addEventListener('paste', (e) => {
+            const modal = document.getElementById('ocr-scanner-modal');
+            if (modal && !modal.classList.contains('hidden') && e.clipboardData) {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const file = items[i].getAsFile();
+                        processOcrImageFile(file);
+                        break;
+                    }
+                }
+            }
+        });
+
+        function handleOcrImageUpload(e) {
+            const file = e.target.files[0];
+            if (file) processOcrImageFile(file);
+        }
+
+        async function processOcrImageFile(file) {
+            const previewImg = document.getElementById('ocr-preview-img');
+            const placeholder = document.getElementById('ocr-upload-placeholder');
+            const progressBox = document.getElementById('ocr-progress-box');
+            const progressBar = document.getElementById('ocr-progress-bar');
+            const percentLabel = document.getElementById('ocr-percent-label');
+            const statusLabel = document.getElementById('ocr-status-label');
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                previewImg.src = ev.target.result;
+                previewImg.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+
+            progressBox.classList.remove('hidden');
+            progressBar.style.width = '5%';
+            percentLabel.textContent = '5%';
+            statusLabel.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memuat mesin OCR...';
+
+            try {
+                if (!window.Tesseract) {
+                    throw new Error('Library Tesseract OCR belum siap. Pastikan koneksi internet aktif saat pertama kali memuat.');
+                }
+
+                const result = await Tesseract.recognize(file, 'ind+eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const pct = Math.round((m.progress || 0) * 100);
+                            progressBar.style.width = `${pct}%`;
+                            percentLabel.textContent = `${pct}%`;
+                            statusLabel.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> Membaca teks dokumen...`;
+                        }
+                    }
+                });
+
+                const rawText = result.data.text || '';
+                document.getElementById('ocr-raw-text').value = rawText;
+                statusLabel.innerHTML = '<i class="fas fa-check-circle text-emerald-600 mr-1"></i> Selesai membaca gambar!';
+                progressBar.style.width = '100%';
+                percentLabel.textContent = '100%';
+
+                parseOcrTextToFields(rawText);
+                showToast('Scan OCR gambar selesai! Periksa hasil ekstraksi di sebelah kanan.', 'success');
+            } catch (err) {
+                console.error(err);
+                statusLabel.innerHTML = '<i class="fas fa-exclamation-triangle text-red-600 mr-1"></i> Gagal membaca otomatis, silakan ketik manual.';
+                showToast('Gagal memproses OCR: ' + err.message, 'error');
+            }
+        }
+
+        function parseRawOcrTextManual() {
+            const rawText = document.getElementById('ocr-raw-text').value;
+            parseOcrTextToFields(rawText);
+            showToast('Teks mentah berhasil dianalisa ulang!', 'info');
+        }
+
+        function parseOcrTextToFields(text) {
+            if (!text) return;
+            const upper = text.toUpperCase();
+
+            let detectedProvider = '';
+            const providers = ['BRI', 'BCA', 'MANDIRI', 'BNI', 'BSI', 'DANA', 'OVO', 'GOPAY', 'SHOPEEPAY', 'TELKOMSEL', 'INDOSAT', 'XL', 'AXIS', 'THREE', 'SMARTFREN', 'PLN'];
+            for (const p of providers) {
+                if (upper.includes(p)) {
+                    detectedProvider = p;
+                    break;
+                }
+            }
+
+            let detectedTarget = '';
+            const phoneMatch = text.match(/(?:08|\+628|628)[0-9\-\s]{7,13}/);
+            const rekMatch = text.match(/\b\d{10,16}\b/);
+            if (phoneMatch) {
+                detectedTarget = phoneMatch[0].replace(/[\s\-]/g, '');
+            } else if (rekMatch) {
+                detectedTarget = rekMatch[0];
+            }
+
+            let detectedAmount = 0;
+            const rpMatches = [...text.matchAll(/(?:RP\.?|IDR|TOTAL|NOMINAL|JUMLAH|BAYAR)\s*[:\-]?\s*([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,9})/gi)];
+            if (rpMatches.length > 0) {
+                const nums = rpMatches.map(m => Number(m[1].replace(/[.,]/g, ''))).filter(n => n >= 1000 && n <= 100000000);
+                if (nums.length > 0) {
+                    detectedAmount = Math.max(...nums);
+                }
+            } else {
+                const generalNums = [...text.matchAll(/\b([0-9]{1,3}(?:[.,][0-9]{3})+)\b/g)]
+                    .map(m => Number(m[1].replace(/[.,]/g, '')))
+                    .filter(n => n >= 1000 && n <= 100000000);
+                if (generalNums.length > 0) {
+                    detectedAmount = Math.max(...generalNums);
+                }
+            }
+
+            let detectedQty = 1;
+            const qtyMatch = text.match(/\b(\d{1,3})\s*(?:PCS|UNIT|BOX|LEMBAR|VCR|X)\b/i);
+            if (qtyMatch) {
+                detectedQty = Math.max(1, Number(qtyMatch[1]));
+            }
+
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+            const summaryDesc = lines.slice(0, 2).join(' | ').slice(0, 75);
+
+            if (detectedProvider) document.getElementById('ocr-ext-provider').value = detectedProvider;
+            if (detectedTarget) document.getElementById('ocr-ext-target').value = detectedTarget;
+            if (detectedAmount > 0) document.getElementById('ocr-ext-amount').value = detectedAmount;
+            document.getElementById('ocr-ext-qty').value = detectedQty;
+            if (summaryDesc) document.getElementById('ocr-ext-desc').value = summaryDesc;
+
+            document.getElementById('ocr-detected-badge').classList.remove('hidden');
+        }
+
+        function applyOcrResultToSystem() {
+            const targetMode = document.getElementById('ocr-target-mode').value;
+            const provider = document.getElementById('ocr-ext-provider').value.trim();
+            const targetNo = document.getElementById('ocr-ext-target').value.trim();
+            const amount = Number(document.getElementById('ocr-ext-amount').value) || 0;
+            const qty = Math.max(1, Number(document.getElementById('ocr-ext-qty').value) || 1);
+            const desc = document.getElementById('ocr-ext-desc').value.trim();
+
+            closeModal('ocr-scanner-modal');
+
+            if (targetMode === 'ppob') {
+                switchTab('ppob');
+                if (['BRI', 'BCA', 'MANDIRI', 'BNI', 'BSI'].includes(provider.toUpperCase())) {
+                    setPpobMode('transfer');
+                } else if (['DANA', 'OVO', 'GOPAY', 'SHOPEEPAY', 'PLN'].includes(provider.toUpperCase())) {
+                    setPpobMode('ewallet');
+                } else {
+                    setPpobMode('pulsa');
+                }
+                if (targetNo) document.getElementById('ppob-target-number').value = targetNo;
+                if (desc) document.getElementById('ppob-product-desc').value = `${provider ? provider + ' - ' : ''}${desc}`;
+                if (amount > 0) {
+                    document.getElementById('ppob-modal-amount').value = amount;
+                    document.getElementById('ppob-sell-amount').value = amount + 5000;
+                    recalcPpobProfit();
+                }
+                showToast('Hasil scan berhasil diisi ke form Transaksi PPOB / BRILink!', 'success');
+            } else if (targetMode === 'pembelian') {
+                switchTab('pembelian');
+                document.getElementById('buy-item-qty').value = qty;
+                if (amount > 0) {
+                    const unitCost = qty > 1 && amount > 50000 ? Math.round(amount / qty) : amount;
+                    document.getElementById('buy-item-cost').value = unitCost;
+                }
+                const matchedItem = appState.items.find(it =>
+                    (targetNo && it.code.toLowerCase().includes(targetNo.toLowerCase())) ||
+                    (provider && it.name.toUpperCase().includes(provider.toUpperCase()))
+                );
+                if (matchedItem) {
+                    document.getElementById('buy-item-select').value = matchedItem.code;
+                }
+                showToast('Hasil scan nota berhasil diisi ke form Pembelian Stok!', 'success');
+            } else if (targetMode === 'pos') {
+                switchTab('kasir');
+                const matchedItem = appState.items.find(it =>
+                    (targetNo && it.code.toLowerCase().includes(targetNo.toLowerCase())) ||
+                    (provider && it.name.toUpperCase().includes(provider.toUpperCase()))
+                );
+                if (matchedItem) {
+                    addItemToPosCart(matchedItem.code);
+                    showToast(`Item "${matchedItem.name}" ditemukan & masuk keranjang!`, 'success');
+                } else {
+                    document.getElementById('pos-barcode-input').value = provider || targetNo;
+                    showToast('Kata kunci hasil scan dimasukkan ke kolom pencarian kasir.', 'info');
+                }
+            }
+        }
+
+        // =========================================================================
+        // 13. SETTINGS, KELOLA USER & PASSWORD, SUPABASE CONFIG & BACKUP
         // =========================================================================
         function openSettingsModal(tab = 'general') {
             document.getElementById('set-store-name').value = appState.settings.storeName || '';
@@ -4836,89 +5210,206 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
 
         function switchSettingsTab(tab) {
             ['general', 'users', 'supabase', 'backup'].forEach(t => {
-                document.getElementById(`settings-pane-${t}`)?.classList.add('hidden');
-                document.getElementById(`stab-${t}`)?.classList.remove('active');
+                const pane = document.getElementById(`settings-pane-${t}`);
+                const btn = document.getElementById(`stab-${t}`);
+                if (pane) pane.classList.add('hidden');
+                if (btn) btn.classList.remove('active');
             });
-            document.getElementById(`settings-pane-${tab}`)?.classList.remove('hidden');
-            document.getElementById(`stab-${tab}`)?.classList.add('active');
-            if (tab === 'users') renderSettingsUsersTable();
+            const activePane = document.getElementById(`settings-pane-${tab}`);
+            const activeBtn = document.getElementById(`stab-${tab}`);
+            if (activePane) activePane.classList.remove('hidden');
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if (tab === 'users') {
+                renderUsersManagementTable();
+            }
+        }
+
+        function renderUsersManagementTable() {
+            const dbLabel = document.getElementById('users-modal-db-name');
+            const curUserLabel = document.getElementById('users-modal-current-user');
+            const curRoleLabel = document.getElementById('users-modal-current-role');
+            const btnAdd = document.getElementById('btn-show-add-user');
+
+            if (dbLabel) dbLabel.textContent = activeDatabaseName;
+            if (curUserLabel) curUserLabel.textContent = currentUser.username;
+            if (curRoleLabel) curRoleLabel.textContent = currentUser.role;
+
+            const isAdmin = isCurrentUserAdmin();
+            if (btnAdd) {
+                btnAdd.style.display = isAdmin ? 'inline-flex' : 'none';
+            }
+
+            const tbody = document.getElementById('settings-users-tbody');
+            if (!tbody) return;
+
+            const users = Array.isArray(appState.users) ? appState.users : getDefaultUsersSeed();
+            tbody.innerHTML = users.map((u, idx) => {
+                const isSelf = u.username.toLowerCase() === currentUser.rawUsername.toLowerCase();
+                const canEdit = isAdmin || isSelf;
+                const canDelete = isAdmin && !isSelf && users.length > 1;
+                const maskedPass = '•'.repeat(Math.min(8, (u.password || '').length || 5));
+
+                return `
+                    <tr>
+                        <td class="text-center">${idx + 1}</td>
+                        <td class="font-bold text-slate-800">
+                            ${u.username.toUpperCase()}
+                            ${isSelf ? '<span class="ml-1 text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.2 rounded font-semibold">Sedang Login</span>' : ''}
+                        </td>
+                        <td class="font-mono text-slate-500">${maskedPass}</td>
+                        <td class="text-center">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.role === 'ADMIN' ? 'bg-amber-100 text-amber-900' : 'bg-slate-200 text-slate-700'}">${u.role}</span>
+                        </td>
+                        <td class="text-center font-mono text-xs">${u.location || 'UTM'}</td>
+                        <td class="text-center space-x-1">
+                            ${canEdit ? `<button type="button" onclick="openUserFormModal('${u.username}')" class="ipos-btn px-2 py-0.5 rounded text-[11px] text-sky-800 font-semibold" title="Ubah Password / Data User"><i class="fas fa-key mr-0.5"></i> Edit</button>` : '<span class="text-[10px] text-slate-400">Terkunci</span>'}
+                            ${canDelete ? `<button type="button" onclick="deleteUserAccount('${u.username}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus User"><i class="fas fa-trash"></i></button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openUserFormModal(targetUsername = null) {
+            const box = document.getElementById('user-form-box');
+            const title = document.getElementById('user-form-title');
+            const origInput = document.getElementById('uf-original-username');
+            const userInp = document.getElementById('uf-username');
+            const passInp = document.getElementById('uf-password');
+            const roleSel = document.getElementById('uf-role');
+            const locSel = document.getElementById('uf-location');
+
+            const isAdmin = isCurrentUserAdmin();
+
+            if (targetUsername) {
+                const found = appState.users.find(u => u.username.toLowerCase() === targetUsername.toLowerCase());
+                if (!found) return;
+                title.textContent = `Edit Akun & Password: ${found.username.toUpperCase()}`;
+                origInput.value = found.username;
+                userInp.value = found.username;
+                userInp.disabled = !isAdmin;
+                passInp.value = found.password;
+                roleSel.value = found.role || 'KASIR';
+                roleSel.disabled = !isAdmin;
+                locSel.value = found.location || 'UTM';
+                locSel.disabled = !isAdmin;
+            } else {
+                if (!isAdmin) {
+                    showToast('Hanya role ADMIN yang dapat menambah user baru!', 'error');
+                    return;
+                }
+                title.textContent = 'Tambah User Baru';
+                origInput.value = '';
+                userInp.value = '';
+                userInp.disabled = false;
+                passInp.value = '';
+                roleSel.value = 'KASIR';
+                roleSel.disabled = false;
+                locSel.value = 'KSR1';
+                locSel.disabled = false;
+            }
+
+            box.classList.remove('hidden');
+            setTimeout(() => (targetUsername ? passInp : userInp).focus(), 50);
+        }
+
+        function closeUserFormModal() {
+            const box = document.getElementById('user-form-box');
+            if (box) box.classList.add('hidden');
+        }
+
+        function togglePasswordVisibility(inputId, btnEl) {
+            const inp = document.getElementById(inputId);
+            if (!inp) return;
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                btnEl.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                inp.type = 'password';
+                btnEl.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        }
+
+        async function saveUserAccount() {
+            const origUsername = document.getElementById('uf-original-username').value.trim();
+            const username = document.getElementById('uf-username').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+            const password = document.getElementById('uf-password').value;
+            const role = document.getElementById('uf-role').value;
+            const location = document.getElementById('uf-location').value;
+
+            if (!username || !password) {
+                showToast('Username dan Password wajib diisi!', 'error');
+                return;
+            }
+
+            if (!Array.isArray(appState.users)) {
+                appState.users = getDefaultUsersSeed();
+            }
+
+            if (origUsername) {
+                const idx = appState.users.findIndex(u => u.username.toLowerCase() === origUsername.toLowerCase());
+                if (idx < 0) return;
+
+                if (username !== origUsername.toLowerCase() && appState.users.some(u => u.username.toLowerCase() === username)) {
+                    showToast(`Username "${username}" sudah dipakai akun lain!`, 'error');
+                    return;
+                }
+
+                appState.users[idx] = { username, password, role, location };
+
+                if (origUsername.toLowerCase() === currentUser.rawUsername.toLowerCase()) {
+                    currentUser.rawUsername = username;
+                    currentUser.username = username.toUpperCase();
+                    currentUser.role = role;
+                    currentUser.location = location;
+                    updateDatabaseIdentityUI();
+                }
+
+                showToast(`Akun "${username.toUpperCase()}" & password berhasil diperbarui!`, 'success');
+            } else {
+                if (appState.users.some(u => u.username.toLowerCase() === username)) {
+                    showToast(`Username "${username}" sudah terdaftar!`, 'error');
+                    return;
+                }
+                appState.users.push({ username, password, role, location });
+                showToast(`User baru "${username.toUpperCase()}" berhasil ditambahkan!`, 'success');
+            }
+
+            closeUserFormModal();
+            await saveAppState();
+            renderUsersManagementTable();
+        }
+
+        async function deleteUserAccount(targetUsername) {
+            if (!isCurrentUserAdmin()) {
+                showToast('Hanya role ADMIN yang dapat menghapus user!', 'error');
+                return;
+            }
+            if (targetUsername.toLowerCase() === currentUser.rawUsername.toLowerCase()) {
+                showToast('Tidak dapat menghapus akun yang sedang login!', 'error');
+                return;
+            }
+            if (appState.users.length <= 1) {
+                showToast('Minimal harus tersisa 1 akun user aktif!', 'error');
+                return;
+            }
+
+            appState.users = appState.users.filter(u => u.username.toLowerCase() !== targetUsername.toLowerCase());
+            await saveAppState();
+            renderUsersManagementTable();
+            showToast(`User "${targetUsername.toUpperCase()}" telah dihapus.`, 'info');
         }
 
         async function saveStoreSettings() {
-            appState.settings.storeName = document.getElementById('set-store-name').value.trim();
+            appState.settings.storeName = document.getElementById('set-store-name').value.trim() || `DONET CELL [${activeDatabaseName}]`;
             appState.settings.storeAddress = document.getElementById('set-store-address').value.trim();
             appState.settings.storePhone = document.getElementById('set-store-phone').value.trim();
             appState.settings.storeWebsite = document.getElementById('set-store-website').value.trim();
             appState.settings.storeFooter = document.getElementById('set-store-footer').value.trim();
             await saveAppState();
-            showToast('Profil toko & pengaturan struk tersimpan!', 'success');
-        }
-
-        function renderSettingsUsersTable() {
-            document.getElementById('users-modal-db-name').textContent = activeDatabaseName;
-            document.getElementById('users-modal-current-user').textContent = currentUser.username;
-            document.getElementById('users-modal-current-role').textContent = currentUser.role;
-            const tbody = document.getElementById('settings-users-tbody');
-            tbody.innerHTML = (appState.users || []).map((u, i) => `
-                <tr>
-                    <td class="text-center">${i + 1}</td>
-                    <td class="font-bold">${u.username}</td>
-                    <td class="font-mono">••••••</td>
-                    <td class="text-center font-bold">${u.role}</td>
-                    <td class="text-center font-mono">${u.location}</td>
-                    <td class="text-center space-x-1">
-                        <button type="button" onclick="openUserFormModal('${u.username}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]"><i class="fas fa-edit"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function openUserFormModal(username = '') {
-            document.getElementById('uf-original-username').value = username;
-            if (username) {
-                const u = appState.users.find(x => x.username === username);
-                document.getElementById('user-form-title').textContent = `Edit User: ${username}`;
-                document.getElementById('uf-username').value = u.username;
-                document.getElementById('uf-password').value = u.password;
-                document.getElementById('uf-role').value = u.role;
-                document.getElementById('uf-location').value = u.location;
-            } else {
-                document.getElementById('user-form-title').textContent = 'Tambah User Baru';
-                document.getElementById('uf-username').value = '';
-                document.getElementById('uf-password').value = '';
-            }
-            document.getElementById('user-form-box').classList.remove('hidden');
-        }
-
-        function closeUserFormModal() {
-            document.getElementById('user-form-box').classList.add('hidden');
-        }
-
-        function togglePasswordVisibility(inputId, btn) {
-            const inp = document.getElementById(inputId);
-            inp.type = inp.type === 'password' ? 'text' : 'password';
-        }
-
-        async function saveUserAccount() {
-            const orig = document.getElementById('uf-original-username').value;
-            const uname = document.getElementById('uf-username').value.trim();
-            const pass = document.getElementById('uf-password').value;
-            const role = document.getElementById('uf-role').value;
-            const loc = document.getElementById('uf-location').value;
-            if (!uname || !pass) {
-                showToast('Username & password wajib diisi!', 'error');
-                return;
-            }
-            if (orig) {
-                const idx = appState.users.findIndex(u => u.username === orig);
-                if (idx >= 0) appState.users[idx] = { username: uname, password: pass, role, location: loc };
-            } else {
-                appState.users.push({ username: uname, password: pass, role, location: loc });
-            }
-            closeUserFormModal();
-            await saveAppState();
-            renderSettingsUsersTable();
-            showToast('Akun user berhasil disimpan!', 'success');
+            closeModal('settings-modal');
+            showToast('Profil toko & identitas struk disimpan!', 'success');
         }
 
         async function saveSupabaseConfig() {
@@ -4926,47 +5417,69 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             appState.settings.supabaseKey = document.getElementById('set-sb-key').value.trim();
             initSupabaseClient();
             await saveAppState();
-            showToast('Konfigurasi Supabase disimpan!', 'success');
+            showToast('Konfigurasi Supabase disimpan & disinkronkan!', 'success');
         }
 
         async function syncNowWithSupabase() {
+            if (!supabaseClient) {
+                showToast('Isi URL dan Anon Key Supabase terlebih dahulu!', 'error');
+                return;
+            }
             await pushToSupabase();
-            showToast('Sinkronisasi cloud selesai!', 'info');
+            showToast('Sinkronisasi ke Supabase Cloud selesai!', 'success');
         }
 
         function showSqlSchemaHelp() {
-            document.getElementById('sql-schema-box').classList.toggle('hidden');
+            const box = document.getElementById('sql-schema-box');
+            box.classList.toggle('hidden');
         }
 
         function downloadBackupJSON() {
             const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `Backup_iPos5_${activeDatabaseName}_${new Date().toISOString().slice(0, 10)}.json`;
-            a.click();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Backup_iPos5_${activeDatabaseName}_${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
         }
 
         async function resetDemoData() {
+            const keepSbUrl = appState.settings.supabaseUrl;
+            const keepSbKey = appState.settings.supabaseKey;
+            const keepUsers = appState.users;
             appState = createDefaultState(activeDatabaseName);
+            appState.settings.supabaseUrl = keepSbUrl;
+            appState.settings.supabaseKey = keepSbKey;
+            appState.users = keepUsers;
             await saveAppState();
             closeModal('settings-modal');
-            showToast('Data berhasil di-reset ke bawaan awal!', 'info');
+            showToast(`Database [${activeDatabaseName}] dikembalikan ke pengaturan awal!`, 'info');
         }
 
         // =========================================================================
-        // 13. INITIALIZATION ON WINDOW LOAD
+        // 14. LIVE CLOCK & NETWORK MONITOR & APP BOOTSTRAP
         // =========================================================================
-        window.onload = async function () {
-            setInterval(() => {
-                const clockEl = document.getElementById('status-clock');
-                if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('id-ID');
-                const netEl = document.getElementById('footer-internet-status');
-                if (netEl) {
-                    netEl.innerHTML = navigator.onLine
-                        ? `<i class="fas fa-wifi text-emerald-600"></i> Online`
-                        : `<i class="fas fa-wifi-slash text-amber-600"></i> Offline (Lokal)`;
-                }
-            }, 1000);
+        function updateClockAndNetwork() {
+            const now = new Date();
+            document.getElementById('status-clock').textContent = now.toLocaleTimeString('id-ID', { hour12: false });
+
+            const netEl = document.getElementById('footer-internet-status');
+            if (navigator.onLine) {
+                netEl.innerHTML = `<i class="fas fa-wifi text-emerald-600"></i> Online (Siap Sinkron)`;
+            } else {
+                netEl.innerHTML = `<i class="fas fa-plug text-amber-600"></i> Offline (Penyimpanan Lokal Aktif)`;
+            }
+        }
+
+        window.addEventListener('online', () => {
+            updateClockAndNetwork();
+            pushToSupabase();
+            showToast('Koneksi internet kembali aktif. Menyinkronkan data...', 'info');
+        });
+        window.addEventListener('offline', updateClockAndNetwork);
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            setInterval(updateClockAndNetwork, 1000);
+            updateClockAndNetwork();
 
             initPosHeader();
             initServiceFormHeader();
@@ -4974,8 +5487,9 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             await loadDatabaseForActiveTenant();
             updateDatabaseIdentityUI();
             refreshAllUI();
+
             renderDbList();
-        };
+        });
     </script>
 </body>
 </html>
