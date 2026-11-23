@@ -484,8 +484,8 @@
                                     <div id="dash-company-name" class="text-base sm:text-lg font-extrabold text-[#1e3a5f]">DONET CELL [GROSIRDONET]</div>
                                     <div id="dash-company-address" class="text-xs text-slate-600 mt-0.5">Jl. Raya Utama No. 88 - Agen Resmi BRILink & Grosir Voucher</div>
                                     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 mt-1">
-                                        <span><i class="fas fa-phone-alt text-sky-600 mr-1"></i> Telp/WA: 0812-3456-7890</span>
-                                        <span><i class="fas fa-globe text-amber-600 mr-1"></i> www.donetcell.id</span>
+                                        <span><i class="fas fa-phone-alt text-sky-600 mr-1"></i> Telp/WA: <span id="dash-company-phone">0812-3456-7890</span></span>
+                                        <span><i class="fas fa-globe text-amber-600 mr-1"></i> <span id="dash-company-website">www.donetcell.id</span></span>
                                     </div>
                                 </div>
                             </div>
@@ -771,9 +771,17 @@
 
                             <!-- Sub-pane 4: Kartu Stok -->
                             <div id="mpane-kartustok" class="hidden space-y-3">
-                                <div class="flex items-center gap-2">
-                                    <label class="font-bold">Filter Item:</label>
-                                    <select id="kartustok-filter-item" onchange="renderStockLedgerTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5"></select>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <div class="flex items-center gap-2">
+                                        <label class="font-bold">Filter Jenis / Kategori:</label>
+                                        <select id="kartustok-filter-category" onchange="onKartuStokCategoryChange()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                                            <option value="ALL">Semua Kategori</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <label class="font-bold">Filter Item:</label>
+                                        <select id="kartustok-filter-item" onchange="renderStockLedgerTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5"></select>
+                                    </div>
                                 </div>
                                 <div class="overflow-x-auto border border-slate-300 rounded max-h-[60vh]">
                                     <table class="w-full table-grid border-collapse">
@@ -878,9 +886,6 @@
                                 <span class="font-bold text-xs text-slate-800"><i class="fas fa-th mr-1 text-sky-600"></i> Etalase Cepat</span>
                                 <select id="pos-quick-cat" onchange="renderPosQuickGrid()" class="bg-white border border-slate-300 rounded px-2 py-0.5 text-[11px]">
                                     <option value="ALL">Semua Kategori</option>
-                                    <option value="Voucher Fisik">Voucher Fisik</option>
-                                    <option value="Kartu Perdana">Kartu Perdana</option>
-                                    <option value="Aksesoris HP">Aksesoris HP</option>
                                 </select>
                             </div>
                             <div id="pos-quick-grid" class="p-2.5 grid grid-cols-2 gap-2 overflow-y-auto max-h-[65vh]"></div>
@@ -1525,8 +1530,18 @@
                         <input type="text" id="set-store-name" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
                     </div>
                     <div>
-                        <label class="block font-bold mb-1">Alamat & No. HP Konter</label>
+                        <label class="block font-bold mb-1">Alamat Konter</label>
                         <input type="text" id="set-store-address" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block font-bold mb-1">Nomor Telp / WhatsApp</label>
+                            <input type="text" id="set-store-phone" placeholder="0812-3456-7890" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                        </div>
+                        <div>
+                            <label class="block font-bold mb-1">Website / Sosial Media</label>
+                            <input type="text" id="set-store-website" placeholder="www.donetcell.id" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                        </div>
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Catatan Kaki Struk (Footer)</label>
@@ -1726,12 +1741,28 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Kategori / Jenis</label>
-                        <select id="item-category" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
-                            <option value="Voucher Fisik">Voucher Fisik</option>
-                            <option value="Kartu Perdana">Kartu Perdana</option>
-                            <option value="Aksesoris HP">Aksesoris HP</option>
-                            <option value="Jasa Servis">Jasa Servis</option>
-                        </select>
+                        <div class="flex gap-1">
+                            <select id="item-category" class="flex-1 border border-slate-300 rounded px-2 py-1.5 font-semibold">
+                                <!-- Populated dynamically -->
+                            </select>
+                            <button type="button" onclick="toggleNewCategoryBox()" class="ipos-btn px-2 py-1.5 rounded font-bold text-sky-700 shrink-0" title="Tambah / Hapus Kategori Manual">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Panel Inline Tambah / Kelola Kategori Manual -->
+                <div id="new-category-box" class="hidden bg-sky-50 border border-sky-200 rounded p-2.5 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-[11px] text-sky-900"><i class="fas fa-tags mr-1"></i> Tambah / Kelola Kategori Manual:</span>
+                        <button type="button" onclick="toggleNewCategoryBox()" class="text-slate-400 hover:text-red-600 font-bold">&times;</button>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <input type="text" id="new-category-input" placeholder="Ketik nama kategori baru (mis. Sparepart HP)" class="flex-1 bg-white border border-slate-300 rounded px-2 py-1 text-xs font-semibold">
+                        <button type="button" onclick="addCustomCategory()" class="ipos-btn-success px-2.5 py-1 rounded text-xs font-bold shrink-0">Tambah</button>
+                    </div>
+                    <div id="custom-categories-list" class="flex flex-wrap gap-1 pt-1">
+                        <!-- Rendered dynamically -->
                     </div>
                 </div>
                 <div>
@@ -2215,32 +2246,39 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             ];
         }
 
-        function ensureWalletListIntegrity() {
-            if (!appState.wallets || typeof appState.wallets !== 'object') {
-                appState.wallets = {};
+        function getDefaultCategoriesSeed() {
+            return ['Voucher Fisik', 'Kartu Perdana', 'Aksesoris HP', 'Jasa Servis'];
+        }
+
+        function ensureCategoriesIntegrity() {
+            if (!Array.isArray(appState.categories) || appState.categories.length === 0) {
+                appState.categories = getDefaultCategoriesSeed();
             }
+            if (Array.isArray(appState.items)) {
+                appState.items.forEach(it => {
+                    if (it.category && !appState.categories.includes(it.category)) {
+                        appState.categories.push(it.category);
+                    }
+                });
+            }
+        }
+
+        function ensureWalletListIntegrity() {
             if (!Array.isArray(appState.walletList) || appState.walletList.length === 0) {
                 appState.walletList = getDefaultWalletListSeed();
             }
-            Object.keys(appState.wallets).forEach(key => {
-                if (!appState.walletList.some(w => w.id === key)) {
-                    appState.walletList.push({
-                        id: key,
-                        name: key.replace(/_/g, ' '),
-                        type: 'BANK',
-                        color: 'teal',
-                        desc: 'Akun sumber dana tambahan'
-                    });
-                }
-            });
+            if (!appState.wallets || typeof appState.wallets !== 'object') {
+                appState.wallets = {};
+            }
             appState.walletList.forEach(w => {
-                if (typeof appState.wallets[w.id] !== 'number') {
-                    appState.wallets[w.id] = Number(appState.wallets[w.id]) || 0;
+                if (appState.wallets[w.id] === undefined) {
+                    appState.wallets[w.id] = 0;
                 }
             });
         }
 
         function getWalletNameById(id) {
+            if (!id) return '-';
             if (id === 'MODAL_LUAR' || id === 'MODAL_OWNER') return 'Setoran Modal Pemilik';
             if (id === 'PRIVE_OWNER') return 'Penarikan / Prive Pemilik';
             const found = (appState.walletList || []).find(w => w.id === id);
@@ -2259,140 +2297,96 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         }
 
         function renderDbList() {
-            const container = document.getElementById('ipos-db-list');
-            container.innerHTML = '';
-            availableDatabases.forEach(dbName => {
+            const listEl = document.getElementById('ipos-db-list');
+            if (!listEl) return;
+            listEl.innerHTML = availableDatabases.map(dbName => {
                 const isSelected = dbName === selectedDbCandidate;
                 const isActive = dbName === activeDatabaseName;
-                const row = document.createElement('div');
-                row.className = `px-2.5 py-1.5 rounded text-xs cursor-pointer flex items-center justify-between transition group ${
-                    isSelected
-                        ? 'bg-[#0078d7] text-white font-semibold shadow-sm'
-                        : 'text-slate-700 hover:bg-sky-50 font-medium'
-                }`;
-                row.onclick = () => {
-                    selectedDbCandidate = dbName;
-                    renderDbList();
-                };
-                row.ondblclick = () => {
-                    selectedDbCandidate = dbName;
-                    confirmSelectDatabase();
-                };
-                row.innerHTML = `
-                    <div class="flex items-center gap-2 truncate">
-                        <i class="fas fa-database ${isSelected ? 'text-amber-300' : 'text-sky-600'}"></i>
-                        <span class="truncate">${dbName}</span>
-                        ${isActive ? `<span class="text-[9px] px-1.5 py-0.2 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'}">Aktif</span>` : ''}
-                    </div>
-                    <div class="flex items-center gap-1 shrink-0">
-                        <button type="button" onclick="event.stopPropagation(); openEditDbFormByName('${dbName}')" class="px-1.5 py-0.5 rounded text-[10px] ${isSelected ? 'hover:bg-white/20 text-amber-200' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'}" title="Edit Nama Database">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button type="button" onclick="event.stopPropagation(); deleteDbByName('${dbName}')" class="px-1.5 py-0.5 rounded text-[10px] ${isSelected ? 'hover:bg-white/20 text-rose-200' : 'text-slate-400 hover:text-red-600 hover:bg-red-50'}" title="Hapus Database">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
+                return `
+                    <div onclick="selectDbCandidate('${dbName}')" ondblclick="selectDbCandidate('${dbName}'); confirmSelectDatabase();"
+                         class="px-2.5 py-1.5 rounded cursor-pointer flex items-center justify-between text-xs transition ${
+                             isSelected ? 'bg-sky-600 text-white font-bold shadow-sm' : 'hover:bg-sky-50 text-slate-800'
+                         }">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-database ${isSelected ? 'text-amber-300' : 'text-sky-600'}"></i>
+                            <span>${dbName}</span>
+                        </div>
+                        ${isActive ? `<span class="text-[10px] px-1.5 py-0.2 rounded ${isSelected ? 'bg-sky-800 text-sky-200' : 'bg-emerald-100 text-emerald-800'} font-semibold">Aktif</span>` : ''}
                     </div>
                 `;
-                container.appendChild(row);
-            });
+            }).join('');
+        }
+
+        function selectDbCandidate(dbName) {
+            selectedDbCandidate = dbName;
+            renderDbList();
         }
 
         function openCreateDbForm() {
             dbFormMode = 'create';
             dbEditOldName = '';
             document.getElementById('ipos-db-form-title').textContent = 'Buat Database Baru:';
-            const input = document.getElementById('ipos-new-db-input');
-            input.value = '';
+            const inp = document.getElementById('ipos-new-db-input');
+            inp.value = '';
             document.getElementById('ipos-new-db-box').classList.remove('hidden');
-            setTimeout(() => input.focus(), 50);
+            setTimeout(() => inp.focus(), 50);
         }
 
         function openEditSelectedDbForm() {
             if (!selectedDbCandidate) return;
-            openEditDbFormByName(selectedDbCandidate);
-        }
-
-        function openEditDbFormByName(dbName) {
             dbFormMode = 'edit';
-            dbEditOldName = dbName;
-            document.getElementById('ipos-db-form-title').textContent = `Ubah Nama Database [${dbName}]:`;
-            const input = document.getElementById('ipos-new-db-input');
-            input.value = dbName;
+            dbEditOldName = selectedDbCandidate;
+            document.getElementById('ipos-db-form-title').textContent = `Ubah Nama Database [${dbEditOldName}]:`;
+            const inp = document.getElementById('ipos-new-db-input');
+            inp.value = dbEditOldName;
             document.getElementById('ipos-new-db-box').classList.remove('hidden');
-            setTimeout(() => input.focus(), 50);
+            setTimeout(() => inp.focus(), 50);
         }
 
         function cancelDbForm() {
-            document.getElementById('ipos-new-db-box').classList.add('hidden');
-            document.getElementById('ipos-new-db-input').value = '';
+            const box = document.getElementById('ipos-new-db-box');
+            if (box) box.classList.add('hidden');
         }
 
         async function saveDbForm() {
-            const rawVal = document.getElementById('ipos-new-db-input').value.trim();
-            const cleanName = rawVal.toUpperCase().replace(/[^A-Z0-9_]/g, '');
-            if (!cleanName) {
-                showToast('Masukkan nama database yang valid (huruf/angka)!', 'error');
+            const inp = document.getElementById('ipos-new-db-input');
+            const newName = (inp.value || '').trim().toUpperCase().replace(/[^A-Z0-9_]/g, '');
+            if (!newName) {
+                showToast('Nama database tidak boleh kosong!', 'error');
                 return;
             }
-
             if (dbFormMode === 'create') {
-                if (availableDatabases.includes(cleanName)) {
-                    showToast('Nama database sudah ada dalam daftar!', 'error');
+                if (availableDatabases.includes(newName)) {
+                    showToast(`Database [${newName}] sudah ada!`, 'error');
                     return;
                 }
-                availableDatabases.push(cleanName);
-                selectedDbCandidate = cleanName;
-                saveAvailableDatabasesList();
-                cancelDbForm();
-                renderDbList();
-                showToast(`Database baru [${cleanName}] berhasil dibuat!`, 'success');
+                availableDatabases.push(newName);
+                selectedDbCandidate = newName;
+                showToast(`Database baru [${newName}] berhasil dibuat!`, 'success');
             } else if (dbFormMode === 'edit') {
-                if (cleanName === dbEditOldName) {
-                    cancelDbForm();
+                if (newName !== dbEditOldName && availableDatabases.includes(newName)) {
+                    showToast(`Nama database [${newName}] sudah digunakan!`, 'error');
                     return;
                 }
-                if (availableDatabases.includes(cleanName)) {
-                    showToast(`Nama database [${cleanName}] sudah digunakan!`, 'error');
-                    return;
+                const oldData = await loadStateFromIndexedDBForDb(dbEditOldName);
+                if (oldData) {
+                    await saveStateToIndexedDBForDb(newName, oldData);
+                    if (newName !== dbEditOldName) await deleteStateFromIndexedDBForDb(dbEditOldName);
                 }
-                const idx = availableDatabases.indexOf(dbEditOldName);
-                if (idx !== -1) {
-                    availableDatabases[idx] = cleanName;
-                }
-                try {
-                    const oldData = await loadStateFromIndexedDBForDb(dbEditOldName);
-                    if (oldData) {
-                        oldData.settings = oldData.settings || {};
-                        oldData.settings.storeName = `DONET CELL [${cleanName}]`;
-                        await saveStateToIndexedDBForDb(cleanName, oldData);
-                        await deleteStateFromIndexedDBForDb(dbEditOldName);
-                    }
-                } catch (e) {
-                    console.warn('Migrasi IndexedDB saat rename:', e);
-                }
-
-                if (activeDatabaseName === dbEditOldName) {
-                    activeDatabaseName = cleanName;
-                    appState.settings.storeName = `DONET CELL [${cleanName}]`;
-                    updateDatabaseIdentityUI();
-                    await saveAppState();
-                }
-                selectedDbCandidate = cleanName;
-                saveAvailableDatabasesList();
-                cancelDbForm();
-                renderDbList();
-                showToast(`Database [${dbEditOldName}] diubah menjadi [${cleanName}]!`, 'success');
+                availableDatabases = availableDatabases.map(d => d === dbEditOldName ? newName : d);
+                if (activeDatabaseName === dbEditOldName) activeDatabaseName = newName;
+                selectedDbCandidate = newName;
+                updateDatabaseIdentityUI();
+                showToast(`Database diubah menjadi [${newName}]!`, 'success');
             }
-        }
-
-        function deleteSelectedDb() {
-            if (!selectedDbCandidate) return;
-            deleteDbByName(selectedDbCandidate);
+            saveAvailableDatabasesList();
+            cancelDbForm();
+            renderDbList();
         }
 
         async function deleteDbByName(dbName) {
             if (availableDatabases.length <= 1) {
-                showToast('Tidak dapat menghapus database terakhir yang tersisa!', 'error');
+                showToast('Minimal harus tersisa 1 database!', 'error');
                 return;
             }
             if (dbName === activeDatabaseName) {
@@ -2413,6 +2407,11 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 </div>
             `;
             document.getElementById('ipos-db-list').after(banner);
+        }
+
+        function deleteSelectedDb() {
+            if (!selectedDbCandidate) return;
+            deleteDbByName(selectedDbCandidate);
         }
 
         async function executeDeleteDatabase(dbName) {
@@ -2523,10 +2522,13 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 settings: {
                     storeName: `DONET CELL [${dbLabel}]`,
                     storeAddress: 'Jl. Raya Utama No. 88 - Agen Resmi BRILink & Grosir Voucher',
+                    storePhone: '0812-3456-7890',
+                    storeWebsite: 'www.donetcell.id',
                     storeFooter: 'Terima Kasih Telah Bertransaksi di DONET CELL. Simpan Struk Sebagai Bukti Sah.',
                     supabaseUrl: '',
                     supabaseKey: ''
                 },
+                categories: getDefaultCategoriesSeed(),
                 users: getDefaultUsersSeed(),
                 wallets: {
                     KAS_TOKO: 8500000,
@@ -2692,6 +2694,10 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                     ? saved.walletList
                     : getDefaultWalletListSeed();
                 ensureWalletListIntegrity();
+                appState.categories = Array.isArray(saved.categories) && saved.categories.length > 0
+                    ? saved.categories
+                    : getDefaultCategoriesSeed();
+                ensureCategoriesIntegrity();
                 if (Array.isArray(appState.items)) {
                     appState.items = appState.items.map(it => ({
                         ...it,
@@ -2709,6 +2715,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             } else {
                 appState = createDefaultState(activeDatabaseName);
                 ensureWalletListIntegrity();
+                ensureCategoriesIntegrity();
                 await saveStateToIndexedDB();
             }
             initSupabaseClient();
@@ -2979,6 +2986,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         // =========================================================================
         function refreshAllUI() {
             ensureWalletListIntegrity();
+            ensureCategoriesIntegrity();
             const setText = (id, value) => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = value;
@@ -2986,6 +2994,8 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
 
             setText('dash-company-name', appState.settings.storeName || `DONET CELL [${activeDatabaseName}]`);
             setText('dash-company-address', appState.settings.storeAddress || 'Jl. Raya Utama No. 88 - Agen Resmi BRILink & Grosir Voucher');
+            setText('dash-company-phone', appState.settings.storePhone || '0812-3456-7890');
+            setText('dash-company-website', appState.settings.storeWebsite || 'www.donetcell.id');
 
             const totalSaldo = appState.walletList.reduce((sum, w) => sum + (Number(appState.wallets[w.id]) || 0), 0);
             setText('dash-total-saldo', formatRp(totalSaldo));
@@ -3011,6 +3021,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             setText('ppob-saldo-kas', formatRp(appState.wallets.KAS_TOKO || 0));
 
             renderDynamicWalletsUI();
+            populateCategoryDropdowns();
             renderPosQuickGrid();
             renderPosCart();
             renderItemsTable();
@@ -3245,23 +3256,120 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             if (prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
         }
 
+        function populateCategoryDropdowns(selectedVal = null) {
+            ensureCategoriesIntegrity();
+            const cats = appState.categories;
+
+            const itemCatSel = document.getElementById('item-category');
+            if (itemCatSel) {
+                const prev = selectedVal || itemCatSel.value;
+                itemCatSel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (prev && cats.includes(prev)) {
+                    itemCatSel.value = prev;
+                }
+            }
+
+            const posCatSel = document.getElementById('pos-quick-cat');
+            if (posCatSel) {
+                const prevPos = posCatSel.value || 'ALL';
+                posCatSel.innerHTML = `<option value="ALL">Semua Kategori</option>` +
+                    cats.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (prevPos === 'ALL' || cats.includes(prevPos)) {
+                    posCatSel.value = prevPos;
+                }
+            }
+
+            const ksCatSel = document.getElementById('kartustok-filter-category');
+            if (ksCatSel) {
+                const prevKsCat = ksCatSel.value || 'ALL';
+                ksCatSel.innerHTML = `<option value="ALL">Semua Kategori</option>` +
+                    cats.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (prevKsCat === 'ALL' || cats.includes(prevKsCat)) {
+                    ksCatSel.value = prevKsCat;
+                }
+            }
+
+            renderCustomCategoriesList();
+        }
+
+        function toggleNewCategoryBox() {
+            const box = document.getElementById('new-category-box');
+            if (!box) return;
+            box.classList.toggle('hidden');
+            if (!box.classList.contains('hidden')) {
+                renderCustomCategoriesList();
+                setTimeout(() => document.getElementById('new-category-input')?.focus(), 50);
+            }
+        }
+
+        function renderCustomCategoriesList() {
+            const listEl = document.getElementById('custom-categories-list');
+            if (!listEl) return;
+            ensureCategoriesIntegrity();
+            listEl.innerHTML = appState.categories.map(cat => `
+                <span class="inline-flex items-center gap-1 bg-white border border-sky-300 text-sky-900 px-2 py-0.5 rounded-full text-[10.5px] font-semibold">
+                    <span>${cat}</span>
+                    ${appState.categories.length > 1 ? `
+                        <button type="button" onclick="deleteCustomCategory('${cat.replace(/'/g, "\\'")}')" class="text-red-500 hover:text-red-700 font-bold ml-0.5" title="Hapus kategori">&times;</button>
+                    ` : ''}
+                </span>
+            `).join('');
+        }
+
         function renderPosQuickGrid() {
             const grid = document.getElementById('pos-quick-grid');
             if (!grid) return;
-            const cat = document.getElementById('pos-quick-cat')?.value || 'ALL';
-            const filtered = (appState.items || []).filter(i => cat === 'ALL' || i.category === cat);
-            grid.innerHTML = filtered.map(item => `
-                <button type="button" onclick="addItemToPosCart('${item.code}')" class="ipos-btn p-2 rounded text-left flex flex-col justify-between hover:border-sky-500">
+            const catFilter = document.getElementById('pos-quick-cat')?.value || 'ALL';
+            const items = (appState.items || []).filter(i => catFilter === 'ALL' || i.category === catFilter);
+            if (items.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 text-center py-6 text-slate-400 italic text-xs">Tidak ada barang pada kategori ini.</div>`;
+                return;
+            }
+            grid.innerHTML = items.map(it => `
+                <button type="button" onclick="addItemToPosCart('${it.code}')" class="ipos-btn p-2 rounded-lg text-left flex flex-col justify-between hover:border-sky-500 transition">
                     <div>
-                        <div class="text-[10px] font-mono text-slate-500">${item.code}</div>
-                        <div class="font-bold text-[11px] text-slate-800 line-clamp-2 leading-snug mt-0.5">${item.name}</div>
+                        <div class="text-[10px] font-mono text-slate-500 flex justify-between">
+                            <span>${it.code}</span>
+                            <span class="${it.stock <= 5 && it.category !== 'Jasa Servis' ? 'text-red-600 font-bold' : 'text-slate-600'}">Stok: ${it.stock}</span>
+                        </div>
+                        <div class="font-bold text-slate-800 text-[11.5px] line-clamp-2 mt-0.5 leading-snug">${it.name}</div>
                     </div>
-                    <div class="mt-1.5 pt-1 border-t border-slate-200 flex items-center justify-between text-[10.5px]">
-                        <span class="font-mono font-bold text-blue-700">${formatRp(item.price)}</span>
-                        <span class="px-1.5 py-0.2 rounded ${item.stock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'} font-semibold">Stok: ${item.stock}</span>
+                    <div class="mt-1.5 pt-1 border-t border-slate-200 flex items-center justify-between">
+                        <span class="font-mono font-extrabold text-blue-800 text-xs">${formatRp(it.price)}</span>
+                        <span class="text-[9.5px] bg-sky-100 text-sky-800 px-1.5 py-0.2 rounded font-semibold">+ Pilih</span>
                     </div>
                 </button>
             `).join('');
+        }
+
+        async function addCustomCategory() {
+            const input = document.getElementById('new-category-input');
+            if (!input) return;
+            const raw = input.value.trim();
+            if (!raw) {
+                showToast('Masukkan nama kategori baru terlebih dahulu!', 'error');
+                return;
+            }
+            if (appState.categories.some(c => c.toLowerCase() === raw.toLowerCase())) {
+                showToast(`Kategori "${raw}" sudah ada!`, 'error');
+                return;
+            }
+            appState.categories.push(raw);
+            input.value = '';
+            populateCategoryDropdowns(raw);
+            await saveAppState();
+            showToast(`Kategori "${raw}" berhasil ditambahkan!`, 'success');
+        }
+
+        async function deleteCustomCategory(catName) {
+            if (appState.categories.length <= 1) {
+                showToast('Minimal harus tersisa 1 kategori barang!', 'error');
+                return;
+            }
+            appState.categories = appState.categories.filter(c => c !== catName);
+            populateCategoryDropdowns();
+            await saveAppState();
+            showToast(`Kategori "${catName}" dihapus.`, 'info');
         }
 
         function handlePosSearchKey(e) {
@@ -3678,19 +3786,31 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             const ksFilter = document.getElementById('kartustok-filter-item');
             if (ksFilter) {
                 const prev = ksFilter.value;
-                ksFilter.innerHTML = `<option value="ALL">Semua Item Barang</option>` +
-                    appState.items.map(i => `<option value="${i.code}">${i.code} - ${i.name}</option>`).join('');
-                if (prev) ksFilter.value = prev;
+                const catFilter = document.getElementById('kartustok-filter-category')?.value || 'ALL';
+                const filteredItems = appState.items.filter(i => catFilter === 'ALL' || i.category === catFilter);
+                ksFilter.innerHTML = `<option value="ALL">Semua Item Barang${catFilter !== 'ALL' ? ' (' + catFilter + ')' : ''}</option>` +
+                    filteredItems.map(i => `<option value="${i.code}">${i.code} - ${i.name}</option>`).join('');
+                if (prev && (prev === 'ALL' || filteredItems.some(i => i.code === prev))) {
+                    ksFilter.value = prev;
+                } else {
+                    ksFilter.value = 'ALL';
+                }
             }
+        }
+
+        function onKartuStokCategoryChange() {
+            renderItemsTable();
+            renderStockLedgerTable();
         }
 
         function openItemModal(idx = -1) {
             document.getElementById('edit-item-index').value = idx;
+            document.getElementById('new-category-box')?.classList.add('hidden');
             if (idx >= 0 && appState.items[idx]) {
                 const it = appState.items[idx];
                 document.getElementById('item-modal-title').textContent = 'Edit Item Barang';
                 document.getElementById('item-code').value = it.code;
-                document.getElementById('item-category').value = it.category;
+                populateCategoryDropdowns(it.category);
                 document.getElementById('item-name').value = it.name;
                 document.getElementById('item-unit').value = it.unit;
                 document.getElementById('item-stock').value = it.stock;
@@ -3700,7 +3820,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             } else {
                 document.getElementById('item-modal-title').textContent = 'Tambah Item Barang Baru';
                 document.getElementById('item-code').value = '';
-                document.getElementById('item-category').value = 'Voucher Fisik';
+                populateCategoryDropdowns(appState.categories[0] || 'Voucher Fisik');
                 document.getElementById('item-name').value = '';
                 document.getElementById('item-unit').value = 'PCS';
                 document.getElementById('item-stock').value = 0;
@@ -4118,20 +4238,23 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 showToast('Library OCR belum siap, silakan isi manual.', 'error');
                 return;
             }
+
             const progBox = document.getElementById('ocr-progress-box');
             progBox.classList.remove('hidden');
+
             try {
                 const res = await Tesseract.recognize(file, 'ind+eng', {
                     logger: m => {
                         if (m.status === 'recognizing text') {
                             const pct = Math.round((m.progress || 0) * 100);
-                            document.getElementById('ocr-percent-label').textContent = `${pct}%`;
-                            document.getElementById('ocr-progress-bar').style.width = `${pct}%`;
+                            document.getElementById('ocr-percent-label').textContent = pct + '%';
+                            document.getElementById('ocr-progress-bar').style.width = pct + '%';
                         }
                     }
                 });
                 document.getElementById('ocr-raw-text').value = res.data.text || '';
                 parseRawOcrTextManual();
+                document.getElementById('ocr-detected-badge').classList.remove('hidden');
             } catch (err) {
                 showToast('Gagal memindai gambar OCR.', 'error');
             } finally {
@@ -4140,54 +4263,72 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         }
 
         function parseRawOcrTextManual() {
-            const raw = document.getElementById('ocr-raw-text').value || '';
-            const numMatch = raw.replace(/\./g, '').match(/\b([1-9]\d{3,8})\b/);
-            if (numMatch) document.getElementById('ocr-ext-amount').value = Number(numMatch[1]);
-            const phoneMatch = raw.match(/\b(08\d{8,11})\b/);
-            if (phoneMatch) document.getElementById('ocr-ext-target').value = phoneMatch[1];
-            document.getElementById('ocr-detected-badge').classList.remove('hidden');
+            const raw = document.getElementById('ocr-raw-text')?.value || '';
+            const amounts = raw.match(/\d{1,3}(?:[.,]\d{3})+/g) || [];
+            let maxAmt = 0;
+            amounts.forEach(a => {
+                const num = Number(a.replace(/[.,]/g, ''));
+                if (num > maxAmt && num < 500000000) maxAmt = num;
+            });
+            if (maxAmt > 0) document.getElementById('ocr-ext-amount').value = maxAmt;
+
+            const phoneOrRek = raw.match(/(08\d{8,12}|\d{10,16})/);
+            if (phoneOrRek) document.getElementById('ocr-ext-target').value = phoneOrRek[0];
+
+            const upper = raw.toUpperCase();
+            if (upper.includes('BRI')) document.getElementById('ocr-ext-provider').value = 'BRI -> BRI';
+            else if (upper.includes('BCA')) document.getElementById('ocr-ext-provider').value = 'BRI -> BCA';
+            else if (upper.includes('MANDIRI')) document.getElementById('ocr-ext-provider').value = 'BRI -> MANDIRI';
+            else if (upper.includes('DANA')) document.getElementById('ocr-ext-provider').value = 'DANA';
+            else if (upper.includes('TELKOMSEL')) document.getElementById('ocr-ext-provider').value = 'TELKOMSEL';
+
+            document.getElementById('ocr-ext-desc').value = raw.split('\n').filter(Boolean).slice(0, 2).join(' • ').slice(0, 80);
         }
 
         function applyOcrResultToSystem() {
-            const targetMode = document.getElementById('ocr-target-mode').value;
-            const amount = Number(document.getElementById('ocr-ext-amount').value) || 0;
-            const target = document.getElementById('ocr-ext-target').value.trim();
-            const desc = document.getElementById('ocr-ext-desc').value.trim();
-
+            const mode = document.getElementById('ocr-target-mode').value;
+            const amt = Number(document.getElementById('ocr-ext-amount').value) || 0;
+            const target = document.getElementById('ocr-ext-target').value;
+            const desc = document.getElementById('ocr-ext-desc').value;
             closeModal('ocr-scanner-modal');
-            if (targetMode === 'ppob') {
-                switchTab('ppob');
-                if (target) document.getElementById('ppob-target-number').value = target;
+
+            if (mode === 'pembelian') {
+                switchTab('pembelian');
+                if (amt > 0) document.getElementById('buy-item-cost').value = amt;
+            } else if (mode === 'pos') {
+                switchTab('kasir');
+                document.getElementById('pos-barcode-input').value = target || desc;
+            } else {
+                switchTab('ppob', 'transfer');
+                document.getElementById('ppob-target-number').value = target;
                 if (desc) document.getElementById('ppob-product-desc').value = desc;
-                if (amount > 0) {
-                    document.getElementById('ppob-modal-amount').value = amount;
-                    document.getElementById('ppob-sell-amount').value = amount + 5000;
+                if (amt > 0) {
+                    document.getElementById('ppob-modal-amount').value = amt;
+                    document.getElementById('ppob-sell-amount').value = amt + 6500;
                     recalcPpobProfit();
                 }
-            } else if (targetMode === 'pembelian') {
-                switchTab('pembelian');
-                if (amount > 0) document.getElementById('buy-item-cost').value = amount;
-            } else {
-                switchTab('kasir');
             }
-            showToast('Hasil scan OCR diterapkan ke form!', 'success');
+            showToast('Data hasil scan OCR diterapkan ke form!', 'success');
         }
 
         // =========================================================================
-        // 11. SERVICE HP (TAHAP 1 TANDA TERIMA PRINT & TAHAP 2 BIAYA INTERNAL)
+        // 11. SERVICE HP, SUMBER DANA MUTASI, LAPORAN & STRUK THERMAL
         // =========================================================================
         function initServiceFormHeader() {
             const trxEl = document.getElementById('srv-trx-no');
             const dateEl = document.getElementById('srv-date-display');
             if (trxEl) trxEl.value = generateInvoiceId('SRV');
-            if (dateEl) dateEl.value = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            if (dateEl) {
+                const now = new Date();
+                dateEl.value = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
+                    now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            }
         }
 
         async function submitServiceHp(e) {
             e.preventDefault();
-            const trxNo = document.getElementById('srv-trx-no').value.trim() || generateInvoiceId('SRV');
+            const trxNo = document.getElementById('srv-trx-no').value || generateInvoiceId('SRV');
             const nowIso = new Date().toISOString();
-
             const ticket = {
                 id: trxNo,
                 date: nowIso,
@@ -4202,906 +4343,582 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 destWallet: '',
                 status: 'PROSES'
             };
-
             appState.serviceTickets.unshift(ticket);
             e.target.reset();
             initServiceFormHeader();
             await saveAppState();
-
-            showServiceReceiptModal(ticket);
-            showToast(`Tanda Terima ${ticket.id} (${ticket.device}) tersimpan & siap dicetak!`, 'success');
+            showServiceIntakeReceipt(ticket);
+            showToast(`Tanda terima ${ticket.id} disimpan & siap cetak!`, 'success');
         }
 
-        function showServiceReceiptModalById(ticketId) {
-            const ticket = appState.serviceTickets.find(t => t.id === ticketId);
-            if (ticket) showServiceReceiptModal(ticket);
-        }
-
-        function showServiceReceiptModal(ticket) {
+        function showServiceIntakeReceipt(ticket) {
             const area = document.getElementById('receipt-print-area');
+            if (!area) return;
             area.innerHTML = `
                 <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="font-bold text-sm uppercase">${appState.settings.storeName}</div>
+                    <div class="font-extrabold text-sm">${appState.settings.storeName}</div>
                     <div class="text-[10px]">${appState.settings.storeAddress}</div>
-                    <div class="font-bold text-xs mt-1.5 border border-slate-800 py-0.5">TANDA TERIMA SERVICE HP</div>
+                    <div class="text-[10px]">Telp/WA: ${appState.settings.storePhone || '-'} ${appState.settings.storeWebsite ? '• ' + appState.settings.storeWebsite : ''}</div>
+                    <div class="font-bold text-xs mt-1 bg-slate-100 py-0.5">TANDA TERIMA SERVICE HP</div>
                 </div>
-                <div class="text-[10.5px] border-b border-dashed border-slate-400 pb-2 mb-2 space-y-1">
-                    <div class="flex justify-between"><span>No. Transaksi :</span><span class="font-bold">${ticket.id}</span></div>
-                    <div class="flex justify-between"><span>Tanggal Masuk :</span><span>${new Date(ticket.date).toLocaleString('id-ID')}</span></div>
-                    <div class="flex justify-between"><span>Penerima      :</span><span>${currentUser.username}</span></div>
+                <div class="text-[10.5px] space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
+                    <div class="flex justify-between"><span>No. Transaksi:</span><span class="font-bold">${ticket.id}</span></div>
+                    <div class="flex justify-between"><span>Tanggal Masuk:</span><span>${new Date(ticket.date).toLocaleString('id-ID')}</span></div>
+                    <div class="flex justify-between"><span>Pelanggan:</span><span class="font-bold">${ticket.customer}</span></div>
+                    <div class="flex justify-between"><span>No. HP / WA:</span><span>${ticket.phone || '-'}</span></div>
                 </div>
-                <div class="text-[10.5px] border-b border-dashed border-slate-400 pb-2 mb-2 space-y-1">
-                    <div><span class="text-slate-500">Nama Lengkap :</span><br><span class="font-bold">${ticket.customer}</span></div>
-                    <div><span class="text-slate-500">No. HP / WA  :</span><br><span class="font-bold">${ticket.phone}</span></div>
-                    <div><span class="text-slate-500">Merk & Tipe  :</span><br><span class="font-bold">${ticket.device}</span></div>
-                    <div><span class="text-slate-500">Keluhan / Kerusakan :</span><br><span class="font-bold">${ticket.issue}</span></div>
+                <div class="text-[10.5px] space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
+                    <div><span class="text-slate-500">Merk & Tipe HP:</span><br><span class="font-bold text-xs">${ticket.device}</span></div>
+                    <div class="pt-1"><span class="text-slate-500">Keluhan / Kerusakan:</span><br><span>${ticket.issue}</span></div>
                 </div>
-                <div class="text-[9.5px] text-slate-600 space-y-0.5 mb-2">
-                    <div>* Harap bawa nota tanda terima ini saat pengambilan unit HP.</div>
-                    <div>* Data penting harap di-backup sebelum pengerjaan.</div>
-                </div>
-                <div class="text-center text-[10px] pt-2 border-t border-dashed border-slate-400">
-                    ${appState.settings.storeFooter}
+                <div class="text-center text-[10px] space-y-1">
+                    <div class="font-bold">Harap bawa nota ini saat pengambilan HP.</div>
+                    <div>${appState.settings.storeFooter}</div>
                 </div>
             `;
             document.getElementById('receipt-modal').classList.remove('hidden');
         }
 
-        function openCompleteServiceModal(ticketId) {
-            const ticket = appState.serviceTickets.find(t => t.id === ticketId);
-            if (!ticket) return;
-
-            document.getElementById('sc-ticket-id').value = ticket.id;
-            document.getElementById('sc-display-id').textContent = ticket.id;
-            document.getElementById('sc-display-device').textContent = `${ticket.customer} — ${ticket.device}`;
-            document.getElementById('sc-display-issue').textContent = ticket.issue;
-
-            const spSel = document.getElementById('sc-sparepart-item');
-            const stockItems = appState.items.filter(i => i.category !== 'Jasa Servis');
-            spSel.innerHTML = `<option value="">-- Tanpa Sparepart Stok (Hanya Jasa Service) --</option>` +
-                stockItems.map(i => `<option value="${i.code}" data-cost="${i.cost}" data-stock="${i.stock}">${i.code} - ${i.name} (Stok: ${i.stock} ${i.unit} | HPP: ${formatRp(i.cost)})</option>`).join('');
-
-            document.getElementById('sc-sparepart-qty').value = 0;
-            document.getElementById('sc-modal-cost').value = 0;
-            document.getElementById('sc-service-price').value = 0;
-
-            const destSel = document.getElementById('sc-dest-wallet');
-            if (destSel && appState.wallets.KAS_TOKO !== undefined) {
-                destSel.value = 'KAS_TOKO';
-            }
-
-            recalcServiceCompletion();
-            document.getElementById('service-complete-modal').classList.remove('hidden');
-        }
-
-        function recalcServiceCompletion() {
-            const spSel = document.getElementById('sc-sparepart-item');
-            const qtyInput = document.getElementById('sc-sparepart-qty');
-            const modalInput = document.getElementById('sc-modal-cost');
-            const priceInput = document.getElementById('sc-service-price');
-
-            if (spSel && spSel.value) {
-                if (Number(qtyInput.value) <= 0) qtyInput.value = 1;
-                const opt = spSel.options[spSel.selectedIndex];
-                const unitCost = Number(opt?.getAttribute('data-cost')) || 0;
-                modalInput.value = unitCost * Math.max(1, Number(qtyInput.value) || 1);
-            } else if (spSel && !spSel.value) {
-                qtyInput.value = 0;
-            }
-
-            const modal = Number(modalInput.value) || 0;
-            const price = Number(priceInput.value) || 0;
-            const profit = price - modal;
-            const el = document.getElementById('sc-profit-preview');
-            el.textContent = formatRp(profit);
-            el.className = `border rounded px-2.5 py-1.5 font-mono font-extrabold ${profit < 0 ? 'bg-red-100 border-red-300 text-red-800' : 'bg-emerald-100 border-emerald-300 text-emerald-800'}`;
-        }
-
-        async function submitCompleteServiceHp(e) {
-            e.preventDefault();
-            const ticketId = document.getElementById('sc-ticket-id').value;
-            const ticket = appState.serviceTickets.find(t => t.id === ticketId);
-            if (!ticket) return;
-
-            const spCode = document.getElementById('sc-sparepart-item').value;
-            const spQty = Math.max(0, Number(document.getElementById('sc-sparepart-qty').value) || 0);
-            const modalCost = Math.max(0, Number(document.getElementById('sc-modal-cost').value) || 0);
-            const servicePrice = Math.max(0, Number(document.getElementById('sc-service-price').value) || 0);
-            const destWallet = document.getElementById('sc-dest-wallet').value || 'KAS_TOKO';
-            const nowIso = new Date().toISOString();
-
-            let spDesc = '';
-            if (spCode && spQty > 0) {
-                const master = appState.items.find(i => i.code === spCode);
-                if (!master) {
-                    showToast('Item sparepart tidak ditemukan di Master Data!', 'error');
-                    return;
-                }
-                if (master.stock < spQty) {
-                    showToast(`Stok ${master.name} tidak mencukupi (Sisa: ${master.stock})!`, 'error');
-                    return;
-                }
-                master.stock -= spQty;
-                spDesc = ` [Part: ${master.name} x${spQty}]`;
-                appState.stockLedger.unshift({
-                    date: nowIso,
-                    ref: ticket.id,
-                    code: master.code,
-                    name: master.name,
-                    type: 'SPAREPART SERVICE HP',
-                    inQty: 0,
-                    outQty: spQty,
-                    balance: master.stock
-                });
-            }
-
-            // Biaya dari konsumen masuk ke salah satu sumber dana terpilih
-            appState.wallets[destWallet] = (appState.wallets[destWallet] || 0) + servicePrice;
-
-            ticket.sparepartCode = spCode;
-            ticket.sparepartQty = spQty;
-            ticket.cost = modalCost;
-            ticket.price = servicePrice;
-            ticket.destWallet = destWallet;
-            ticket.status = 'SELESAI';
-            ticket.completedAt = nowIso;
-
-            const trx = {
-                id: ticket.id,
-                date: nowIso,
-                module: 'SERVICE',
-                description: `Service HP ${ticket.device} - ${ticket.issue} (${ticket.customer})${spDesc}`,
-                customer: ticket.customer,
-                modal: modalCost,
-                total: servicePrice,
-                profit: servicePrice - modalCost,
-                paymentMethod: destWallet,
-                items: [{ name: `Service ${ticket.device} (${ticket.issue})`, qty: 1, price: servicePrice }]
-            };
-            appState.transactions.unshift(trx);
-
-            closeModal('service-complete-modal');
-            await saveAppState();
-            showToast(`Biaya Service ${ticket.id} (${formatRp(servicePrice)}) masuk ke ${getWalletNameById(destWallet)}!`, 'success');
+        function printServiceReceiptById(id) {
+            const t = appState.serviceTickets.find(x => x.id === id);
+            if (t) showServiceIntakeReceipt(t);
         }
 
         function renderServiceHpTable() {
             const tbody = document.getElementById('service-hp-tbody');
-            const activeBadge = document.getElementById('srv-active-count');
+            const activeCountEl = document.getElementById('srv-active-count');
+            const list = appState.serviceTickets || [];
+
+            if (activeCountEl) {
+                activeCountEl.textContent = list.filter(t => t.status === 'PROSES').length;
+            }
             if (!tbody) return;
 
-            const trxInp = document.getElementById('srv-trx-no');
-            if (trxInp && !trxInp.value) initServiceFormHeader();
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 italic">Belum ada data service HP masuk.</td></tr>`;
+                return;
+            }
 
-            const activeCount = appState.serviceTickets.filter(t => t.status === 'PROSES').length;
-            if (activeBadge) activeBadge.textContent = activeCount;
+            tbody.innerHTML = list.map(t => {
+                const profit = (Number(t.price) || 0) - (Number(t.cost) || 0);
+                const internalDetail = t.status === 'SELESAI'
+                    ? `<div class="text-[10.5px] mt-1 pt-1 border-t border-slate-200 text-slate-600">
+                        <div>Modal Part: <b class="font-mono text-amber-800">${formatRp(t.cost)}</b> ${t.sparepartCode ? `(${t.sparepartCode} x${t.sparepartQty})` : ''}</div>
+                        <div>Biaya Konsumen: <b class="font-mono text-blue-800">${formatRp(t.price)}</b> &bull; Laba: <b class="font-mono text-emerald-700">${formatRp(profit)}</b></div>
+                        <div class="text-[10px] text-teal-700">Masuk: ${getWalletNameById(t.destWallet)}</div>
+                       </div>`
+                    : '';
 
-            tbody.innerHTML = appState.serviceTickets.map(t => {
-                const isDone = t.status === 'SELESAI' || t.status === 'DIAMBIL';
-                const statusColor = isDone
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                    : 'bg-amber-100 text-amber-800 border-amber-300';
                 return `
                     <tr>
-                        <td class="font-mono font-bold text-rose-900">${t.id}</td>
-                        <td class="font-mono text-[11px]">${new Date(t.date).toLocaleDateString('id-ID')}</td>
-                        <td>
-                            <div class="font-bold text-slate-800">${t.customer} <span class="font-mono font-normal text-[11px] text-slate-500">(${t.phone})</span></div>
+                        <td class="font-mono font-bold text-rose-900 align-top">${t.id}</td>
+                        <td class="font-mono text-[11px] align-top">${new Date(t.date).toLocaleDateString('id-ID')}</td>
+                        <td class="align-top">
+                            <div class="font-bold text-slate-800">${t.customer} <span class="font-normal text-slate-500">(${t.phone || '-'})</span></div>
                             <div class="text-[11px] font-semibold text-sky-900">${t.device}</div>
                         </td>
-                        <td>
-                            <div>${t.issue}</div>
-                            ${isDone ? `<div class="text-[10.5px] text-emerald-700 font-mono mt-0.5">Biaya: ${formatRp(t.price)} | Modal Part: ${formatRp(t.cost)} &rarr; ${getWalletNameById(t.destWallet || 'KAS_TOKO')}</div>` : ''}
+                        <td class="align-top">
+                            <div class="text-slate-700">${t.issue}</div>
+                            ${internalDetail}
                         </td>
-                        <td class="text-center">
-                            <span class="px-2 py-0.5 rounded border text-[10px] font-bold ${statusColor}">${isDone ? 'SELESAI' : 'PROSES'}</span>
+                        <td class="text-center align-top">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'SELESAI' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${t.status}</span>
                         </td>
-                        <td class="text-center space-x-1 whitespace-nowrap">
-                            <button type="button" onclick="showServiceReceiptModalById('${t.id}')" class="ipos-btn px-2 py-1 rounded text-[10.5px] text-slate-700" title="Cetak Ulang Tanda Terima">
-                                <i class="fas fa-print"></i> Terima
-                            </button>
-                            ${!isDone
-                                ? `<button type="button" onclick="openCompleteServiceModal('${t.id}')" class="ipos-btn-success px-2 py-1 rounded text-[10.5px] font-bold" title="Input Biaya & Sparepart (Internal)"><i class="fas fa-check"></i> Input Biaya</button>`
-                                : `<span class="text-[10.5px] text-emerald-700 font-bold ml-1"><i class="fas fa-check-double"></i> Lunas</span>`
-                            }
+                        <td class="text-center align-top space-y-1">
+                            <div class="flex items-center justify-center gap-1">
+                                <button type="button" onclick="printServiceReceiptById('${t.id}')" class="ipos-btn px-2 py-0.5 rounded text-[10.5px] font-semibold" title="Cetak Tanda Terima Pelanggan">
+                                    <i class="fas fa-print"></i> Nota
+                                </button>
+                                ${t.status === 'PROSES' ? `
+                                    <button type="button" onclick="openServiceCompleteModal('${t.id}')" class="ipos-btn-success px-2 py-0.5 rounded text-[10.5px] font-bold" title="Input Biaya Sparepart & Penyelesaian">
+                                        <i class="fas fa-check"></i> Input Biaya
+                                    </button>
+                                ` : `
+                                    <button type="button" onclick="openServiceCompleteModal('${t.id}')" class="ipos-btn px-2 py-0.5 rounded text-[10.5px] text-sky-800" title="Edit Biaya Internal">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                `}
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        function generateVoucherBatchPreview() {
-            const op = document.getElementById('vc-operator').value;
-            const pkg = document.getElementById('vc-package').value.trim();
-            const price = Number(document.getElementById('vc-price').value) || 0;
-            const qty = Math.min(24, Math.max(1, Number(document.getElementById('vc-qty').value) || 1));
-            const area = document.getElementById('vc-preview-area');
+        function openServiceCompleteModal(id) {
+            const t = appState.serviceTickets.find(x => x.id === id);
+            if (!t) return;
 
-            let cardsHtml = '';
-            for (let i = 0; i < qty; i++) {
-                const sn = '8962' + Math.floor(100000000000 + Math.random() * 899999999999);
-                const pin = Math.floor(100000000000 + Math.random() * 899999999999);
-                cardsHtml += `
-                    <div class="border border-slate-400 rounded p-2.5 bg-white shadow-sm text-[11px] font-mono">
-                        <div class="flex justify-between font-bold text-sky-900 border-b border-dashed border-slate-300 pb-1">
-                            <span>${op}</span>
-                            <span>${formatRp(price)}</span>
-                        </div>
-                        <div class="font-sans font-bold text-xs text-slate-800 my-1">${pkg}</div>
-                        <div class="bg-slate-100 px-2 py-1 rounded text-center font-bold tracking-wider text-slate-900 border border-slate-300">
-                            *133*${pin}#
-                        </div>
-                        <div class="text-[9.5px] text-slate-500 mt-1 flex justify-between">
-                            <span>SN: ${sn}</span>
-                            <span>DONET CELL</span>
-                        </div>
-                    </div>
-                `;
+            document.getElementById('sc-ticket-id').value = t.id;
+            document.getElementById('sc-display-id').textContent = t.id;
+            document.getElementById('sc-display-device').textContent = `${t.customer} — ${t.device}`;
+            document.getElementById('sc-display-issue').textContent = t.issue;
+
+            const spSel = document.getElementById('sc-sparepart-item');
+            const stockItems = (appState.items || []).filter(i => i.category !== 'Jasa Servis');
+            spSel.innerHTML = `<option value="" data-cost="0">-- Tanpa Sparepart Stok / Jasa Murni --</option>` +
+                stockItems.map(i => `<option value="${i.code}" data-cost="${i.cost}">${i.code} - ${i.name} (Stok: ${i.stock} | HPP: ${formatRp(i.cost)})</option>`).join('');
+
+            spSel.value = t.sparepartCode || '';
+            document.getElementById('sc-sparepart-qty').value = t.sparepartQty || (t.sparepartCode ? 1 : 0);
+            document.getElementById('sc-modal-cost').value = t.cost || 0;
+            document.getElementById('sc-service-price').value = t.price || 0;
+
+            const destSel = document.getElementById('sc-dest-wallet');
+            if (destSel) {
+                destSel.innerHTML = appState.walletList.map(w =>
+                    `<option value="${w.id}">${w.name} (${formatRp(appState.wallets[w.id] || 0)})</option>`
+                ).join('');
+                if (t.destWallet && appState.wallets[t.destWallet] !== undefined) {
+                    destSel.value = t.destWallet;
+                }
             }
-            area.innerHTML = cardsHtml;
-            showToast(`${qty} lembar voucher fisik siap dicetak!`, 'success');
+
+            recalcServiceCompletion(false);
+            document.getElementById('service-complete-modal').classList.remove('hidden');
+        }
+
+        function recalcServiceCompletion(autoFillCost = true) {
+            const spSel = document.getElementById('sc-sparepart-item');
+            const qtyEl = document.getElementById('sc-sparepart-qty');
+            const costEl = document.getElementById('sc-modal-cost');
+            const priceEl = document.getElementById('sc-service-price');
+            const profitEl = document.getElementById('sc-profit-preview');
+
+            if (autoFillCost && spSel && spSel.value) {
+                const opt = spSel.options[spSel.selectedIndex];
+                const unitCost = Number(opt?.dataset?.cost) || 0;
+                if (Number(qtyEl.value) <= 0) qtyEl.value = 1;
+                costEl.value = unitCost * (Number(qtyEl.value) || 0);
+            } else if (autoFillCost && spSel && !spSel.value) {
+                qtyEl.value = 0;
+                costEl.value = 0;
+            }
+
+            const modal = Number(costEl.value) || 0;
+            const sell = Number(priceEl.value) || 0;
+            const profit = sell - modal;
+            if (profitEl) {
+                profitEl.textContent = formatRp(profit);
+                profitEl.className = `border rounded px-2.5 py-1.5 font-mono font-extrabold ${
+                    profit >= 0 ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-red-100 border-red-300 text-red-700'
+                }`;
+            }
+        }
+
+        async function submitCompleteServiceHp(e) {
+            e.preventDefault();
+            const id = document.getElementById('sc-ticket-id').value;
+            const t = appState.serviceTickets.find(x => x.id === id);
+            if (!t) return;
+
+            const spCode = document.getElementById('sc-sparepart-item').value;
+            const spQty = Math.max(0, Number(document.getElementById('sc-sparepart-qty').value) || 0);
+            const modalCost = Math.max(0, Number(document.getElementById('sc-modal-cost').value) || 0);
+            const sellPrice = Math.max(0, Number(document.getElementById('sc-service-price').value) || 0);
+            const destWallet = document.getElementById('sc-dest-wallet').value;
+            const nowIso = new Date().toISOString();
+
+            if (t.status === 'SELESAI') {
+                if (t.sparepartCode && t.sparepartQty > 0) {
+                    const prevMaster = appState.items.find(i => i.code === t.sparepartCode);
+                    if (prevMaster) prevMaster.stock += t.sparepartQty;
+                }
+                if (t.destWallet && appState.wallets[t.destWallet] !== undefined) {
+                    appState.wallets[t.destWallet] -= (Number(t.price) || 0);
+                }
+                appState.transactions = appState.transactions.filter(tr => tr.id !== t.id);
+            }
+
+            if (spCode && spQty > 0) {
+                const master = appState.items.find(i => i.code === spCode);
+                if (master) {
+                    if (master.stock < spQty) {
+                        showToast(`Stok sparepart ${master.name} hanya tersisa ${master.stock}!`, 'error');
+                        return;
+                    }
+                    master.stock -= spQty;
+                    appState.stockLedger.unshift({
+                        date: nowIso,
+                        ref: t.id,
+                        code: master.code,
+                        name: master.name,
+                        type: `SERVICE HP (${t.device})`,
+                        inQty: 0,
+                        outQty: spQty,
+                        balance: master.stock
+                    });
+                }
+            }
+
+            t.sparepartCode = spCode;
+            t.sparepartQty = spQty;
+            t.cost = modalCost;
+            t.price = sellPrice;
+            t.destWallet = destWallet;
+            t.status = 'SELESAI';
+            t.completedAt = nowIso;
+
+            appState.wallets[destWallet] = (appState.wallets[destWallet] || 0) + sellPrice;
+
+            appState.transactions.unshift({
+                id: t.id,
+                date: nowIso,
+                module: 'SERVICE',
+                description: `Service HP ${t.device} - ${t.issue}${spCode ? ` [Part: ${spCode} x${spQty}]` : ''}`,
+                customer: t.customer,
+                modal: modalCost,
+                total: sellPrice,
+                profit: sellPrice - modalCost,
+                paymentMethod: destWallet,
+                items: [{ name: `Biaya Service ${t.device}`, qty: 1, price: sellPrice }]
+            });
+
+            closeModal('service-complete-modal');
+            await saveAppState();
+            showToast(`Biaya Service ${t.id} dicatat & saldo ${getWalletNameById(destWallet)} bertambah ${formatRp(sellPrice)}!`, 'success');
         }
 
         async function submitMutasiSumberDana(e) {
             e.preventDefault();
             const from = document.getElementById('sd-from').value;
             const to = document.getElementById('sd-to').value;
-            const amount = Number(document.getElementById('sd-amount').value) || 0;
+            const amt = Math.max(1000, Number(document.getElementById('sd-amount').value) || 0);
             const note = document.getElementById('sd-note').value.trim() || 'Mutasi Antar Sumber Dana';
 
             if (from === to) {
-                showToast('Sumber dan tujuan dana tidak boleh sama!', 'error');
+                showToast('Sumber dan tujuan mutasi tidak boleh sama!', 'error');
                 return;
             }
-            if (from !== 'MODAL_LUAR' && (appState.wallets[from] || 0) < amount) {
+            if (from !== 'MODAL_LUAR' && (appState.wallets[from] || 0) < amt) {
                 showToast(`Saldo ${getWalletNameById(from)} tidak mencukupi!`, 'error');
                 return;
             }
 
-            if (from !== 'MODAL_LUAR') appState.wallets[from] -= amount;
-            if (to !== 'PRIVE_OWNER') appState.wallets[to] = (appState.wallets[to] || 0) + amount;
+            if (from !== 'MODAL_LUAR') appState.wallets[from] -= amt;
+            if (to !== 'PRIVE_OWNER') appState.wallets[to] = (appState.wallets[to] || 0) + amt;
 
             appState.fundTransfers.unshift({
                 date: new Date().toISOString(),
                 from: getWalletNameById(from),
                 to: getWalletNameById(to),
-                amount: amount,
+                amount: amt,
                 note: note
             });
 
-            document.getElementById('sd-note').value = '';
             await saveAppState();
-            showToast(`Mutasi dana ${formatRp(amount)} berhasil dicatat!`, 'success');
+            showToast(`Mutasi ${formatRp(amt)} berhasil diproses!`, 'success');
         }
 
         function renderSumberDanaHistory() {
             const tbody = document.getElementById('sumberdana-history-tbody');
             if (!tbody) return;
-            if (appState.fundTransfers.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-400 italic">Belum ada riwayat mutasi antar sumber dana.</td></tr>`;
+            if (!appState.fundTransfers || appState.fundTransfers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-400 italic">Belum ada riwayat mutasi sumber dana.</td></tr>`;
                 return;
             }
             tbody.innerHTML = appState.fundTransfers.map(m => `
                 <tr>
                     <td class="font-mono text-[11px]">${new Date(m.date).toLocaleString('id-ID')}</td>
                     <td class="font-semibold">${m.from}</td>
-                    <td class="font-semibold text-sky-800">${m.to}</td>
-                    <td class="text-right font-mono font-bold">${formatRp(m.amount)}</td>
+                    <td class="font-semibold">${m.to}</td>
+                    <td class="text-right font-mono font-bold text-teal-800">${formatRp(m.amount)}</td>
                     <td>${m.note}</td>
                 </tr>
             `).join('');
         }
 
-        // =========================================================================
-        // 12. LAPORAN TRANSAKSI (EDIT, HAPUS & EXPORT) & KARTU STOK
-        // =========================================================================
-        function renderTransactionsTable() {
-            const filter = document.getElementById('riwayat-filter-type')?.value || 'ALL';
-            const tbody = document.getElementById('riwayat-tbody');
-            if (!tbody) return;
-
-            const filtered = appState.transactions.filter(t => filter === 'ALL' || t.module === filter);
-
-            tbody.innerHTML = filtered.map(t => {
-                const badgeClass = t.module === 'BRILINK' ? 'bg-blue-100 text-blue-800 border-blue-300' :
-                                   t.module === 'PPOB' ? 'bg-purple-100 text-purple-800 border-purple-300' :
-                                   t.module === 'SERVICE' ? 'bg-rose-100 text-rose-800 border-rose-300' :
-                                   'bg-emerald-100 text-emerald-800 border-emerald-300';
-                return `
-                    <tr>
-                        <td class="font-mono text-[11px]">${new Date(t.date).toLocaleString('id-ID')}</td>
-                        <td class="font-mono font-bold text-slate-800">${t.id}</td>
-                        <td class="text-center"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${badgeClass}">${t.module}</span></td>
-                        <td>${t.description}</td>
-                        <td class="text-right font-mono text-slate-600">${formatNum(t.modal)}</td>
-                        <td class="text-right font-mono font-bold text-slate-900">${formatNum(t.total)}</td>
-                        <td class="text-right font-mono font-bold text-emerald-700">${formatNum(t.profit)}</td>
-                        <td class="text-center space-x-1 whitespace-nowrap">
-                            <button onclick='showReceiptModalById("${t.id}")' class="ipos-btn px-2 py-0.5 rounded text-[11px] text-slate-700" title="Cetak Struk">
-                                <i class="fas fa-print"></i>
-                            </button>
-                            <button onclick='openEditTransactionModal("${t.id}")' class="ipos-btn px-2 py-0.5 rounded text-[11px] text-sky-700" title="Edit Transaksi">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick='openDeleteTransactionModal("${t.id}")' class="ipos-btn px-2 py-0.5 rounded text-[11px] text-red-600" title="Hapus Transaksi">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function reverseTransactionEffects(trx) {
-            if (!trx) return;
-            if (trx.module === 'POS') {
-                const walletKey = trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined
-                    ? trx.paymentMethod
-                    : 'KAS_TOKO';
-                appState.wallets[walletKey] = Math.max(0, (appState.wallets[walletKey] || 0) - (Number(trx.total) || 0));
-
-                if (Array.isArray(trx.items)) {
-                    trx.items.forEach(item => {
-                        const master = item.code
-                            ? appState.items.find(i => i.code === item.code)
-                            : appState.items.find(i => i.name === item.name);
-                        if (master && master.category !== 'Jasa Servis') {
-                            master.stock = (Number(master.stock) || 0) + (Number(item.qty) || 0);
-                            appState.stockLedger.unshift({
-                                date: new Date().toISOString(),
-                                ref: `KOREKSI-${trx.id}`,
-                                code: master.code,
-                                name: master.name,
-                                type: 'REVERSAL TRANSAKSI',
-                                inQty: Number(item.qty) || 0,
-                                outQty: 0,
-                                balance: master.stock
-                            });
-                        }
-                    });
-                }
-            } else if (trx.module === 'BRILINK') {
-                const isTarik = trx.id.startsWith('BRI') && trx.description.toLowerCase().includes('tarik');
-                if (isTarik) {
-                    appState.wallets.KAS_TOKO = (appState.wallets.KAS_TOKO || 0) + (Number(trx.modal) || 0);
-                    appState.wallets.SALDO_BRILINK = Math.max(0, (appState.wallets.SALDO_BRILINK || 0) - (Number(trx.total) || 0));
-                } else {
-                    appState.wallets.SALDO_BRILINK = (appState.wallets.SALDO_BRILINK || 0) + (Number(trx.modal) || 0);
-                    appState.wallets.KAS_TOKO = Math.max(0, (appState.wallets.KAS_TOKO || 0) - (Number(trx.total) || 0));
-                }
-            } else if (trx.module === 'PPOB') {
-                appState.wallets.SALDO_PULSA = (appState.wallets.SALDO_PULSA || 0) + (Number(trx.modal) || 0);
-                appState.wallets.KAS_TOKO = Math.max(0, (appState.wallets.KAS_TOKO || 0) - (Number(trx.total) || 0));
-            } else if (trx.module === 'SERVICE') {
-                const targetWallet = trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined
-                    ? trx.paymentMethod
-                    : 'KAS_TOKO';
-                appState.wallets[targetWallet] = Math.max(0, (appState.wallets[targetWallet] || 0) - (Number(trx.total) || 0));
-            }
-        }
-
-        function applyTransactionEffects(trx) {
-            if (!trx) return;
-            if (trx.module === 'POS') {
-                const walletKey = trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined
-                    ? trx.paymentMethod
-                    : 'KAS_TOKO';
-                appState.wallets[walletKey] = (appState.wallets[walletKey] || 0) + (Number(trx.total) || 0);
-
-                if (Array.isArray(trx.items)) {
-                    trx.items.forEach(item => {
-                        const master = item.code
-                            ? appState.items.find(i => i.code === item.code)
-                            : appState.items.find(i => i.name === item.name);
-                        if (master && master.category !== 'Jasa Servis') {
-                            master.stock = Math.max(0, (Number(master.stock) || 0) - (Number(item.qty) || 0));
-                            appState.stockLedger.unshift({
-                                date: new Date().toISOString(),
-                                ref: `EDIT-${trx.id}`,
-                                code: master.code,
-                                name: master.name,
-                                type: 'PENJUALAN (REVISI)',
-                                inQty: 0,
-                                outQty: Number(item.qty) || 0,
-                                balance: master.stock
-                            });
-                        }
-                    });
-                }
-            } else if (trx.module === 'BRILINK') {
-                const isTarik = trx.id.startsWith('BRI') && trx.description.toLowerCase().includes('tarik');
-                if (isTarik) {
-                    appState.wallets.KAS_TOKO = Math.max(0, (appState.wallets.KAS_TOKO || 0) - (Number(trx.modal) || 0));
-                    appState.wallets.SALDO_BRILINK = (appState.wallets.SALDO_BRILINK || 0) + (Number(trx.total) || 0);
-                } else {
-                    appState.wallets.SALDO_BRILINK = Math.max(0, (appState.wallets.SALDO_BRILINK || 0) - (Number(trx.modal) || 0));
-                    appState.wallets.KAS_TOKO = (appState.wallets.KAS_TOKO || 0) + (Number(trx.total) || 0);
-                }
-            } else if (trx.module === 'PPOB') {
-                appState.wallets.SALDO_PULSA = Math.max(0, (appState.wallets.SALDO_PULSA || 0) - (Number(trx.modal) || 0));
-                appState.wallets.KAS_TOKO = (appState.wallets.KAS_TOKO || 0) + (Number(trx.total) || 0);
-            } else if (trx.module === 'SERVICE') {
-                const targetWallet = trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined
-                    ? trx.paymentMethod
-                    : 'KAS_TOKO';
-                appState.wallets[targetWallet] = (appState.wallets[targetWallet] || 0) + (Number(trx.total) || 0);
-            }
-        }
-
-        function openEditTransactionModal(trxId) {
-            const trx = appState.transactions.find(t => t.id === trxId);
-            if (!trx) return;
-
-            document.getElementById('edit-trx-id').value = trx.id;
-            document.getElementById('edit-trx-code').value = trx.id;
-            document.getElementById('edit-trx-module').value = trx.module;
-
-            const d = new Date(trx.date);
-            const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-            document.getElementById('edit-trx-date').value = localIso;
-            document.getElementById('edit-trx-customer').value = trx.customer || 'Pelanggan Umum';
-            document.getElementById('edit-trx-desc').value = trx.description || '';
-            document.getElementById('edit-trx-modal').value = Number(trx.modal) || 0;
-            document.getElementById('edit-trx-total').value = Number(trx.total) || 0;
-
-            const itemsBox = document.getElementById('edit-trx-items-box');
-            const itemsList = document.getElementById('edit-trx-items-list');
-            if (trx.module === 'POS' && Array.isArray(trx.items) && trx.items.length > 0) {
-                itemsBox.classList.remove('hidden');
-                itemsList.innerHTML = trx.items.map((it, idx) => `
-                    <div class="flex items-center justify-between gap-2 bg-white border border-slate-200 rounded px-2 py-1">
-                        <span class="font-semibold truncate flex-1">${it.name}</span>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <span class="text-[10px] text-slate-500">Qty:</span>
-                            <input type="number" min="1" value="${it.qty}" data-idx="${idx}" oninput="onEditPosItemChange()" class="edit-pos-qty w-14 border border-slate-300 rounded px-1.5 py-0.5 text-center font-mono font-bold">
-                            <span class="text-[10px] text-slate-500">Harga:</span>
-                            <input type="number" min="0" value="${it.price}" data-idx="${idx}" oninput="onEditPosItemChange()" class="edit-pos-price w-24 border border-slate-300 rounded px-1.5 py-0.5 text-right font-mono font-bold">
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                itemsBox.classList.add('hidden');
-                itemsList.innerHTML = '';
-            }
-
-            recalcEditTrxProfit();
-            document.getElementById('edit-trx-modal').classList.remove('hidden');
-        }
-
-        function onEditPosItemChange() {
-            const trxId = document.getElementById('edit-trx-id').value;
-            const trx = appState.transactions.find(t => t.id === trxId);
-            if (!trx || !Array.isArray(trx.items)) return;
-
-            const qtyInputs = document.querySelectorAll('.edit-pos-qty');
-            const priceInputs = document.querySelectorAll('.edit-pos-price');
-            let newTotal = 0;
-            let newModal = 0;
-
-            qtyInputs.forEach((inp, i) => {
-                const qty = Math.max(1, Number(inp.value) || 1);
-                const price = Math.max(0, Number(priceInputs[i].value) || 0);
-                const itemRef = trx.items[i];
-                const master = itemRef.code
-                    ? appState.items.find(m => m.code === itemRef.code)
-                    : appState.items.find(m => m.name === itemRef.name);
-                const unitCost = master ? (Number(master.cost) || 0) : (trx.modal / Math.max(1, trx.items.reduce((s, x) => s + x.qty, 0)));
-
-                newTotal += qty * price;
-                newModal += qty * unitCost;
-            });
-
-            document.getElementById('edit-trx-total').value = Math.round(newTotal);
-            document.getElementById('edit-trx-modal').value = Math.round(newModal);
-            recalcEditTrxProfit();
-        }
-
-        function recalcEditTrxProfit() {
-            const modal = Number(document.getElementById('edit-trx-modal').value) || 0;
-            const total = Number(document.getElementById('edit-trx-total').value) || 0;
-            const profit = total - modal;
-            const el = document.getElementById('edit-trx-profit-display');
-            el.textContent = formatRp(profit);
-            el.className = `border rounded px-2 py-1 font-mono font-extrabold ${profit < 0 ? 'bg-red-100 border-red-300 text-red-800' : 'bg-emerald-100 border-emerald-300 text-emerald-800'}`;
-        }
-
-        async function saveEditedTransaction(e) {
-            e.preventDefault();
-            const trxId = document.getElementById('edit-trx-id').value;
-            const idx = appState.transactions.findIndex(t => t.id === trxId);
-            if (idx < 0) return;
-
-            const oldTrx = appState.transactions[idx];
-            // 1. Kembalikan efek saldo & stok dari transaksi lama
-            reverseTransactionEffects(oldTrx);
-
-            // 2. Bangun data transaksi yang telah diperbarui
-            const updatedTrx = JSON.parse(JSON.stringify(oldTrx));
-            const dateVal = document.getElementById('edit-trx-date').value;
-            if (dateVal) updatedTrx.date = new Date(dateVal).toISOString();
-            updatedTrx.customer = document.getElementById('edit-trx-customer').value.trim();
-            updatedTrx.description = document.getElementById('edit-trx-desc').value.trim();
-            updatedTrx.modal = Number(document.getElementById('edit-trx-modal').value) || 0;
-            updatedTrx.total = Number(document.getElementById('edit-trx-total').value) || 0;
-            updatedTrx.profit = updatedTrx.total - updatedTrx.modal;
-
-            if (updatedTrx.module === 'POS' && Array.isArray(updatedTrx.items)) {
-                const qtyInputs = document.querySelectorAll('.edit-pos-qty');
-                const priceInputs = document.querySelectorAll('.edit-pos-price');
-                if (qtyInputs.length === updatedTrx.items.length) {
-                    qtyInputs.forEach((inp, i) => {
-                        updatedTrx.items[i].qty = Math.max(1, Number(inp.value) || 1);
-                        updatedTrx.items[i].price = Math.max(0, Number(priceInputs[i].value) || 0);
-                    });
-                    updatedTrx.description = updatedTrx.items.map(c => `${c.name} (${c.qty}x)`).join(', ');
-                }
-            } else if (Array.isArray(updatedTrx.items) && updatedTrx.items.length >= 2) {
-                updatedTrx.items[0].price = updatedTrx.modal;
-                updatedTrx.items[1].price = updatedTrx.profit;
-            }
-
-            // 3. Terapkan efek saldo & stok baru
-            applyTransactionEffects(updatedTrx);
-            appState.transactions[idx] = updatedTrx;
-
-            closeModal('edit-trx-modal');
-            await saveAppState();
-            showToast(`Transaksi ${trxId} berhasil diperbarui & saldo disesuaikan!`, 'success');
-        }
-
-        function openDeleteTransactionModal(trxId) {
-            const trx = appState.transactions.find(t => t.id === trxId);
-            if (!trx) return;
-            document.getElementById('delete-trx-id').value = trx.id;
-            document.getElementById('delete-trx-label').textContent = `${trx.id} (${formatRp(trx.total)})`;
-            document.getElementById('delete-trx-modal').classList.remove('hidden');
-        }
-
-        async function confirmDeleteTransaction() {
-            const trxId = document.getElementById('delete-trx-id').value;
-            const idx = appState.transactions.findIndex(t => t.id === trxId);
-            if (idx < 0) return;
-
-            const targetTrx = appState.transactions[idx];
-            reverseTransactionEffects(targetTrx);
-            appState.transactions.splice(idx, 1);
-
-            closeModal('delete-trx-modal');
-            await saveAppState();
-            showToast(`Transaksi ${trxId} dihapus & saldo/stok telah dikembalikan!`, 'info');
-        }
-
         function renderStockLedgerTable() {
-            const filterCode = document.getElementById('kartustok-filter-item')?.value || 'ALL';
             const tbody = document.getElementById('kartustok-tbody');
             if (!tbody) return;
+            const filterCat = document.getElementById('kartustok-filter-category')?.value || 'ALL';
+            const filterCode = document.getElementById('kartustok-filter-item')?.value || 'ALL';
+            const itemCatMap = {};
+            (appState.items || []).forEach(it => { itemCatMap[it.code] = it.category; });
 
-            const filtered = appState.stockLedger.filter(s => filterCode === 'ALL' || s.code === filterCode);
-            tbody.innerHTML = filtered.map(s => `
+            const list = (appState.stockLedger || []).filter(l => {
+                const itemCategory = itemCatMap[l.code] || '';
+                const matchCat = filterCat === 'ALL' || itemCategory === filterCat;
+                const matchCode = filterCode === 'ALL' || l.code === filterCode;
+                return matchCat && matchCode;
+            });
+            tbody.innerHTML = list.map(l => `
                 <tr>
-                    <td class="font-mono text-[11px]">${new Date(s.date).toLocaleString('id-ID')}</td>
-                    <td class="font-mono font-semibold">${s.ref}</td>
-                    <td class="font-mono text-sky-900">${s.code}</td>
-                    <td>${s.name}</td>
-                    <td class="text-center text-[11px]">${s.type}</td>
-                    <td class="text-right font-mono text-emerald-700 font-bold">${s.inQty > 0 ? '+' + s.inQty : '-'}</td>
-                    <td class="text-right font-mono text-red-600 font-bold">${s.outQty > 0 ? '-' + s.outQty : '-'}</td>
-                    <td class="text-right font-mono font-extrabold">${s.balance}</td>
+                    <td class="font-mono text-[11px]">${new Date(l.date).toLocaleString('id-ID')}</td>
+                    <td class="font-mono font-semibold">${l.ref}</td>
+                    <td class="font-mono">${l.code}</td>
+                    <td>${l.name}</td>
+                    <td class="text-center text-[11px]">${l.type}</td>
+                    <td class="text-right font-mono text-emerald-700">${l.inQty > 0 ? '+' + l.inQty : '-'}</td>
+                    <td class="text-right font-mono text-red-700">${l.outQty > 0 ? '-' + l.outQty : '-'}</td>
+                    <td class="text-right font-mono font-bold">${l.balance}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTransactionsTable() {
+            const tbody = document.getElementById('riwayat-tbody');
+            if (!tbody) return;
+            const filter = document.getElementById('riwayat-filter-type')?.value || 'ALL';
+            const list = (appState.transactions || []).filter(t => filter === 'ALL' || t.module === filter);
+            tbody.innerHTML = list.map(t => `
+                <tr>
+                    <td class="font-mono text-[11px]">${new Date(t.date).toLocaleString('id-ID')}</td>
+                    <td class="font-mono font-bold text-sky-900">${t.id}</td>
+                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[10px] font-bold">${t.module}</span></td>
+                    <td>
+                        <div class="font-semibold">${t.description}</div>
+                        <div class="text-[10px] text-slate-500">Pelanggan: ${t.customer || 'UMUM'}</div>
+                    </td>
+                    <td class="text-right font-mono">${formatNum(t.modal)}</td>
+                    <td class="text-right font-mono font-bold text-blue-800">${formatNum(t.total)}</td>
+                    <td class="text-right font-mono font-bold text-emerald-700">${formatNum(t.profit)}</td>
+                    <td class="text-center space-x-1">
+                        <button type="button" onclick="showReceiptModalById('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]" title="Cetak Struk"><i class="fas fa-print"></i></button>
+                        <button type="button" onclick="openEditTransactionModal('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button type="button" onclick="openDeleteTransactionModal('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus"><i class="fas fa-trash"></i></button>
+                    </td>
                 </tr>
             `).join('');
         }
 
         function renderProfitLossSummary() {
-            const revPos = appState.transactions.filter(t => t.module === 'POS').reduce((s, t) => s + t.total, 0);
-            const revPpob = appState.transactions.filter(t => t.module === 'PPOB').reduce((s, t) => s + t.total, 0);
-            const revBri = appState.transactions.filter(t => t.module === 'BRILINK' || t.module === 'SERVICE').reduce((s, t) => s + t.total, 0);
-            const cogs = appState.transactions.reduce((s, t) => s + t.modal, 0);
-            const net = (revPos + revPpob + revBri) - cogs;
+            const trxs = appState.transactions || [];
+            const sumMod = (mod) => trxs.filter(t => t.module === mod).reduce((s, t) => s + (Number(t.total) || 0), 0);
+            const revPos = sumMod('POS') + sumMod('SERVICE');
+            const revPpob = sumMod('PPOB');
+            const revBri = sumMod('BRILINK');
+            const cogs = trxs.reduce((s, t) => s + (Number(t.modal) || 0), 0);
+            const net = trxs.reduce((s, t) => s + (Number(t.profit) || 0), 0);
 
-            document.getElementById('pl-rev-pos').textContent = formatRp(revPos);
-            document.getElementById('pl-rev-ppob').textContent = formatRp(revPpob);
-            document.getElementById('pl-rev-brilink').textContent = formatRp(revBri);
-            document.getElementById('pl-cogs').textContent = `(${formatRp(cogs)})`;
-            document.getElementById('pl-net-profit').textContent = formatRp(net);
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            set('pl-rev-pos', formatRp(revPos));
+            set('pl-rev-ppob', formatRp(revPpob));
+            set('pl-rev-brilink', formatRp(revBri));
+            set('pl-cogs', `(${formatRp(cogs)})`);
+            set('pl-net-profit', formatRp(net));
         }
 
-        function exportTransactionsCSV() {
-            const headers = ['Tanggal', 'No_Transaksi', 'Modul', 'Keterangan', 'Pelanggan', 'Modal', 'Total_Jual', 'Laba_Bersih'];
-            const rows = appState.transactions.map(t => [
-                new Date(t.date).toLocaleString('id-ID').replace(/,/g, ''),
-                t.id,
-                t.module,
-                `"${t.description.replace(/"/g, '""')}"`,
-                `"${t.customer}"`,
-                t.modal,
-                t.total,
-                t.profit
-            ]);
-            const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
-            link.setAttribute('download', `Laporan_DonetCell_${activeDatabaseName}_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            showToast('Laporan CSV berhasil diunduh!', 'success');
-        }
-
-        // =========================================================================
-        // 13. THERMAL RECEIPT GENERATOR (STRUK 80MM)
-        // =========================================================================
-        function showReceiptModalById(trxId) {
-            const trx = appState.transactions.find(t => t.id === trxId);
+        function showReceiptModalById(id) {
+            const trx = appState.transactions.find(t => t.id === id);
             if (trx) showReceiptModal(trx);
         }
 
         function showReceiptModal(trx) {
             const area = document.getElementById('receipt-print-area');
+            if (!area) return;
             const itemsHtml = (trx.items || []).map(it => `
                 <div class="flex justify-between">
-                    <span>${it.name} ${it.qty > 1 ? `(${it.qty}x)` : ''}</span>
-                    <span>${formatNum(it.price * it.qty)}</span>
+                    <span class="truncate pr-2">${it.name} x${it.qty}</span>
+                    <span class="shrink-0">${formatNum(it.qty * it.price)}</span>
                 </div>
             `).join('');
 
             area.innerHTML = `
                 <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="font-bold text-sm uppercase">${appState.settings.storeName}</div>
+                    <div class="font-extrabold text-sm">${appState.settings.storeName}</div>
                     <div class="text-[10px]">${appState.settings.storeAddress}</div>
+                    <div class="text-[10px]">Telp/WA: ${appState.settings.storePhone || '-'} ${appState.settings.storeWebsite ? '• ' + appState.settings.storeWebsite : ''}</div>
                 </div>
-                <div class="text-[10px] border-b border-dashed border-slate-400 pb-1.5 mb-2 space-y-0.5">
-                    <div class="flex justify-between"><span>No. Ref:</span><span class="font-bold">${trx.id}</span></div>
-                    <div class="flex justify-between"><span>Waktu  :</span><span>${new Date(trx.date).toLocaleString('id-ID')}</span></div>
-                    <div class="flex justify-between"><span>Kasir  :</span><span>${currentUser.username} [${activeDatabaseName}]</span></div>
-                    <div class="flex justify-between"><span>Tujuan :</span><span>${trx.customer}</span></div>
+                <div class="text-[10px] space-y-0.5 border-b border-dashed border-slate-400 pb-2 mb-2">
+                    <div>No. Ref : ${trx.id}</div>
+                    <div>Waktu   : ${new Date(trx.date).toLocaleString('id-ID')}</div>
+                    <div>Kasir   : ${currentUser.username}</div>
+                    <div>Pelanggan: ${trx.customer || 'UMUM'}</div>
                 </div>
                 <div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
-                    ${itemsHtml}
+                    ${itemsHtml || `<div>${trx.description}</div>`}
                 </div>
-                <div class="space-y-0.5 font-bold text-xs">
-                    <div class="flex justify-between">
-                        <span>TOTAL BAYAR</span>
-                        <span>${formatRp(trx.total)}</span>
-                    </div>
-                    ${trx.paid ? `
-                    <div class="flex justify-between font-normal text-[10px]">
-                        <span>Tunai / Bayar</span>
-                        <span>${formatRp(trx.paid)}</span>
-                    </div>
-                    <div class="flex justify-between font-normal text-[10px]">
-                        <span>Kembalian</span>
-                        <span>${formatRp(trx.change || 0)}</span>
-                    </div>` : ''}
+                <div class="space-y-0.5 font-bold text-xs border-b border-dashed border-slate-400 pb-2 mb-2">
+                    <div class="flex justify-between"><span>TOTAL</span><span>${formatRp(trx.total)}</span></div>
+                    ${trx.paid ? `<div class="flex justify-between font-normal text-[10.5px]"><span>Bayar</span><span>${formatRp(trx.paid)}</span></div>` : ''}
+                    ${trx.change !== undefined ? `<div class="flex justify-between font-normal text-[10.5px]"><span>Kembali</span><span>${formatRp(trx.change)}</span></div>` : ''}
                 </div>
-                <div class="text-center text-[10px] mt-3 pt-2 border-t border-dashed border-slate-400">
-                    ${appState.settings.storeFooter}
-                </div>
+                <div class="text-center text-[10px]">${appState.settings.storeFooter}</div>
             `;
             document.getElementById('receipt-modal').classList.remove('hidden');
         }
 
+        function openEditTransactionModal(id) {
+            const trx = appState.transactions.find(t => t.id === id);
+            if (!trx) return;
+            document.getElementById('edit-trx-id').value = trx.id;
+            document.getElementById('edit-trx-code').value = trx.id;
+            document.getElementById('edit-trx-module').value = trx.module;
+            document.getElementById('edit-trx-date').value = new Date(trx.date).toISOString().slice(0, 16);
+            document.getElementById('edit-trx-customer').value = trx.customer || '';
+            document.getElementById('edit-trx-desc').value = trx.description || '';
+            document.getElementById('edit-trx-modal').value = trx.modal || 0;
+            document.getElementById('edit-trx-total').value = trx.total || 0;
+            recalcEditTrxProfit();
+            document.getElementById('edit-trx-modal').classList.remove('hidden');
+        }
+
+        function recalcEditTrxProfit() {
+            const m = Number(document.getElementById('edit-trx-modal').value) || 0;
+            const t = Number(document.getElementById('edit-trx-total').value) || 0;
+            document.getElementById('edit-trx-profit-display').textContent = formatRp(t - m);
+        }
+
+        async function saveEditedTransaction(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-trx-id').value;
+            const trx = appState.transactions.find(t => t.id === id);
+            if (!trx) return;
+            const oldTotal = Number(trx.total) || 0;
+            const newTotal = Number(document.getElementById('edit-trx-total').value) || 0;
+            const newModal = Number(document.getElementById('edit-trx-modal').value) || 0;
+
+            if (trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined) {
+                appState.wallets[trx.paymentMethod] += (newTotal - oldTotal);
+            }
+
+            trx.customer = document.getElementById('edit-trx-customer').value;
+            trx.description = document.getElementById('edit-trx-desc').value;
+            trx.modal = newModal;
+            trx.total = newTotal;
+            trx.profit = newTotal - newModal;
+
+            closeModal('edit-trx-modal');
+            await saveAppState();
+            showToast('Transaksi berhasil diperbarui!', 'success');
+        }
+
+        function openDeleteTransactionModal(id) {
+            document.getElementById('delete-trx-id').value = id;
+            document.getElementById('delete-trx-label').textContent = id;
+            document.getElementById('delete-trx-modal').classList.remove('hidden');
+        }
+
+        async function confirmDeleteTransaction() {
+            const id = document.getElementById('delete-trx-id').value;
+            const idx = appState.transactions.findIndex(t => t.id === id);
+            if (idx >= 0) {
+                const trx = appState.transactions[idx];
+                if (trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined) {
+                    appState.wallets[trx.paymentMethod] -= (Number(trx.total) || 0);
+                }
+                if (trx.module === 'POS' && Array.isArray(trx.items)) {
+                    trx.items.forEach(it => {
+                        const master = appState.items.find(m => m.code === it.code);
+                        if (master) master.stock += (Number(it.qty) || 0);
+                    });
+                }
+                appState.transactions.splice(idx, 1);
+                await saveAppState();
+                showToast(`Transaksi ${id} berhasil dihapus!`, 'info');
+            }
+            closeModal('delete-trx-modal');
+        }
+
+        function exportTransactionsCSV() {
+            if (!window.XLSX) return;
+            const ws = XLSX.utils.json_to_sheet(appState.transactions);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Laporan_Transaksi');
+            XLSX.writeFile(wb, `Laporan_Transaksi_${activeDatabaseName}.xlsx`);
+        }
+
         // =========================================================================
-        // 14. SETTINGS, USER & PASSWORD MANAGEMENT & CLOUD SYNC
+        // 12. PENGATURAN SISTEM, USER & BACKUP
         // =========================================================================
         function openSettingsModal(tab = 'general') {
             document.getElementById('set-store-name').value = appState.settings.storeName || '';
             document.getElementById('set-store-address').value = appState.settings.storeAddress || '';
+            document.getElementById('set-store-phone').value = appState.settings.storePhone || '';
+            document.getElementById('set-store-website').value = appState.settings.storeWebsite || '';
             document.getElementById('set-store-footer').value = appState.settings.storeFooter || '';
             document.getElementById('set-sb-url').value = appState.settings.supabaseUrl || '';
             document.getElementById('set-sb-key').value = appState.settings.supabaseKey || '';
-            closeUserFormModal();
             switchSettingsTab(tab);
             document.getElementById('settings-modal').classList.remove('hidden');
         }
 
         function switchSettingsTab(tab) {
             ['general', 'users', 'supabase', 'backup'].forEach(t => {
-                document.getElementById(`settings-pane-${t}`).classList.add('hidden');
-                document.getElementById(`stab-${t}`).classList.remove('active');
+                document.getElementById(`settings-pane-${t}`)?.classList.add('hidden');
+                document.getElementById(`stab-${t}`)?.classList.remove('active');
             });
-            document.getElementById(`settings-pane-${tab}`).classList.remove('hidden');
-            document.getElementById(`stab-${tab}`).classList.add('active');
-
-            if (tab === 'users') {
-                renderUsersManagementTable();
-            }
+            document.getElementById(`settings-pane-${tab}`)?.classList.remove('hidden');
+            document.getElementById(`stab-${tab}`)?.classList.add('active');
+            if (tab === 'users') renderSettingsUsersTable();
         }
 
-        function renderUsersManagementTable() {
+        async function saveStoreSettings() {
+            appState.settings.storeName = document.getElementById('set-store-name').value.trim();
+            appState.settings.storeAddress = document.getElementById('set-store-address').value.trim();
+            appState.settings.storePhone = document.getElementById('set-store-phone').value.trim();
+            appState.settings.storeWebsite = document.getElementById('set-store-website').value.trim();
+            appState.settings.storeFooter = document.getElementById('set-store-footer').value.trim();
+            await saveAppState();
+            showToast('Profil toko & pengaturan struk tersimpan!', 'success');
+        }
+
+        function renderSettingsUsersTable() {
             document.getElementById('users-modal-db-name').textContent = activeDatabaseName;
             document.getElementById('users-modal-current-user').textContent = currentUser.username;
             document.getElementById('users-modal-current-role').textContent = currentUser.role;
-
-            const addBtn = document.getElementById('btn-show-add-user');
-            if (isCurrentUserAdmin()) {
-                addBtn.classList.remove('hidden');
-            } else {
-                addBtn.classList.add('hidden');
-            }
-
             const tbody = document.getElementById('settings-users-tbody');
-            const users = Array.isArray(appState.users) ? appState.users : getDefaultUsersSeed();
-
-            tbody.innerHTML = users.map((u, idx) => {
-                const isSelf = u.username.toLowerCase() === currentUser.rawUsername.toLowerCase();
-                const canEdit = isCurrentUserAdmin() || isSelf;
-                const canDelete = isCurrentUserAdmin() && !isSelf && users.length > 1;
-                const roleBadge = u.role === 'ADMIN'
-                    ? '<span class="px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-300 font-bold text-[10px]">ADMIN</span>'
-                    : '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-bold text-[10px]">KASIR</span>';
-
-                return `
-                    <tr>
-                        <td class="text-center">${idx + 1}</td>
-                        <td class="font-semibold text-slate-800">
-                            ${u.username}
-                            ${isSelf ? '<span class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">Sedang Login</span>' : ''}
-                        </td>
-                        <td class="font-mono text-slate-500">••••••••</td>
-                        <td class="text-center">${roleBadge}</td>
-                        <td class="text-center font-mono font-semibold">${u.location || 'UTM'}</td>
-                        <td class="text-center space-x-1">
-                            ${canEdit ? `<button type="button" onclick="openUserFormModal('${u.username}')" class="ipos-btn px-2 py-0.5 rounded text-[11px] text-sky-700" title="Edit User / Ganti Password"><i class="fas fa-key"></i> Edit</button>` : '<span class="text-slate-400 text-[10px]">Terkunci</span>'}
-                            ${canDelete ? `<button type="button" onclick="deleteUserAccount('${u.username}')" class="ipos-btn px-2 py-0.5 rounded text-[11px] text-red-600" title="Hapus User"><i class="fas fa-trash"></i></button>` : ''}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            tbody.innerHTML = (appState.users || []).map((u, i) => `
+                <tr>
+                    <td class="text-center">${i + 1}</td>
+                    <td class="font-bold">${u.username}</td>
+                    <td class="font-mono">••••••</td>
+                    <td class="text-center font-bold">${u.role}</td>
+                    <td class="text-center font-mono">${u.location}</td>
+                    <td class="text-center space-x-1">
+                        <button type="button" onclick="openUserFormModal('${u.username}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]"><i class="fas fa-edit"></i></button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        function openUserFormModal(targetUsername = '') {
-            const box = document.getElementById('user-form-box');
-            const title = document.getElementById('user-form-title');
-            const origInput = document.getElementById('uf-original-username');
-            const userInput = document.getElementById('uf-username');
-            const passInput = document.getElementById('uf-password');
-            const roleSelect = document.getElementById('uf-role');
-            const locSelect = document.getElementById('uf-location');
-
-            passInput.type = 'password';
-
-            if (targetUsername) {
-                const account = appState.users.find(u => u.username.toLowerCase() === targetUsername.toLowerCase());
-                if (!account) return;
-                title.textContent = `Edit Akun & Ganti Password: ${account.username}`;
-                origInput.value = account.username;
-                userInput.value = account.username;
-                passInput.value = account.password;
-                roleSelect.value = account.role || 'KASIR';
-                locSelect.value = account.location || 'UTM';
-
-                roleSelect.disabled = !isCurrentUserAdmin();
+        function openUserFormModal(username = '') {
+            document.getElementById('uf-original-username').value = username;
+            if (username) {
+                const u = appState.users.find(x => x.username === username);
+                document.getElementById('user-form-title').textContent = `Edit User: ${username}`;
+                document.getElementById('uf-username').value = u.username;
+                document.getElementById('uf-password').value = u.password;
+                document.getElementById('uf-role').value = u.role;
+                document.getElementById('uf-location').value = u.location;
             } else {
-                if (!isCurrentUserAdmin()) {
-                    showToast('Hanya role ADMIN yang dapat menambah user baru!', 'error');
-                    return;
-                }
-                title.textContent = 'Tambah User Baru';
-                origInput.value = '';
-                userInput.value = '';
-                passInput.value = '';
-                roleSelect.value = 'KASIR';
-                locSelect.value = 'KSR1';
-                roleSelect.disabled = false;
+                document.getElementById('user-form-title').textContent = 'Tambah User Baru';
+                document.getElementById('uf-username').value = '';
+                document.getElementById('uf-password').value = '';
             }
-
-            box.classList.remove('hidden');
-            setTimeout(() => userInput.focus(), 50);
+            document.getElementById('user-form-box').classList.remove('hidden');
         }
 
         function closeUserFormModal() {
             document.getElementById('user-form-box').classList.add('hidden');
         }
 
-        function togglePasswordVisibility(inputId, btnEl) {
+        function togglePasswordVisibility(inputId, btn) {
             const inp = document.getElementById(inputId);
-            if (!inp) return;
-            if (inp.type === 'password') {
-                inp.type = 'text';
-                btnEl.innerHTML = '<i class="fas fa-eye-slash"></i>';
-            } else {
-                inp.type = 'password';
-                btnEl.innerHTML = '<i class="fas fa-eye"></i>';
-            }
+            inp.type = inp.type === 'password' ? 'text' : 'password';
         }
 
         async function saveUserAccount() {
-            const origUsername = document.getElementById('uf-original-username').value.trim();
-            const newUsername = document.getElementById('uf-username').value.trim();
-            const newPassword = document.getElementById('uf-password').value;
-            const newRole = document.getElementById('uf-role').value;
-            const newLoc = document.getElementById('uf-location').value;
-
-            if (!newUsername || !newPassword) {
-                showToast('Username dan Password tidak boleh kosong!', 'error');
+            const orig = document.getElementById('uf-original-username').value;
+            const uname = document.getElementById('uf-username').value.trim();
+            const pass = document.getElementById('uf-password').value;
+            const role = document.getElementById('uf-role').value;
+            const loc = document.getElementById('uf-location').value;
+            if (!uname || !pass) {
+                showToast('Username & password wajib diisi!', 'error');
                 return;
             }
-
-            if (!Array.isArray(appState.users)) {
-                appState.users = getDefaultUsersSeed();
-            }
-
-            if (origUsername) {
-                const idx = appState.users.findIndex(u => u.username.toLowerCase() === origUsername.toLowerCase());
-                if (idx === -1) return;
-
-                const duplicate = appState.users.some(
-                    (u, i) => i !== idx && u.username.toLowerCase() === newUsername.toLowerCase()
-                );
-                if (duplicate) {
-                    showToast('Username sudah digunakan akun lain!', 'error');
-                    return;
-                }
-
-                const finalRole = isCurrentUserAdmin() ? newRole : appState.users[idx].role;
-                appState.users[idx] = {
-                    username: newUsername,
-                    password: newPassword,
-                    role: finalRole,
-                    location: newLoc
-                };
-
-                if (origUsername.toLowerCase() === currentUser.rawUsername.toLowerCase()) {
-                    currentUser.rawUsername = newUsername;
-                    currentUser.username = newUsername.toUpperCase();
-                    currentUser.role = finalRole;
-                    currentUser.location = newLoc;
-                    updateDatabaseIdentityUI();
-                }
-
-                showToast(`Akun "${newUsername}" & password berhasil diperbarui!`, 'success');
+            if (orig) {
+                const idx = appState.users.findIndex(u => u.username === orig);
+                if (idx >= 0) appState.users[idx] = { username: uname, password: pass, role, location: loc };
             } else {
-                if (!isCurrentUserAdmin()) {
-                    showToast('Hanya role ADMIN yang dapat menambah user baru!', 'error');
-                    return;
-                }
-                const duplicate = appState.users.some(u => u.username.toLowerCase() === newUsername.toLowerCase());
-                if (duplicate) {
-                    showToast('Username sudah terdaftar dalam database ini!', 'error');
-                    return;
-                }
-                appState.users.push({
-                    username: newUsername,
-                    password: newPassword,
-                    role: newRole,
-                    location: newLoc
-                });
-                showToast(`User baru "${newUsername}" berhasil ditambahkan!`, 'success');
+                appState.users.push({ username: uname, password: pass, role, location: loc });
             }
-
             closeUserFormModal();
             await saveAppState();
-            renderUsersManagementTable();
-        }
-
-        async function deleteUserAccount(targetUsername) {
-            if (!isCurrentUserAdmin()) {
-                showToast('Hanya role ADMIN yang dapat menghapus user!', 'error');
-                return;
-            }
-            if (targetUsername.toLowerCase() === currentUser.rawUsername.toLowerCase()) {
-                showToast('Tidak dapat menghapus akun yang sedang aktif login!', 'error');
-                return;
-            }
-            if (appState.users.length <= 1) {
-                showToast('Minimal harus tersisa 1 akun user dalam database!', 'error');
-                return;
-            }
-
-            appState.users = appState.users.filter(u => u.username.toLowerCase() !== targetUsername.toLowerCase());
-            await saveAppState();
-            renderUsersManagementTable();
-            showToast(`Akun "${targetUsername}" berhasil dihapus.`, 'info');
-        }
-
-        async function saveStoreSettings() {
-            appState.settings.storeName = document.getElementById('set-store-name').value.trim() || `DONET CELL [${activeDatabaseName}]`;
-            appState.settings.storeAddress = document.getElementById('set-store-address').value.trim();
-            appState.settings.storeFooter = document.getElementById('set-store-footer').value.trim();
-            await saveAppState();
-            closeModal('settings-modal');
-            showToast('Profil toko & pengaturan struk disimpan!', 'success');
+            renderSettingsUsersTable();
+            showToast('Akun user berhasil disimpan!', 'success');
         }
 
         async function saveSupabaseConfig() {
@@ -5109,16 +4926,12 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             appState.settings.supabaseKey = document.getElementById('set-sb-key').value.trim();
             initSupabaseClient();
             await saveAppState();
-            showToast('Konfigurasi Supabase disimpan & disinkronkan!', 'success');
+            showToast('Konfigurasi Supabase disimpan!', 'success');
         }
 
         async function syncNowWithSupabase() {
-            if (!supabaseClient) {
-                showToast('Isi Project URL & Anon Key Supabase terlebih dahulu!', 'error');
-                return;
-            }
             await pushToSupabase();
-            showToast('Sinkronisasi ke Supabase Cloud selesai!', 'success');
+            showToast('Sinkronisasi cloud selesai!', 'info');
         }
 
         function showSqlSchemaHelp() {
@@ -5126,64 +4939,43 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         }
 
         function downloadBackupJSON() {
-            const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
             const a = document.createElement('a');
-            a.setAttribute('href', dataStr);
-            a.setAttribute('download', `Backup_DonetCell_${activeDatabaseName}_${new Date().toISOString().slice(0,10)}.json`);
-            document.body.appendChild(a);
+            a.href = URL.createObjectURL(blob);
+            a.download = `Backup_iPos5_${activeDatabaseName}_${new Date().toISOString().slice(0, 10)}.json`;
             a.click();
-            a.remove();
-            showToast('File Backup JSON berhasil diunduh!', 'success');
         }
 
         async function resetDemoData() {
-            const preservedSbUrl = appState.settings.supabaseUrl;
-            const preservedSbKey = appState.settings.supabaseKey;
-            const preservedUsers = appState.users;
             appState = createDefaultState(activeDatabaseName);
-            appState.settings.supabaseUrl = preservedSbUrl;
-            appState.settings.supabaseKey = preservedSbKey;
-            appState.users = preservedUsers;
             await saveAppState();
             closeModal('settings-modal');
-            showToast(`Data database [${activeDatabaseName}] dikembalikan ke pengaturan awal!`, 'info');
+            showToast('Data berhasil di-reset ke bawaan awal!', 'info');
         }
 
         // =========================================================================
-        // 15. REAL-TIME CLOCK, NETWORK MONITOR & APP BOOTSTRAP
+        // 13. INITIALIZATION ON WINDOW LOAD
         // =========================================================================
-        function updateClockAndNetwork() {
-            const now = new Date();
-            document.getElementById('status-clock').textContent = now.toLocaleTimeString('id-ID');
+        window.onload = async function () {
+            setInterval(() => {
+                const clockEl = document.getElementById('status-clock');
+                if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('id-ID');
+                const netEl = document.getElementById('footer-internet-status');
+                if (netEl) {
+                    netEl.innerHTML = navigator.onLine
+                        ? `<i class="fas fa-wifi text-emerald-600"></i> Online`
+                        : `<i class="fas fa-wifi-slash text-amber-600"></i> Offline (Lokal)`;
+                }
+            }, 1000);
 
-            const netEl = document.getElementById('footer-internet-status');
-            if (navigator.onLine) {
-                netEl.innerHTML = `<i class="fas fa-wifi text-emerald-600"></i> Online (Sinkronisasi Cloud Siap)`;
-            } else {
-                netEl.innerHTML = `<i class="fas fa-plane text-amber-600"></i> Offline (Penyimpanan Lokal Aktif)`;
-            }
-        }
-
-        window.addEventListener('online', () => {
-            updateClockAndNetwork();
-            pushToSupabase();
-            showToast('Koneksi internet kembali online! Data otomatis disinkronkan.', 'info');
-        });
-        window.addEventListener('offline', updateClockAndNetwork);
-
-        window.addEventListener('DOMContentLoaded', async () => {
             initPosHeader();
             initServiceFormHeader();
             setPpobMode('pulsa');
-            updateClockAndNetwork();
-            setInterval(updateClockAndNetwork, 1000);
-
             await loadDatabaseForActiveTenant();
             updateDatabaseIdentityUI();
             refreshAllUI();
-
-            openDbModal();
-        });
+            renderDbList();
+        };
     </script>
 </body>
 </html>
