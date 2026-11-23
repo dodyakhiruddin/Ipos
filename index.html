@@ -411,6 +411,11 @@
                         <span class="hidden sm:inline">Sumber Dana</span>
                     </button>
 
+                    <button onclick="switchTab('utangpiutang')" id="nav-utangpiutang" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                        <i class="fas fa-hand-holding-usd w-4 text-center text-amber-300"></i>
+                        <span class="hidden sm:inline">Utang & Piutang</span>
+                    </button>
+
                     <button onclick="switchTab('akuntansi')" id="nav-akuntansi" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-balance-scale w-4 text-center text-purple-300"></i>
                         <span class="hidden sm:inline">Akutansi</span>
@@ -635,6 +640,10 @@
                                 <button onclick="switchTab('sumberdana')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-wallet text-lg text-teal-600"></i>
                                     <span class="font-semibold">Sumber Dana</span>
+                                </button>
+                                <button onclick="switchTab('utangpiutang')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
+                                    <i class="fas fa-hand-holding-usd text-lg text-amber-600"></i>
+                                    <span class="font-semibold">Utang & Piutang</span>
                                 </button>
                                 <button onclick="switchTab('akuntansi')" class="ipos-btn p-2.5 rounded flex flex-col items-center gap-1.5 text-center">
                                     <i class="fas fa-balance-scale text-lg text-purple-600"></i>
@@ -1245,6 +1254,10 @@
                                         <!-- Populated dynamically -->
                                     </select>
                                 </div>
+                                <div>
+                                    <label class="block font-bold mb-1">Jatuh Tempo (Isi jika Utang / Tempo)</label>
+                                    <input type="date" id="buy-due-date" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                                </div>
                                 <button type="submit" class="w-full ipos-btn-primary py-2 rounded font-bold shadow">
                                     <i class="fas fa-plus-circle mr-1"></i> Simpan Pembelian Stok
                                 </button>
@@ -1417,10 +1430,84 @@
                                         <tr><td class="font-mono">1102</td><td>Rekening Bank Agen BRILink</td><td>Harta / Bank</td></tr>
                                         <tr><td class="font-mono">1103</td><td>Deposit Server Pulsa & PPOB</td><td>Harta / Deposit</td></tr>
                                         <tr><td class="font-mono">1104</td><td>Persediaan Voucher & Aksesoris</td><td>Harta / Persediaan</td></tr>
+                                        <tr><td class="font-mono">1105</td><td>Piutang Usaha / Pelanggan</td><td>Harta / Piutang</td></tr>
+                                        <tr><td class="font-mono">2101</td><td>Utang Usaha / Supplier</td><td>Kewajiban / Utang</td></tr>
                                         <tr><td class="font-mono">4101</td><td>Pendapatan Penjualan Retail</td><td>Pendapatan</td></tr>
                                         <tr><td class="font-mono">4102</td><td>Pendapatan Fee Admin BRILink</td><td>Pendapatan</td></tr>
                                         <tr><td class="font-mono">5101</td><td>Harga Pokok Penjualan (HPP)</td><td>Beban Pokok</td></tr>
                                     </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== MENU BARU: UTANG & PIUTANG ==================== -->
+                <section id="view-utangpiutang" class="hidden p-3 sm:p-4 max-w-7xl mx-auto space-y-4">
+                    <!-- Ringkasan Saldo Utang & Piutang -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="ipos-panel rounded-lg p-3.5 border-l-4 border-l-amber-500 bg-amber-50/50 flex items-center justify-between">
+                            <div>
+                                <div class="font-bold text-amber-900 uppercase">Total Sisa Piutang Pelanggan (Tagihan Masuk)</div>
+                                <div id="up-total-piutang" class="text-2xl font-extrabold font-mono text-amber-700 mt-1">Rp 0</div>
+                                <div class="text-[11px] text-slate-600 mt-0.5">Kasbon penjualan kasir, pulsa/PPOB tempo & tagihan manual</div>
+                            </div>
+                            <div class="w-11 h-11 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-lg">
+                                <i class="fas fa-arrow-circle-down"></i>
+                            </div>
+                        </div>
+                        <div class="ipos-panel rounded-lg p-3.5 border-l-4 border-l-rose-600 bg-rose-50/50 flex items-center justify-between">
+                            <div>
+                                <div class="font-bold text-rose-900 uppercase">Total Sisa Utang Toko / Supplier (Kewajiban Bayar)</div>
+                                <div id="up-total-utang" class="text-2xl font-extrabold font-mono text-rose-700 mt-1">Rp 0</div>
+                                <div class="text-[11px] text-slate-600 mt-0.5">Kulakan stok tempo supplier & kewajiban utang operasional</div>
+                            </div>
+                            <div class="w-11 h-11 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-lg">
+                                <i class="fas fa-arrow-circle-up"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ipos-panel rounded-lg overflow-hidden">
+                        <div class="ipos-panel-header px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-hand-holding-usd text-amber-600"></i>
+                                <h2 class="font-bold text-sm text-slate-800">Buku Besar Utang Usaha & Piutang Pelanggan</h2>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs">
+                                <button onclick="switchUpSubTab('piutang')" id="upsub-piutang" class="ipos-tab active px-3 py-1 rounded-t font-bold">Daftar Piutang (Kasbon)</button>
+                                <button onclick="switchUpSubTab('utang')" id="upsub-utang" class="ipos-tab px-3 py-1 rounded-t font-bold">Daftar Utang Supplier</button>
+                                <button onclick="openDebtModal('PIUTANG')" class="ipos-btn-primary px-3 py-1 rounded font-bold"><i class="fas fa-plus mr-1"></i> Catat Manual</button>
+                            </div>
+                        </div>
+
+                        <div class="p-4 text-xs space-y-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <input type="text" id="up-search-input" onkeyup="renderUtangPiutangTable()" placeholder="Cari nama pelanggan/supplier, no. ref, atau keterangan..." class="w-full max-w-sm bg-white border border-slate-300 rounded px-3 py-1.5">
+                                <select id="up-filter-status" onchange="renderUtangPiutangTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                                    <option value="BELUM_LUNAS">Belum Lunas / Sisa Tagihan</option>
+                                    <option value="ALL">Semua Status (Termasuk Lunas)</option>
+                                    <option value="LUNAS">Sudah Lunas</option>
+                                </select>
+                            </div>
+
+                            <div class="overflow-x-auto border border-slate-300 rounded max-h-[58vh]">
+                                <table class="w-full table-grid border-collapse">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-28 text-left">Tanggal</th>
+                                            <th class="w-32 text-left">No. Referensi</th>
+                                            <th class="text-left" id="up-party-col-header">Nama Pelanggan</th>
+                                            <th class="text-left">Keterangan</th>
+                                            <th class="w-24 text-center">Jatuh Tempo</th>
+                                            <th class="w-28 text-right">Total Awal</th>
+                                            <th class="w-28 text-right">Sudah Dibayar</th>
+                                            <th class="w-28 text-right">Sisa Tagihan</th>
+                                            <th class="w-24 text-center">Status</th>
+                                            <th class="w-32 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="up-tbody"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -1736,8 +1823,14 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 <input type="hidden" id="edit-item-index" value="-1">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-bold mb-1">Kode Item / Barcode</label>
-                        <input type="text" id="item-code" required placeholder="VCR-TSEL-5" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono uppercase">
+                        <label class="block font-bold mb-1 flex items-center justify-between">
+                            <span>Kode Item / Barcode</span>
+                            <button type="button" onclick="fillAutoGeneratedItemCode()" class="text-[10.5px] text-sky-700 hover:underline font-semibold">
+                                <i class="fas fa-magic mr-0.5"></i> Generate
+                            </button>
+                        </label>
+                        <input type="text" id="item-code" placeholder="Kosongkan = Auto By Sistem" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono uppercase">
+                        <div class="text-[10px] text-slate-500 mt-0.5">Bisa ketik manual atau biarkan kosong untuk otomatis.</div>
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Kategori / Jenis</label>
@@ -2195,6 +2288,102 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         </div>
     </div>
 
+    <!-- ==================== MODAL: CATAT UTANG / PIUTANG MANUAL ==================== -->
+    <div id="debt-modal" class="fixed inset-0 bg-slate-900/55 z-50 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between">
+                <span class="font-bold text-xs sm:text-sm"><i class="fas fa-file-signature mr-1.5 text-amber-600"></i> Catat Utang / Piutang Baru</span>
+                <button onclick="closeModal('debt-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <form onsubmit="saveManualDebtRecord(event)" class="p-4 space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold mb-1">Jenis Pencatatan</label>
+                        <select id="debt-type-input" onchange="toggleDebtWalletOption()" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-bold">
+                            <option value="PIUTANG">PIUTANG (Pelanggan Kasbon)</option>
+                            <option value="UTANG">UTANG (Utang ke Supplier/Pihak Lain)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Jatuh Tempo</label>
+                        <input type="date" id="debt-due-input" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Nama Pelanggan / Supplier</label>
+                    <input type="text" id="debt-party-input" required placeholder="Contoh: Berkah Cell / CV. Mitra Reload" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold mb-1">Nominal (Rp)</label>
+                        <input type="number" id="debt-amount-input" min="100" required placeholder="0" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Pengaruh Saldo Kas/Dompet</label>
+                        <select id="debt-wallet-effect" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                            <option value="NONE">Hanya Catat Buku (Tanpa Ubah Saldo)</option>
+                            <!-- Dynamic wallets populated via JS -->
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Keterangan / Rincian</label>
+                    <input type="text" id="debt-desc-input" required placeholder="Contoh: Kasbon voucher fisik 10 pcs / Pinjaman modal" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                    <button type="button" onclick="closeModal('debt-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
+                    <button type="submit" class="ipos-btn-primary px-4 py-1.5 rounded font-bold">Simpan Catatan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: PEMBAYARAN / PELUNASAN UTANG & PIUTANG ==================== -->
+    <div id="debt-pay-modal" class="fixed inset-0 bg-slate-900/55 z-50 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between bg-emerald-50">
+                <span id="debt-pay-title" class="font-bold text-xs sm:text-sm text-emerald-950"><i class="fas fa-money-bill-wave mr-1.5 text-emerald-600"></i> Pembayaran / Pelunasan</span>
+                <button onclick="closeModal('debt-pay-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <form onsubmit="submitDebtPayment(event)" class="p-4 space-y-3 text-xs">
+                <input type="hidden" id="dp-record-id">
+                <div class="bg-slate-100 border border-slate-300 rounded p-2.5 space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">No. Referensi:</span>
+                        <span id="dp-ref-display" class="font-mono font-bold"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Pihak Terkait:</span>
+                        <span id="dp-party-display" class="font-bold"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Sisa Tagihan Saat Ini:</span>
+                        <span id="dp-remaining-display" class="font-mono font-extrabold text-red-700"></span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Nominal Pembayaran / Cicilan (Rp)</label>
+                    <div class="flex gap-1.5">
+                        <input type="number" id="dp-pay-amount" min="1" required class="flex-1 border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-800">
+                        <button type="button" onclick="setFullDebtPayAmount()" class="ipos-btn px-2.5 py-1.5 rounded font-bold text-sky-800 shrink-0">Lunas Penuh</button>
+                    </div>
+                </div>
+                <div>
+                    <label id="dp-wallet-label" class="block font-bold mb-1">Masuk ke Sumber Dana</label>
+                    <select id="dp-wallet-select" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Catatan Pembayaran</label>
+                    <input type="text" id="dp-note-input" placeholder="Contoh: Transfer BRI / Tunai di kasir" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                    <button type="button" onclick="closeModal('debt-pay-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
+                    <button type="submit" class="ipos-btn-success px-4 py-1.5 rounded font-bold shadow">Proses Pembayaran</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="fixed bottom-8 right-4 z-[80] space-y-2 pointer-events-none"></div>
 
@@ -2593,6 +2782,20 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                         status: 'PROSES'
                     }
                 ],
+                debtsReceivables: [
+                    {
+                        id: 'PIU-20261123-001',
+                        type: 'PIUTANG',
+                        date: new Date().toISOString(),
+                        dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+                        party: 'Berkah Cell (Reseller)',
+                        description: 'Kasbon Voucher Telkomsel 3GB (5 PCS)',
+                        totalAmount: 62500,
+                        paidAmount: 0,
+                        status: 'BELUM_LUNAS',
+                        payments: []
+                    }
+                ],
                 fundTransfers: [],
                 transactions: [
                     {
@@ -2726,6 +2929,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 if (!Array.isArray(appState.suppliers)) appState.suppliers = base.suppliers;
                 if (!Array.isArray(appState.customers)) appState.customers = base.customers;
                 if (!Array.isArray(appState.serviceTickets)) appState.serviceTickets = base.serviceTickets;
+                if (!Array.isArray(appState.debtsReceivables)) appState.debtsReceivables = [];
                 if (!Array.isArray(appState.fundTransfers)) appState.fundTransfers = [];
                 if (!Array.isArray(appState.voucherProductions)) appState.voucherProductions = [];
             } else {
@@ -2857,6 +3061,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             servicehp: 'Service HP',
             cetakvoucher: 'Pembuatan Voucher Fisik',
             sumberdana: 'Sumber Dana',
+            utangpiutang: 'Utang & Piutang',
             akuntansi: 'Akutansi',
             laporan: 'Laporan',
             petunjuk: 'Petunjuk dan pengunaan'
@@ -3056,6 +3261,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             renderSumberDanaHistory();
             populateVoucherAssemblyForm();
             renderVoucherAssemblyHistory();
+            renderUtangPiutangTable();
         }
 
         function renderDynamicWalletsUI() {
@@ -3183,179 +3389,21 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 const prevPos = posPayEl.value;
                 posPayEl.innerHTML = appState.walletList.map(w =>
                     `<option value="${w.id}">${w.type === 'TUNAI' ? 'TUNAI - ' : 'NON-TUNAI - '}${w.name}</option>`
-                ).join('');
+                ).join('') + `<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>`;
                 if (prevPos && Array.from(posPayEl.options).some(o => o.value === prevPos)) {
                     posPayEl.value = prevPos;
                 }
             }
 
             syncSelect('ppob-source-wallet');
-            syncSelect('ppob-dest-wallet');
+            syncSelect('ppob-dest-wallet', '', '<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>');
             syncSelect('vf-source-wallet');
             syncSelect('sc-dest-wallet');
-        }
+            syncSelect('dp-wallet-select');
 
-        function openWalletModal(walletId = null) {
-            const titleEl = document.getElementById('wallet-modal-title');
-            const editIdEl = document.getElementById('edit-wallet-id');
-            const codeEl = document.getElementById('wallet-code-input');
-            const typeEl = document.getElementById('wallet-type-input');
-            const nameEl = document.getElementById('wallet-name-input');
-            const balEl = document.getElementById('wallet-balance-input');
-            const colorEl = document.getElementById('wallet-color-input');
-            const descEl = document.getElementById('wallet-desc-input');
-
-            if (walletId) {
-                const w = appState.walletList.find(item => item.id === walletId);
-                if (!w) return;
-                titleEl.innerHTML = `<i class="fas fa-edit mr-1.5 text-teal-600"></i> Edit Sumber Dana: ${w.name}`;
-                editIdEl.value = w.id;
-                codeEl.value = w.id;
-                codeEl.disabled = true;
-                codeEl.classList.add('bg-slate-100', 'text-slate-500');
-                typeEl.value = w.type || 'BANK';
-                nameEl.value = w.name;
-                balEl.value = Number(appState.wallets[w.id]) || 0;
-                colorEl.value = w.color || 'teal';
-                descEl.value = w.desc || '';
-            } else {
-                titleEl.innerHTML = `<i class="fas fa-plus-circle mr-1.5 text-teal-600"></i> Tambah Sumber Dana Baru`;
-                editIdEl.value = '';
-                codeEl.value = '';
-                codeEl.disabled = false;
-                codeEl.classList.remove('bg-slate-100', 'text-slate-500');
-                typeEl.value = 'EWALLET';
-                nameEl.value = '';
-                balEl.value = 0;
-                colorEl.value = 'sky';
-                descEl.value = '';
-            }
-
-            document.getElementById('wallet-modal').classList.remove('hidden');
-            setTimeout(() => (walletId ? nameEl : codeEl).focus(), 50);
-        }
-
-        async function saveWalletAccount(e) {
-            e.preventDefault();
-            const editId = document.getElementById('edit-wallet-id').value.trim();
-            const rawCode = document.getElementById('wallet-code-input').value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
-            const type = document.getElementById('wallet-type-input').value;
-            const name = document.getElementById('wallet-name-input').value.trim();
-            const balance = Number(document.getElementById('wallet-balance-input').value) || 0;
-            const color = document.getElementById('wallet-color-input').value;
-            const desc = document.getElementById('wallet-desc-input').value.trim();
-
-            if (!name) {
-                showToast('Nama sumber dana wajib diisi!', 'error');
-                return;
-            }
-
-            if (editId) {
-                const idx = appState.walletList.findIndex(w => w.id === editId);
-                if (idx >= 0) {
-                    appState.walletList[idx] = { ...appState.walletList[idx], name, type, color, desc };
-                    appState.wallets[editId] = balance;
-                    showToast(`Sumber dana "${name}" berhasil diperbarui!`, 'success');
-                }
-            } else {
-                if (!rawCode) {
-                    showToast('Kode akun sumber dana wajib diisi!', 'error');
-                    return;
-                }
-                if (appState.walletList.some(w => w.id === rawCode)) {
-                    showToast(`Kode "${rawCode}" sudah digunakan! Gunakan kode lain.`, 'error');
-                    return;
-                }
-                appState.walletList.push({ id: rawCode, name, type, color, desc });
-                appState.wallets[rawCode] = balance;
-                showToast(`Sumber dana baru "${name}" berhasil ditambahkan!`, 'success');
-            }
-
-            await saveAppState();
-            closeModal('wallet-modal');
-        }
-
-        async function deleteWalletAccount(walletId) {
-            if (!isCurrentUserAdmin()) {
-                showToast('Akses ditolak! Hanya role ADMIN yang dapat menghapus Sumber Dana.', 'error');
-                return;
-            }
-            if (appState.walletList.length <= 1) {
-                showToast('Minimal harus tersisa 1 sumber dana aktif!', 'error');
-                return;
-            }
-            const target = appState.walletList.find(w => w.id === walletId);
-            if (!target) return;
-
-            appState.walletList = appState.walletList.filter(w => w.id !== walletId);
-            delete appState.wallets[walletId];
-            await saveAppState();
-            showToast(`Sumber dana "${target.name}" telah dihapus.`, 'info');
-        }
-
-        // =========================================================================
-        // 6. KASIR PENJUALAN (POS)
-        // =========================================================================
-        function initPosHeader() {
-            const invEl = document.getElementById('pos-invoice-no');
-            const dateEl = document.getElementById('pos-date');
-            if (invEl) invEl.value = generateInvoiceId('POS');
-            if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
-        }
-
-        function populatePosCustomerDropdown() {
-            const sel = document.getElementById('pos-customer');
-            if (!sel) return;
-            const prev = sel.value;
-            sel.innerHTML = (appState.customers || []).map(c =>
-                `<option value="${c.group === 'RESELLER' ? 'COUNTER' : 'UMUM'}" data-name="${c.name}">${c.name} [${c.group}]</option>`
-            ).join('');
-            if (prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
-        }
-
-        function populateCategoryDropdowns(selectedVal = null) {
-            ensureCategoriesIntegrity();
-            const cats = appState.categories;
-
-            const itemCatSel = document.getElementById('item-category');
-            if (itemCatSel) {
-                const prev = selectedVal || itemCatSel.value;
-                itemCatSel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
-                if (prev && cats.includes(prev)) {
-                    itemCatSel.value = prev;
-                }
-            }
-
-            const posCatSel = document.getElementById('pos-quick-cat');
-            if (posCatSel) {
-                const prevPos = posCatSel.value || 'ALL';
-                posCatSel.innerHTML = `<option value="ALL">Semua Kategori</option>` +
-                    cats.map(c => `<option value="${c}">${c}</option>`).join('');
-                if (prevPos === 'ALL' || cats.includes(prevPos)) {
-                    posCatSel.value = prevPos;
-                }
-            }
-
-            const ksCatSel = document.getElementById('kartustok-filter-category');
-            if (ksCatSel) {
-                const prevKsCat = ksCatSel.value || 'ALL';
-                ksCatSel.innerHTML = `<option value="ALL">Semua Kategori</option>` +
-                    cats.map(c => `<option value="${c}">${c}</option>`).join('');
-                if (prevKsCat === 'ALL' || cats.includes(prevKsCat)) {
-                    ksCatSel.value = prevKsCat;
-                }
-            }
-
-            renderCustomCategoriesList();
-        }
-
-        function toggleNewCategoryBox() {
-            const box = document.getElementById('new-category-box');
-            if (!box) return;
-            box.classList.toggle('hidden');
-            if (!box.classList.contains('hidden')) {
-                renderCustomCategoriesList();
-                setTimeout(() => document.getElementById('new-category-input')?.focus(), 50);
+            const buySrcEl = document.getElementById('buy-item-source');
+            if (buySrcEl && !Array.from(buySrcEl.options).some(o => o.value === 'UTANG_TEMPO')) {
+                buySrcEl.innerHTML += `<option value="UTANG_TEMPO">TEMPO / KREDIT SUPPLIER (MASUK UTANG)</option>`;
             }
         }
 
@@ -3588,16 +3636,17 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             }
             const total = posCart.reduce((s, c) => s + (c.qty * c.price), 0);
             const modal = posCart.reduce((s, c) => s + (c.qty * c.cost), 0);
-            const paidInput = Number(document.getElementById('pos-cash-paid')?.value) || total;
-            if (paidInput < total) {
+            const payMethod = document.getElementById('pos-payment-method').value || 'KAS_TOKO';
+            const isTempo = payMethod === 'PIUTANG_TEMPO';
+            const paidInput = isTempo ? 0 : (Number(document.getElementById('pos-cash-paid')?.value) || total);
+            if (!isTempo && paidInput < total) {
                 showToast('Jumlah pembayaran kurang dari total belanja!', 'error');
                 return;
             }
 
             const invNo = document.getElementById('pos-invoice-no').value || generateInvoiceId('POS');
-            const payMethod = document.getElementById('pos-payment-method').value || 'KAS_TOKO';
             const custSel = document.getElementById('pos-customer');
-            const custName = custSel?.options[custSel.selectedIndex]?.text || 'UMUM';
+            const custName = custSel?.options[custSel.selectedIndex]?.dataset?.name || custSel?.options[custSel.selectedIndex]?.text || 'UMUM';
             const nowIso = new Date().toISOString();
 
             posCart.forEach(c => {
@@ -3617,19 +3666,35 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 }
             });
 
-            appState.wallets[payMethod] = (appState.wallets[payMethod] || 0) + total;
+            if (isTempo) {
+                if (!Array.isArray(appState.debtsReceivables)) appState.debtsReceivables = [];
+                appState.debtsReceivables.unshift({
+                    id: invNo,
+                    type: 'PIUTANG',
+                    date: nowIso,
+                    dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+                    party: custName,
+                    description: `Kasbon Kasir: ${posCart.map(c => `${c.name} (${c.qty}x)`).join(', ')}`,
+                    totalAmount: total,
+                    paidAmount: 0,
+                    status: 'BELUM_LUNAS',
+                    payments: []
+                });
+            } else {
+                appState.wallets[payMethod] = (appState.wallets[payMethod] || 0) + total;
+            }
 
             const trx = {
                 id: invNo,
                 date: nowIso,
                 module: 'POS',
-                description: posCart.map(c => `${c.name} (${c.qty}x)`).join(', '),
+                description: `${isTempo ? '[TEMPO/PIUTANG] ' : ''}${posCart.map(c => `${c.name} (${c.qty}x)`).join(', ')}`,
                 customer: custName,
                 modal: modal,
                 total: total,
                 profit: total - modal,
                 paid: paidInput,
-                change: paidInput - total,
+                change: isTempo ? 0 : (paidInput - total),
                 paymentMethod: payMethod,
                 items: JSON.parse(JSON.stringify(posCart))
             };
@@ -3639,7 +3704,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             initPosHeader();
             await saveAppState();
             showReceiptModal(trx);
-            showToast(`Transaksi ${invNo} berhasil disimpan!`, 'success');
+            showToast(isTempo ? `Transaksi tempo ${invNo} dicatat ke Piutang Pelanggan!` : `Transaksi ${invNo} berhasil disimpan!`, 'success');
         }
 
         // =========================================================================
@@ -3741,7 +3806,8 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             if (el) el.textContent = formatRp(profit);
 
             const srcName = getWalletNameById(document.getElementById('ppob-source-wallet')?.value || 'SALDO_PULSA');
-            const dstName = getWalletNameById(document.getElementById('ppob-dest-wallet')?.value || 'KAS_TOKO');
+            const dstVal = document.getElementById('ppob-dest-wallet')?.value || 'KAS_TOKO';
+            const dstName = dstVal === 'PIUTANG_TEMPO' ? 'Buku Piutang Pelanggan (Kasbon)' : getWalletNameById(dstVal);
             const infoEl = document.getElementById('ppob-accounting-info');
             if (infoEl) {
                 infoEl.innerHTML = `<i class="fas fa-info-circle mr-1"></i> Saldo <b>${srcName}</b> berkurang <b>${formatRp(modal)}</b>, dan <b>${dstName}</b> bertambah <b>${formatRp(sell)}</b>.`;
@@ -3765,15 +3831,35 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 return;
             }
 
-            appState.wallets[srcWallet] -= modal;
-            appState.wallets[dstWallet] = (appState.wallets[dstWallet] || 0) + sell;
-
             const isBrilink = mode === 'transfer' || mode === 'tarik';
+            const trxId = generateInvoiceId(isBrilink ? 'BRI' : 'PPB');
+            const nowIso = new Date().toISOString();
+            const isTempo = dstWallet === 'PIUTANG_TEMPO';
+
+            appState.wallets[srcWallet] -= modal;
+            if (isTempo) {
+                if (!Array.isArray(appState.debtsReceivables)) appState.debtsReceivables = [];
+                appState.debtsReceivables.unshift({
+                    id: trxId,
+                    type: 'PIUTANG',
+                    date: nowIso,
+                    dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+                    party: cust,
+                    description: `Kasbon ${provider} • ${desc} (${target})`,
+                    totalAmount: sell,
+                    paidAmount: 0,
+                    status: 'BELUM_LUNAS',
+                    payments: []
+                });
+            } else {
+                appState.wallets[dstWallet] = (appState.wallets[dstWallet] || 0) + sell;
+            }
+
             const trx = {
-                id: generateInvoiceId(isBrilink ? 'BRI' : 'PPB'),
-                date: new Date().toISOString(),
+                id: trxId,
+                date: nowIso,
                 module: isBrilink ? 'BRILINK' : 'PPOB',
-                description: `${provider} • ${desc} (${target})`,
+                description: `${isTempo ? '[PIUTANG] ' : ''}${provider} • ${desc} (${target})`,
                 customer: cust,
                 modal: modal,
                 total: sell,
@@ -3789,7 +3875,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             document.getElementById('ppob-target-number').value = '';
             await saveAppState();
             showReceiptModal(trx);
-            showToast(`Transaksi ${trx.id} berhasil diproses!`, 'success');
+            showToast(isTempo ? `Transaksi ${trx.id} masuk ke Buku Piutang Pelanggan!` : `Transaksi ${trx.id} berhasil diproses!`, 'success');
         }
 
         function renderPpobRecentList() {
@@ -3821,43 +3907,57 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             const list = appState.items.filter(i => i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q));
             tbody.innerHTML = list.map((it, idx) => {
                 const realIdx = appState.items.findIndex(x => x.code === it.code);
+                const isSold = isItemAlreadySoldOrUsed(it.code);
                 return `
                     <tr>
                         <td class="text-center">${idx + 1}</td>
-                        <td class="font-mono font-bold text-sky-900">${it.code}</td>
+                        <td class="font-mono font-bold">${it.code}</td>
                         <td class="font-semibold">${it.name}</td>
-                        <td>${it.category}</td>
-                        <td class="text-center">${it.unit}</td>
-                        <td class="text-right font-mono font-bold ${it.stock <= 5 ? 'text-red-600' : 'text-slate-800'}">${it.stock}</td>
-                        <td class="text-right font-mono">${formatNum(it.cost)}</td>
-                        <td class="text-right font-mono font-bold text-blue-800">${formatNum(it.price)}</td>
-                        <td class="text-right font-mono font-bold text-emerald-700">${formatNum(it.wholesalePrice || it.price)}</td>
+                        <td>${it.category || '-'}</td>
+                        <td class="text-center">${it.unit || 'PCS'}</td>
+                        <td class="text-right font-mono font-bold ${it.stock <= 5 && it.category !== 'Jasa Servis' ? 'text-red-600' : ''}">${it.stock}</td>
+                        <td class="text-right font-mono">${formatRp(it.cost)}</td>
+                        <td class="text-right font-mono font-bold text-blue-800">${formatRp(it.price)}</td>
+                        <td class="text-right font-mono font-bold text-emerald-700">${formatRp(it.wholesalePrice || it.price)}</td>
                         <td class="text-center space-x-1">
-                            <button type="button" onclick="openItemModal(${realIdx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700"><i class="fas fa-edit"></i></button>
-                            <button type="button" onclick="deleteMasterItem(${realIdx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600"><i class="fas fa-trash"></i></button>
+                            <button type="button" onclick="openItemModal(${realIdx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700" title="Edit Item"><i class="fas fa-edit"></i></button>
+                            ${!isSold
+                                ? `<button type="button" onclick="deleteMasterItem(${realIdx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus Item"><i class="fas fa-trash"></i></button>`
+                                : `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" title="Barang sudah memiliki riwayat transaksi keluar / terjual sehingga tidak bisa dihapus"><i class="fas fa-lock"></i></span>`
+                            }
                         </td>
                     </tr>
                 `;
             }).join('');
-
-            const ksFilter = document.getElementById('kartustok-filter-item');
-            if (ksFilter) {
-                const prev = ksFilter.value;
-                const catFilter = document.getElementById('kartustok-filter-category')?.value || 'ALL';
-                const filteredItems = appState.items.filter(i => catFilter === 'ALL' || i.category === catFilter);
-                ksFilter.innerHTML = `<option value="ALL">Semua Item Barang${catFilter !== 'ALL' ? ' (' + catFilter + ')' : ''}</option>` +
-                    filteredItems.map(i => `<option value="${i.code}">${i.code} - ${i.name}</option>`).join('');
-                if (prev && (prev === 'ALL' || filteredItems.some(i => i.code === prev))) {
-                    ksFilter.value = prev;
-                } else {
-                    ksFilter.value = 'ALL';
-                }
-            }
         }
 
-        function onKartuStokCategoryChange() {
-            renderItemsTable();
-            renderStockLedgerTable();
+        function generateAutoItemCode(categoryName = '') {
+            const cat = (categoryName || '').toLowerCase();
+            let prefix = 'BRG';
+            if (cat.includes('voucher')) prefix = 'VCR';
+            else if (cat.includes('perdana')) prefix = 'PRD';
+            else if (cat.includes('aksesoris')) prefix = 'AKS';
+            else if (cat.includes('servis') || cat.includes('jasa')) prefix = 'JSA';
+            else if (cat.includes('sparepart')) prefix = 'SPR';
+            else if (categoryName.trim().length >= 3) {
+                prefix = categoryName.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'BRG';
+            }
+
+            let counter = (appState.items || []).length + 1;
+            let candidate = `${prefix}-${String(counter).padStart(4, '0')}`;
+            while ((appState.items || []).some(i => (i.code || '').toUpperCase() === candidate)) {
+                counter++;
+                candidate = `${prefix}-${String(counter).padStart(4, '0')}`;
+            }
+            return candidate;
+        }
+
+        function fillAutoGeneratedItemCode() {
+            const catVal = document.getElementById('item-category')?.value || '';
+            const codeInp = document.getElementById('item-code');
+            if (codeInp) {
+                codeInp.value = generateAutoItemCode(catVal);
+            }
         }
 
         function openItemModal(idx = -1) {
@@ -3891,9 +3991,14 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         async function saveMasterItem(e) {
             e.preventDefault();
             const idx = Number(document.getElementById('edit-item-index').value);
+            const selectedCategory = document.getElementById('item-category').value;
+            let rawCode = document.getElementById('item-code').value.trim().toUpperCase();
+            if (!rawCode) {
+                rawCode = generateAutoItemCode(selectedCategory);
+            }
             const itemObj = {
-                code: document.getElementById('item-code').value.trim().toUpperCase(),
-                category: document.getElementById('item-category').value,
+                code: rawCode,
+                category: selectedCategory,
                 name: document.getElementById('item-name').value.trim(),
                 unit: document.getElementById('item-unit').value.trim().toUpperCase() || 'PCS',
                 stock: Number(document.getElementById('item-stock').value) || 0,
@@ -3903,22 +4008,63 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             };
 
             if (idx >= 0) {
+                const isCodeConflict = appState.items.some((i, iIdx) => iIdx !== idx && i.code.toLowerCase() === itemObj.code.toLowerCase());
+                if (isCodeConflict) {
+                    showToast(`Kode barang "${itemObj.code}" sudah dipakai item lain!`, 'error');
+                    return;
+                }
                 appState.items[idx] = itemObj;
                 showToast('Data barang berhasil diperbarui!', 'success');
             } else {
-                if (appState.items.some(i => i.code === itemObj.code)) {
-                    showToast('Kode item sudah terdaftar!', 'error');
+                const isDuplicate = appState.items.some(i =>
+                    i.code.toLowerCase() === itemObj.code.toLowerCase() ||
+                    (i.name.trim().toLowerCase() === itemObj.name.toLowerCase() &&
+                     (i.category || '').trim().toLowerCase() === itemObj.category.toLowerCase())
+                );
+                if (isDuplicate) {
+                    showToast('Barang dengan kode atau nama & kategori yang sama sudah terdaftar!', 'error');
                     return;
                 }
                 appState.items.push(itemObj);
-                showToast('Item barang baru berhasil ditambahkan!', 'success');
+                showToast(`Item barang "${itemObj.name}" (${itemObj.code}) berhasil ditambahkan!`, 'success');
             }
             closeModal('item-modal');
             await saveAppState();
         }
 
+        function isItemAlreadySoldOrUsed(itemCode) {
+            if (!itemCode) return false;
+            const codeUpper = itemCode.trim().toUpperCase();
+
+            // 1. Cek di Kartu Stok apakah pernah ada transaksi keluar (Penjualan, Perakitan, Sparepart Service, dll)
+            const hasOutLedger = (appState.stockLedger || []).some(
+                entry => (entry.code || '').trim().toUpperCase() === codeUpper && (Number(entry.outQty) || 0) > 0
+            );
+            if (hasOutLedger) return true;
+
+            // 2. Cek di riwayat Transaksi Penjualan (POS)
+            const hasPosTrx = (appState.transactions || []).some(
+                trx => trx.module === 'POS' && Array.isArray(trx.items) &&
+                    trx.items.some(it => (it.code || '').trim().toUpperCase() === codeUpper)
+            );
+            if (hasPosTrx) return true;
+
+            // 3. Cek di tiket Service HP yang memakai sparepart terkait
+            const hasServiceUsage = (appState.serviceTickets || []).some(
+                srv => (srv.sparepartCode || '').trim().toUpperCase() === codeUpper && (Number(srv.sparepartQty) || 0) > 0
+            );
+            if (hasServiceUsage) return true;
+
+            return false;
+        }
+
         async function deleteMasterItem(idx) {
             if (idx < 0 || !appState.items[idx]) return;
+            const target = appState.items[idx];
+            if (isItemAlreadySoldOrUsed(target.code)) {
+                showToast(`Barang "${target.name}" (${target.code}) sudah pernah terjual / keluar stok sehingga tidak dapat dihapus!`, 'error');
+                return;
+            }
             const removed = appState.items.splice(idx, 1)[0];
             await saveAppState();
             showToast(`Item ${removed.name} dihapus.`, 'info');
@@ -4056,7 +4202,10 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         }
 
         async function deleteMasterCustomer(idx) {
-            if (idx < 0) return;
+            if (idx <= 0) {
+                showToast('Pelanggan default UMUM tidak dapat dihapus!', 'error');
+                return;
+            }
             appState.customers.splice(idx, 1);
             await saveAppState();
             showToast('Pelanggan dihapus.', 'info');
@@ -4066,138 +4215,466 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             if (!window.XLSX) return;
             const ws = XLSX.utils.json_to_sheet(appState.items);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Items');
-            XLSX.writeFile(wb, `Master_Items_${activeDatabaseName}.xlsx`);
-        }
-
-        function downloadItemTemplateExcel() {
-            if (!window.XLSX) return;
-            const ws = XLSX.utils.json_to_sheet([{ code: 'VCR-CONTOH', name: 'Voucher Contoh 5GB', category: 'Voucher Fisik', unit: 'PCS', stock: 10, cost: 15000, price: 18000, wholesalePrice: 16500 }]);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Template');
-            XLSX.writeFile(wb, 'Template_Import_Items.xlsx');
-        }
-
-        function handleImportItemsExcel(e) {
-            const file = e.target.files[0];
-            if (!file || !window.XLSX) return;
-            const reader = new FileReader();
-            reader.onload = async (evt) => {
-                const wb = XLSX.read(evt.target.result, { type: 'binary' });
-                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                rows.forEach(r => {
-                    if (r.code && r.name) {
-                        appState.items.push({
-                            code: String(r.code).toUpperCase(),
-                            name: String(r.name),
-                            category: r.category || 'Voucher Fisik',
-                            unit: r.unit || 'PCS',
-                            stock: Number(r.stock) || 0,
-                            cost: Number(r.cost) || 0,
-                            price: Number(r.price) || 0,
-                            wholesalePrice: Number(r.wholesalePrice || r.price) || 0
-                        });
-                    }
-                });
-                await saveAppState();
-                showToast(`${rows.length} baris item berhasil diimpor!`, 'success');
-            };
-            reader.readAsBinaryString(file);
+            XLSX.utils.book_append_sheet(wb, ws, 'MasterItem');
+            XLSX.writeFile(wb, `MasterItem_${activeDatabaseName}.xlsx`);
         }
 
         function exportSuppliersToExcel() {
             if (!window.XLSX) return;
             const ws = XLSX.utils.json_to_sheet(appState.suppliers);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Suppliers');
-            XLSX.writeFile(wb, `Master_Suppliers_${activeDatabaseName}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, 'Supplier');
+            XLSX.writeFile(wb, `Supplier_${activeDatabaseName}.xlsx`);
         }
 
         function exportCustomersToExcel() {
             if (!window.XLSX) return;
             const ws = XLSX.utils.json_to_sheet(appState.customers);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Customers');
-            XLSX.writeFile(wb, `Master_Customers_${activeDatabaseName}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, 'Pelanggan');
+            XLSX.writeFile(wb, `Pelanggan_${activeDatabaseName}.xlsx`);
+        }
+
+        function handleImportItemsExcel(e) {
+            const file = e.target.files?.[0];
+            if (!file || !window.XLSX) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const wb = XLSX.read(ev.target.result, { type: 'binary' });
+                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    let added = 0;
+                    rows.forEach(r => {
+                        const code = String(r.code || r.Kode || '').trim().toUpperCase();
+                        const name = String(r.name || r.Nama || r['Nama Barang'] || '').trim();
+                        if (code && name && !appState.items.some(i => i.code === code)) {
+                            appState.items.push({
+                                code,
+                                name,
+                                category: String(r.category || r.Kategori || 'Voucher Fisik'),
+                                unit: String(r.unit || r.Satuan || 'PCS').toUpperCase(),
+                                stock: Number(r.stock || r.Stok || 0),
+                                cost: Number(r.cost || r.HPP || 0),
+                                price: Number(r.price || r['Harga Umum'] || 0),
+                                wholesalePrice: Number(r.wholesalePrice || r['Harga Grosir'] || r.price || 0)
+                            });
+                            added++;
+                        }
+                    });
+                    await saveAppState();
+                    showToast(`Berhasil import ${added} item barang dari Excel!`, 'success');
+                } catch (err) {
+                    showToast('Gagal membaca file Excel!', 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function renderStockLedgerTable() {
+            const tbody = document.getElementById('kartustok-tbody');
+            if (!tbody) return;
+            const catFilter = document.getElementById('kartustok-filter-category')?.value || 'ALL';
+            const itemFilter = document.getElementById('kartustok-filter-item')?.value || 'ALL';
+            const itemCategoryMap = new Map(appState.items.map(it => [it.code, it.category || '']));
+            const list = (appState.stockLedger || []).filter(l => {
+                const matchCat = catFilter === 'ALL' || itemCategoryMap.get(l.code) === catFilter;
+                const matchItem = itemFilter === 'ALL' || l.code === itemFilter;
+                return matchCat && matchItem;
+            });
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 italic">Belum ada mutasi kartu stok untuk filter yang dipilih.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = list.map(l => `
+                <tr>
+                    <td class="font-mono text-[11px]">${new Date(l.date).toLocaleString('id-ID')}</td>
+                    <td class="font-mono font-semibold">${l.ref}</td>
+                    <td class="font-mono">${l.code}</td>
+                    <td>${l.name}</td>
+                    <td class="text-center text-[11px] font-bold">${l.type}</td>
+                    <td class="text-right font-mono text-emerald-700 font-bold">${l.inQty > 0 ? '+' + l.inQty : '-'}</td>
+                    <td class="text-right font-mono text-red-700 font-bold">${l.outQty > 0 ? '-' + l.outQty : '-'}</td>
+                    <td class="text-right font-mono font-extrabold">${l.balance}</td>
+                </tr>
+            `).join('');
         }
 
         // =========================================================================
-        // 9. PEMBELIAN / KULAKAN STOK, DEPOSIT SALDO & MUTASI SUMBER DANA
+        // 9. SERVICE HP, PEMBUATAN VOUCHER FISIK, PEMBELIAN & MUTASI SUMBER DANA
         // =========================================================================
-        function populatePurchaseDropdowns() {
-            const supSel = document.getElementById('buy-item-supplier');
-            if (supSel) {
-                supSel.innerHTML = (appState.suppliers || []).map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
-            }
-            const itemSel = document.getElementById('buy-item-select');
-            if (itemSel) {
-                itemSel.innerHTML = (appState.items || []).map(i => `<option value="${i.code}">${i.code} - ${i.name} (Stok: ${i.stock})</option>`).join('');
+        function initServiceFormHeader() {
+            const idEl = document.getElementById('srv-trx-no');
+            const dateEl = document.getElementById('srv-date-display');
+            if (idEl) idEl.value = generateInvoiceId('SRV');
+            if (dateEl) {
+                dateEl.value = new Date().toLocaleString('id-ID', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
             }
         }
 
-        async function submitPurchaseStock(e) {
+        async function submitServiceHp(e) {
             e.preventDefault();
-            const supplier = document.getElementById('buy-item-supplier')?.value || 'Supplier';
-            const code = document.getElementById('buy-item-select')?.value;
-            const qty = Math.max(1, Number(document.getElementById('buy-item-qty')?.value) || 1);
-            const cost = Math.max(0, Number(document.getElementById('buy-item-cost')?.value) || 0);
-            const srcWallet = document.getElementById('buy-item-source')?.value || 'KAS_TOKO';
-            const totalCost = qty * cost;
+            const srvId = document.getElementById('srv-trx-no').value || generateInvoiceId('SRV');
+            const nowIso = new Date().toISOString();
+            const ticket = {
+                id: srvId,
+                date: nowIso,
+                customer: document.getElementById('srv-cust-name').value.trim(),
+                phone: document.getElementById('srv-cust-phone').value.trim() || '-',
+                device: document.getElementById('srv-device').value.trim(),
+                issue: document.getElementById('srv-issue').value.trim(),
+                sparepartCode: '',
+                sparepartQty: 0,
+                cost: 0,
+                price: 0,
+                destWallet: '',
+                status: 'PROSES'
+            };
+            appState.serviceTickets.unshift(ticket);
+            e.target.reset();
+            initServiceFormHeader();
+            await saveAppState();
+            printServiceIntakeReceipt(ticket.id);
+            showToast(`Tanda Terima Service ${ticket.id} berhasil dibuat & dicetak!`, 'success');
+        }
 
-            if ((appState.wallets[srcWallet] || 0) < totalCost) {
-                showToast(`Saldo ${getWalletNameById(srcWallet)} tidak mencukupi untuk kulakan!`, 'error');
+        function printServiceIntakeReceipt(ticketId) {
+            const ticket = (appState.serviceTickets || []).find(t => t.id === ticketId);
+            if (!ticket) return;
+            const area = document.getElementById('receipt-print-area');
+            if (!area) return;
+
+            const tglFormatted = new Date(ticket.date).toLocaleString('id-ID', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            area.innerHTML = `
+                <div class="text-center border-b border-dashed border-slate-500 pb-2 mb-2">
+                    <div class="font-extrabold text-sm">${appState.settings.storeName}</div>
+                    <div class="text-[10px]">${appState.settings.storeAddress}</div>
+                    <div class="text-[10px]">Telp/WA: ${appState.settings.storePhone || '-'}</div>
+                    <div class="mt-1.5 font-extrabold text-xs tracking-wide border-t border-b border-slate-800 py-0.5">
+                        TANDA TERIMA SERVICE HP
+                    </div>
+                </div>
+                <div class="text-[10.5px] space-y-1 border-b border-dashed border-slate-500 pb-2 mb-2">
+                    <div class="flex justify-between">
+                        <span>No. Transaksi:</span>
+                        <span class="font-bold">${ticket.id}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Tanggal Masuk:</span>
+                        <span>${tglFormatted}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Pelanggan:</span>
+                        <span class="font-bold">${ticket.customer}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>No. HP / WA:</span>
+                        <span>${ticket.phone || '-'}</span>
+                    </div>
+                </div>
+                <div class="text-[10.5px] space-y-1 border-b border-dashed border-slate-500 pb-2 mb-2">
+                    <div>
+                        <div class="text-slate-600">Merk & Tipe HP:</div>
+                        <div class="font-bold text-xs">${ticket.device}</div>
+                    </div>
+                    <div class="pt-1">
+                        <div class="text-slate-600">Keluhan / Kerusakan:</div>
+                        <div class="font-semibold">${ticket.issue}</div>
+                    </div>
+                </div>
+                <div class="text-[9.5px] text-slate-700 space-y-1 border-b border-dashed border-slate-500 pb-2 mb-2">
+                    <div>* Simpan tanda terima ini sebagai bukti pengambilan unit HP.</div>
+                    <div>* Konfirmasi biaya perbaikan akan diinformasikan sebelum pengerjaan selesai.</div>
+                </div>
+                <div class="text-center text-[10px]">
+                    <div class="font-bold">Terima Kasih</div>
+                    <div class="text-[9px] text-slate-500">${appState.settings.storeWebsite || ''}</div>
+                </div>
+            `;
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function openCompleteServiceModal(ticketId) {
+            const ticket = (appState.serviceTickets || []).find(t => t.id === ticketId);
+            if (!ticket) return;
+
+            document.getElementById('sc-ticket-id').value = ticket.id;
+            document.getElementById('sc-display-id').textContent = ticket.id;
+            document.getElementById('sc-display-device').textContent = `${ticket.customer} — ${ticket.device}`;
+            document.getElementById('sc-display-issue').textContent = ticket.issue;
+
+            const spSel = document.getElementById('sc-sparepart-item');
+            const physicalItems = getPhysicalStockItems();
+            spSel.innerHTML = `<option value="">-- Tanpa Sparepart Stok / Jasa Murni --</option>` +
+                physicalItems.map(it =>
+                    `<option value="${it.code}" data-cost="${it.cost}" data-stock="${it.stock}">[${it.code}] ${it.name} (Stok: ${it.stock} • HPP: ${formatRp(it.cost)})</option>`
+                ).join('');
+
+            document.getElementById('sc-sparepart-qty').value = 0;
+            document.getElementById('sc-modal-cost').value = 0;
+            document.getElementById('sc-service-price').value = 0;
+
+            if (appState.wallets['KAS_TOKO'] !== undefined) {
+                document.getElementById('sc-dest-wallet').value = 'KAS_TOKO';
+            }
+
+            recalcServiceCompletion();
+            document.getElementById('service-complete-modal').classList.remove('hidden');
+        }
+
+        function recalcServiceCompletion() {
+            const spSel = document.getElementById('sc-sparepart-item');
+            const qtyInput = document.getElementById('sc-sparepart-qty');
+            const modalInput = document.getElementById('sc-modal-cost');
+            const priceInput = document.getElementById('sc-service-price');
+            const profitEl = document.getElementById('sc-profit-preview');
+
+            const selectedOpt = spSel?.options[spSel.selectedIndex];
+            const spCode = spSel?.value || '';
+
+            if (spCode && selectedOpt) {
+                if ((Number(qtyInput.value) || 0) <= 0) {
+                    qtyInput.value = 1;
+                }
+                const unitCost = Number(selectedOpt.dataset.cost) || 0;
+                const qty = Math.max(0, Number(qtyInput.value) || 0);
+                modalInput.value = unitCost * qty;
+            } else if (!spCode && document.activeElement === spSel) {
+                qtyInput.value = 0;
+                modalInput.value = 0;
+            }
+
+            const modalVal = Number(modalInput.value) || 0;
+            const priceVal = Number(priceInput.value) || 0;
+            const profit = priceVal - modalVal;
+
+            profitEl.textContent = formatRp(profit);
+            profitEl.className = profit >= 0
+                ? 'bg-emerald-100 border border-emerald-300 rounded px-2.5 py-1.5 font-mono font-extrabold text-emerald-800'
+                : 'bg-red-100 border border-red-300 rounded px-2.5 py-1.5 font-mono font-extrabold text-red-800';
+        }
+
+        async function submitCompleteServiceHp(e) {
+            e.preventDefault();
+            const ticketId = document.getElementById('sc-ticket-id').value;
+            const ticket = (appState.serviceTickets || []).find(t => t.id === ticketId);
+            if (!ticket) return;
+
+            const spCode = document.getElementById('sc-sparepart-item').value;
+            const spQty = spCode ? (Math.max(1, Number(document.getElementById('sc-sparepart-qty').value) || 1)) : 0;
+            const modalCost = Number(document.getElementById('sc-modal-cost').value) || 0;
+            const servicePrice = Number(document.getElementById('sc-service-price').value) || 0;
+            const destWallet = document.getElementById('sc-dest-wallet').value;
+
+            if (!destWallet) {
+                showToast('Pilih sumber dana tujuan penerimaan biaya service!', 'error');
                 return;
             }
 
-            const master = appState.items.find(i => i.code === code);
-            if (!master) return;
+            let sparepartLabel = '';
+            if (spCode) {
+                const masterItem = appState.items.find(i => i.code === spCode);
+                if (masterItem) {
+                    if ((Number(masterItem.stock) || 0) < spQty) {
+                        showToast(`Stok sparepart "${masterItem.name}" tidak cukup (tersisa ${masterItem.stock} ${masterItem.unit})!`, 'error');
+                        return;
+                    }
+                    masterItem.stock = (Number(masterItem.stock) || 0) - spQty;
+                    sparepartLabel = ` • Sparepart: ${masterItem.name} (${spQty} ${masterItem.unit})`;
 
-            appState.wallets[srcWallet] -= totalCost;
-            master.stock = (Number(master.stock) || 0) + qty;
-            master.cost = cost;
+                    appState.stockLedger.unshift({
+                        date: new Date().toISOString(),
+                        ref: ticket.id,
+                        code: masterItem.code,
+                        name: masterItem.name,
+                        type: 'SPAREPART SERVICE HP',
+                        inQty: 0,
+                        outQty: spQty,
+                        balance: masterItem.stock
+                    });
+                }
+            }
 
-            const ref = generateInvoiceId('BLI');
-            appState.stockLedger.unshift({
-                date: new Date().toISOString(),
-                ref: ref,
-                code: master.code,
-                name: master.name,
-                type: `PEMBELIAN (${supplier})`,
-                inQty: qty,
-                outQty: 0,
-                balance: master.stock
-            });
+            const nowIso = new Date().toISOString();
+            ticket.sparepartCode = spCode;
+            ticket.sparepartQty = spQty;
+            ticket.cost = modalCost;
+            ticket.price = servicePrice;
+            ticket.destWallet = destWallet;
+            ticket.status = 'SELESAI';
+            ticket.completedAt = nowIso;
 
+            appState.wallets[destWallet] = (appState.wallets[destWallet] || 0) + servicePrice;
+
+            const existingTrxIdx = appState.transactions.findIndex(tr => tr.id === ticket.id);
+            const trxObj = {
+                id: ticket.id,
+                date: nowIso,
+                module: 'SERVICE',
+                description: `Service HP ${ticket.device} (${ticket.issue})${sparepartLabel}`,
+                customer: ticket.customer,
+                modal: modalCost,
+                total: servicePrice,
+                profit: servicePrice - modalCost,
+                paymentMethod: destWallet,
+                items: [
+                    { name: `Biaya Service ${ticket.device}`, qty: 1, price: servicePrice }
+                ]
+            };
+
+            if (existingTrxIdx >= 0) {
+                appState.transactions[existingTrxIdx] = trxObj;
+            } else {
+                appState.transactions.unshift(trxObj);
+            }
+
+            closeModal('service-complete-modal');
             await saveAppState();
-            showToast(`Kulakan ${qty} ${master.unit} ${master.name} berhasil disimpan!`, 'success');
+            showToast(`Biaya service ${ticket.id} disimpan ke ${getWalletNameById(destWallet)} (Laba: ${formatRp(servicePrice - modalCost)})!`, 'success');
         }
 
-        async function submitDepositWallet(e) {
-            e.preventDefault();
-            const target = document.getElementById('dep-target-wallet').value;
-            const amount = Number(document.getElementById('dep-amount').value) || 0;
-            const source = document.getElementById('dep-source-type').value;
-            const note = document.getElementById('dep-note').value.trim() || 'Deposit Saldo Agen';
-
-            if (source !== 'MODAL_OWNER') {
-                if ((appState.wallets[source] || 0) < amount) {
-                    showToast(`Saldo ${getWalletNameById(source)} tidak mencukupi!`, 'error');
-                    return;
-                }
-                appState.wallets[source] -= amount;
+        function renderServiceHpTable() {
+            const tbody = document.getElementById('service-hp-tbody');
+            const activeBadge = document.getElementById('srv-active-count');
+            const tickets = appState.serviceTickets || [];
+            if (activeBadge) {
+                activeBadge.textContent = tickets.filter(t => t.status !== 'SELESAI').length;
             }
-            appState.wallets[target] = (appState.wallets[target] || 0) + amount;
+            if (!tbody) return;
 
-            appState.fundTransfers.unshift({
-                date: new Date().toISOString(),
-                from: getWalletNameById(source),
-                to: getWalletNameById(target),
-                amount: amount,
-                note: note
+            if (tickets.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 italic">Belum ada data tanda terima Service HP.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = tickets.map(t => {
+                const isDone = t.status === 'SELESAI';
+                const tglStr = new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const profit = (Number(t.price) || 0) - (Number(t.cost) || 0);
+                return `
+                    <tr>
+                        <td class="font-mono font-bold text-rose-900">${t.id}</td>
+                        <td class="font-mono text-[11px] text-slate-600">${tglStr}</td>
+                        <td>
+                            <div class="font-bold text-slate-800">${t.customer} <span class="text-[10.5px] font-normal text-slate-500">(${t.phone || '-'})</span></div>
+                            <div class="text-[11px] font-semibold text-sky-800"><i class="fas fa-mobile-alt mr-1"></i>${t.device}</div>
+                        </td>
+                        <td>
+                            <div class="text-slate-700">${t.issue}</div>
+                            ${isDone ? `
+                                <div class="mt-1 text-[10.5px] bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 text-emerald-900 font-mono">
+                                    Biaya: <b>${formatRp(t.price)}</b> &bull; Modal: ${formatRp(t.cost)} &bull; Laba: <b>${formatRp(profit)}</b>
+                                    <div class="text-[10px] text-slate-500 font-sans">Masuk: ${getWalletNameById(t.destWallet)}</div>
+                                </div>
+                            ` : `<div class="text-[10px] text-amber-700 italic mt-0.5">Menunggu penyelesaian & input biaya toko</div>`}
+                        </td>
+                        <td class="text-center">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isDone ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                                ${t.status}
+                            </span>
+                        </td>
+                        <td class="text-center space-y-1">
+                            <div class="flex items-center justify-center gap-1">
+                                <button type="button" onclick="printServiceIntakeReceipt('${t.id}')" class="ipos-btn px-2 py-1 rounded text-[10.5px] text-slate-700" title="Cetak Ulang Tanda Terima">
+                                    <i class="fas fa-print"></i> Print
+                                </button>
+                                ${!isDone ? `
+                                    <button type="button" onclick="openCompleteServiceModal('${t.id}')" class="ipos-btn-success px-2 py-1 rounded text-[10.5px] font-bold" title="Input Modal Sparepart & Biaya Service">
+                                        <i class="fas fa-check"></i> Input Biaya
+                                    </button>
+                                ` : `
+                                    <button type="button" onclick="openCompleteServiceModal('${t.id}')" class="ipos-btn px-2 py-1 rounded text-[10.5px] text-sky-700" title="Edit Biaya Internal">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                `}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function populateVoucherAssemblyForm() {
+            const zeroSel = document.getElementById('vf-zero-item');
+            const targetSel = document.getElementById('vf-target-item');
+            if (!zeroSel || !targetSel) return;
+            const vouchers = appState.items.filter(i => i.category === 'Voucher Fisik');
+            zeroSel.innerHTML = vouchers.map(v => `<option value="${v.code}">${v.name} (Stok: ${v.stock})</option>`).join('');
+            targetSel.innerHTML = vouchers.map(v => `<option value="${v.code}">${v.name} (Stok: ${v.stock})</option>`).join('');
+            if (vouchers.length > 1) targetSel.selectedIndex = 1;
+        }
+
+        async function submitVoucherAssembly(e) {
+            e.preventDefault();
+            const zeroCode = document.getElementById('vf-zero-item').value;
+            const targetCode = document.getElementById('vf-target-item').value;
+            const qty = Math.max(1, Number(document.getElementById('vf-qty').value) || 1);
+            const injectCost = Math.max(0, Number(document.getElementById('vf-inject-cost').value) || 0);
+            const srcWallet = document.getElementById('vf-source-wallet').value;
+
+            if (zeroCode === targetCode) {
+                showToast('Bahan baku dan voucher jadi tidak boleh sama!', 'error');
+                return;
+            }
+            const zeroItem = appState.items.find(i => i.code === zeroCode);
+            const targetItem = appState.items.find(i => i.code === targetCode);
+            if (!zeroItem || !targetItem) return;
+
+            if (zeroItem.stock < qty) {
+                showToast(`Stok ${zeroItem.name} tidak mencukupi (${zeroItem.stock} PCS)!`, 'error');
+                return;
+            }
+            const totalInject = qty * injectCost;
+            if ((appState.wallets[srcWallet] || 0) < totalInject) {
+                showToast(`Saldo ${getWalletNameById(srcWallet)} tidak mencukupi!`, 'error');
+                return;
+            }
+
+            const nowIso = new Date().toISOString();
+            const refNo = generateInvoiceId('VCR');
+
+            zeroItem.stock -= qty;
+            targetItem.stock += qty;
+            appState.wallets[srcWallet] -= totalInject;
+
+            appState.stockLedger.unshift(
+                { date: nowIso, ref: refNo, code: zeroItem.code, name: zeroItem.name, type: 'PERAKITAN KELUAR', inQty: 0, outQty: qty, balance: zeroItem.stock },
+                { date: nowIso, ref: refNo, code: targetItem.code, name: targetItem.name, type: 'PERAKITAN MASUK', inQty: qty, outQty: 0, balance: targetItem.stock }
+            );
+
+            appState.voucherProductions.unshift({
+                date: nowIso,
+                targetName: targetItem.name,
+                qty: qty,
+                totalCost: totalInject + (qty * zeroItem.cost)
             });
 
             await saveAppState();
-            showToast(`Deposit ${formatRp(amount)} ke ${getWalletNameById(target)} berhasil!`, 'success');
+            showToast(`Berhasil merakit ${qty} PCS ${targetItem.name}!`, 'success');
+        }
+
+        function renderVoucherAssemblyHistory() {
+            const tbody = document.getElementById('vf-history-tbody');
+            if (!tbody) return;
+            const list = appState.voucherProductions || [];
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-400 italic">Belum ada riwayat perakitan voucher.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = list.map(v => `
+                <tr>
+                    <td class="font-mono text-[11px]">${new Date(v.date).toLocaleString('id-ID')}</td>
+                    <td class="font-semibold">${v.targetName}</td>
+                    <td class="text-right font-mono font-bold">${v.qty} PCS</td>
+                    <td class="text-right font-mono">${formatRp(v.totalCost)}</td>
+                </tr>
+            `).join('');
         }
 
         async function submitMutasiSumberDana(e) {
@@ -4205,10 +4682,10 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             const from = document.getElementById('sd-from').value;
             const to = document.getElementById('sd-to').value;
             const amount = Number(document.getElementById('sd-amount').value) || 0;
-            const note = document.getElementById('sd-note').value.trim() || 'Mutasi Internal';
+            const note = document.getElementById('sd-note').value.trim() || 'Mutasi antar sumber dana';
 
             if (from === to) {
-                showToast('Sumber dan tujuan dana tidak boleh sama!', 'error');
+                showToast('Sumber dan tujuan mutasi tidak boleh sama!', 'error');
                 return;
             }
             if (from !== 'MODAL_LUAR') {
@@ -4230,8 +4707,9 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 note: note
             });
 
+            document.getElementById('sd-note').value = '';
             await saveAppState();
-            showToast(`Mutasi dana ${formatRp(amount)} berhasil dicatat!`, 'success');
+            showToast(`Mutasi saldo sebesar ${formatRp(amount)} berhasil dicatat!`, 'success');
         }
 
         function renderSumberDanaHistory() {
@@ -4253,429 +4731,386 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             `).join('');
         }
 
-        // =========================================================================
-        // 10. SERVICE HP (TAHAP 1 TANDA TERIMA & TAHAP 2 BIAYA INTERNAL) & PERAKITAN VOUCHER
-        // =========================================================================
-        function initServiceHpHeader() {
-            const trxEl = document.getElementById('srv-trx-no');
-            const dateEl = document.getElementById('srv-date-display');
-            if (trxEl) trxEl.value = generateInvoiceId('SRV');
-            if (dateEl) {
-                dateEl.value = new Date().toLocaleDateString('id-ID', {
-                    day: '2-digit', month: '2-digit', year: 'numeric'
-                });
+        function populatePurchaseDropdowns() {
+            const supSel = document.getElementById('buy-item-supplier');
+            const itemSel = document.getElementById('buy-item-select');
+            if (supSel) {
+                supSel.innerHTML = (appState.suppliers || []).map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
+            }
+            if (itemSel) {
+                itemSel.innerHTML = (appState.items || []).map(i => `<option value="${i.code}">${i.code} - ${i.name} (Stok: ${i.stock})</option>`).join('');
             }
         }
 
-        async function submitServiceHp(e) {
+        async function submitPurchaseStock(e) {
             e.preventDefault();
-            const trxNo = document.getElementById('srv-trx-no').value.trim() || generateInvoiceId('SRV');
-            const custName = document.getElementById('srv-cust-name').value.trim();
-            const custPhone = document.getElementById('srv-cust-phone').value.trim();
-            const device = document.getElementById('srv-device').value.trim();
-            const issue = document.getElementById('srv-issue').value.trim();
+            const supplier = document.getElementById('buy-item-supplier')?.value || 'Supplier';
+            const code = document.getElementById('buy-item-select').value;
+            const qty = Math.max(1, Number(document.getElementById('buy-item-qty').value) || 1);
+            const cost = Math.max(0, Number(document.getElementById('buy-item-cost').value) || 0);
+            const srcWallet = document.getElementById('buy-item-source').value;
+            const dueDate = document.getElementById('buy-due-date')?.value || new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+            const totalCost = qty * cost;
+            const isTempo = srcWallet === 'UTANG_TEMPO';
 
-            const ticket = {
-                id: trxNo,
-                date: new Date().toISOString(),
-                customer: custName,
-                phone: custPhone,
-                device: device,
-                issue: issue,
-                sparepartCode: '',
-                sparepartQty: 0,
-                cost: 0,
-                price: 0,
-                destWallet: '',
-                status: 'PROSES'
-            };
-
-            appState.serviceTickets.unshift(ticket);
-            e.target.reset();
-            initServiceHpHeader();
-            await saveAppState();
-            showServiceReceiptModal(ticket);
-            showToast(`Tanda Terima Service ${ticket.id} berhasil disimpan & siap dicetak!`, 'success');
-        }
-
-        function showServiceReceiptModalById(id) {
-            const ticket = (appState.serviceTickets || []).find(x => x.id === id);
-            if (ticket) showServiceReceiptModal(ticket);
-        }
-
-        function showServiceReceiptModal(ticket) {
-            const area = document.getElementById('receipt-print-area');
-            if (!area) return;
-            area.innerHTML = `
-                <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="font-bold text-sm">${appState.settings.storeName}</div>
-                    <div class="text-[10px]">${appState.settings.storeAddress}</div>
-                    <div class="text-[10px]">Telp/WA: ${appState.settings.storePhone || '-'}</div>
-                    <div class="mt-1.5 font-bold text-xs tracking-wider border-y border-slate-800 py-0.5">TANDA TERIMA SERVICE HP</div>
-                </div>
-                <div class="text-[10.5px] border-b border-dashed border-slate-400 pb-2 mb-2 space-y-1">
-                    <div class="flex justify-between"><span>No. Transaksi:</span><span class="font-bold">${ticket.id}</span></div>
-                    <div class="flex justify-between"><span>Tanggal Masuk:</span><span>${new Date(ticket.date).toLocaleString('id-ID')}</span></div>
-                    <div class="flex justify-between"><span>Nama Pelanggan:</span><span class="font-bold">${ticket.customer}</span></div>
-                    <div class="flex justify-between"><span>No. HP / WA:</span><span>${ticket.phone || '-'}</span></div>
-                    <div class="flex justify-between"><span>Merk & Tipe HP:</span><span class="font-bold">${ticket.device}</span></div>
-                </div>
-                <div class="text-[10.5px] border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="font-bold mb-0.5">Keluhan / Kerusakan:</div>
-                    <div class="bg-slate-50 p-1.5 border border-slate-300 rounded">${ticket.issue}</div>
-                </div>
-                <div class="text-[10px] text-center space-y-1">
-                    <div class="font-bold">HARAP BAWA NOTA INI SAAT PENGAMBILAN UNIT</div>
-                    <div>${appState.settings.storeFooter}</div>
-                </div>
-            `;
-            document.getElementById('receipt-modal').classList.remove('hidden');
-        }
-
-        function openCompleteServiceModal(id) {
-            const t = (appState.serviceTickets || []).find(x => x.id === id);
-            if (!t) return;
-
-            document.getElementById('sc-ticket-id').value = t.id;
-            document.getElementById('sc-display-id').textContent = t.id;
-            document.getElementById('sc-display-device').textContent = `${t.customer} — ${t.device}`;
-            document.getElementById('sc-display-issue').textContent = t.issue;
-
-            const spSel = document.getElementById('sc-sparepart-item');
-            const physicalItems = (appState.items || []).filter(i => i.category !== 'Jasa Servis');
-            spSel.innerHTML = `<option value="" data-cost="0">-- Tanpa Sparepart (Jasa Murni) --</option>` +
-                physicalItems.map(it =>
-                    `<option value="${it.code}" data-cost="${it.cost}">${it.code} - ${it.name} (Stok: ${it.stock} | HPP: ${formatRp(it.cost)})</option>`
-                ).join('');
-
-            document.getElementById('sc-sparepart-qty').value = 0;
-            document.getElementById('sc-modal-cost').value = 0;
-            document.getElementById('sc-service-price').value = '';
-            recalcServiceCompletion();
-
-            document.getElementById('service-complete-modal').classList.remove('hidden');
-            setTimeout(() => document.getElementById('sc-service-price').focus(), 60);
-        }
-
-        function recalcServiceCompletion() {
-            const spSel = document.getElementById('sc-sparepart-item');
-            const qtyEl = document.getElementById('sc-sparepart-qty');
-            const modalEl = document.getElementById('sc-modal-cost');
-            const priceEl = document.getElementById('sc-service-price');
-            const profitEl = document.getElementById('sc-profit-preview');
-
-            if (spSel && qtyEl && modalEl) {
-                const selectedOpt = spSel.options[spSel.selectedIndex];
-                const unitCost = Number(selectedOpt?.getAttribute('data-cost')) || 0;
-                if (spSel.value && Number(qtyEl.value) === 0) {
-                    qtyEl.value = 1;
-                }
-                if (!spSel.value) {
-                    qtyEl.value = 0;
-                }
-                const qty = Math.max(0, Number(qtyEl.value) || 0);
-                if (spSel.value) {
-                    modalEl.value = unitCost * qty;
-                }
-            }
-
-            const modalCost = Number(modalEl?.value) || 0;
-            const servicePrice = Number(priceEl?.value) || 0;
-            const profit = servicePrice - modalCost;
-            if (profitEl) {
-                profitEl.textContent = formatRp(profit);
-                profitEl.className = profit >= 0
-                    ? 'bg-emerald-100 border border-emerald-300 rounded px-2.5 py-1.5 font-mono font-extrabold text-emerald-800'
-                    : 'bg-red-100 border border-red-300 rounded px-2.5 py-1.5 font-mono font-extrabold text-red-800';
-            }
-        }
-
-        async function submitCompleteServiceHp(e) {
-            e.preventDefault();
-            const id = document.getElementById('sc-ticket-id').value;
-            const t = (appState.serviceTickets || []).find(x => x.id === id);
-            if (!t || t.status === 'SELESAI') return;
-
-            const spCode = document.getElementById('sc-sparepart-item').value;
-            const spQty = Math.max(0, Number(document.getElementById('sc-sparepart-qty').value) || 0);
-            const modalCost = Math.max(0, Number(document.getElementById('sc-modal-cost').value) || 0);
-            const servicePrice = Math.max(0, Number(document.getElementById('sc-service-price').value) || 0);
-            const destWallet = document.getElementById('sc-dest-wallet').value || 'KAS_TOKO';
-
-            let spLabel = 'Tanpa Sparepart';
-            if (spCode && spQty > 0) {
-                const master = appState.items.find(i => i.code === spCode);
-                if (master) {
-                    if (master.stock < spQty) {
-                        showToast(`Stok sparepart ${master.name} hanya tersisa ${master.stock}!`, 'error');
-                        return;
-                    }
-                    master.stock -= spQty;
-                    spLabel = `${master.name} (${spQty}x)`;
-                    appState.stockLedger.unshift({
-                        date: new Date().toISOString(),
-                        ref: t.id,
-                        code: master.code,
-                        name: master.name,
-                        type: `SPAREPART SERVICE (${t.device})`,
-                        inQty: 0,
-                        outQty: spQty,
-                        balance: master.stock
-                    });
-                }
-            }
-
-            t.sparepartCode = spCode;
-            t.sparepartQty = spQty;
-            t.cost = modalCost;
-            t.price = servicePrice;
-            t.destWallet = destWallet;
-            t.status = 'SELESAI';
-            t.completedAt = new Date().toISOString();
-
-            appState.wallets[destWallet] = (appState.wallets[destWallet] || 0) + servicePrice;
-            appState.transactions.unshift({
-                id: t.id,
-                date: new Date().toISOString(),
-                module: 'SERVICE',
-                description: `Service HP: ${t.device} (${t.issue}) [${spLabel}]`,
-                customer: t.customer,
-                modal: modalCost,
-                total: servicePrice,
-                profit: servicePrice - modalCost,
-                paymentMethod: destWallet,
-                items: [{ name: `Service ${t.device} - ${t.issue}`, qty: 1, price: servicePrice }]
-            });
-
-            closeModal('service-complete-modal');
-            await saveAppState();
-            showToast(`Service ${t.id} selesai! Laba bersih ${formatRp(servicePrice - modalCost)} masuk ke ${getWalletNameById(destWallet)}.`, 'success');
-        }
-
-        function renderServiceHpTable() {
-            initServiceHpHeader();
-            const tbody = document.getElementById('service-hp-tbody');
-            const activeCountEl = document.getElementById('srv-active-count');
-            const tickets = appState.serviceTickets || [];
-            if (activeCountEl) {
-                activeCountEl.textContent = tickets.filter(t => t.status !== 'SELESAI').length;
-            }
-            if (!tbody) return;
-            if (tickets.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 italic">Belum ada data penerimaan Service HP.</td></tr>`;
+            const master = appState.items.find(i => i.code === code);
+            if (!master) return;
+            if (!isTempo && (appState.wallets[srcWallet] || 0) < totalCost) {
+                showToast(`Saldo ${getWalletNameById(srcWallet)} tidak mencukupi!`, 'error');
                 return;
             }
-            tbody.innerHTML = tickets.map(t => {
-                const isDone = t.status === 'SELESAI';
-                const profit = (Number(t.price) || 0) - (Number(t.cost) || 0);
+
+            const nowIso = new Date().toISOString();
+            const refNo = generateInvoiceId('BELI');
+            master.stock = (Number(master.stock) || 0) + qty;
+            if (cost > 0) master.cost = cost;
+
+            if (isTempo) {
+                if (!Array.isArray(appState.debtsReceivables)) appState.debtsReceivables = [];
+                appState.debtsReceivables.unshift({
+                    id: refNo,
+                    type: 'UTANG',
+                    date: nowIso,
+                    dueDate: dueDate,
+                    party: supplier,
+                    description: `Kulakan Tempo: ${master.name} (${qty} ${master.unit})`,
+                    totalAmount: totalCost,
+                    paidAmount: 0,
+                    status: 'BELUM_LUNAS',
+                    payments: []
+                });
+            } else {
+                appState.wallets[srcWallet] -= totalCost;
+            }
+
+            appState.stockLedger.unshift({
+                date: nowIso,
+                ref: refNo,
+                code: master.code,
+                name: master.name,
+                type: `PEMBELIAN${isTempo ? ' TEMPO' : ''} (${supplier})`,
+                inQty: qty,
+                outQty: 0,
+                balance: master.stock
+            });
+
+            await saveAppState();
+            showToast(isTempo ? `Pembelian tempo ${refNo} dicatat ke Utang Supplier!` : `Kulakan ${qty} ${master.unit} ${master.name} berhasil disimpan!`, 'success');
+        }
+
+        async function submitDepositWallet(e) {
+            e.preventDefault();
+            const target = document.getElementById('dep-target-wallet').value;
+            const amount = Number(document.getElementById('dep-amount').value) || 0;
+            const source = document.getElementById('dep-source-type').value;
+            const note = document.getElementById('dep-note').value.trim() || 'Deposit saldo agen';
+
+            if (source === target) {
+                showToast('Sumber dana dan tujuan akun saldo tidak boleh sama!', 'error');
+                return;
+            }
+
+            if (source !== 'MODAL_OWNER') {
+                if ((appState.wallets[source] || 0) < amount) {
+                    showToast(`Saldo ${getWalletNameById(source)} tidak mencukupi!`, 'error');
+                    return;
+                }
+                appState.wallets[source] -= amount;
+            }
+
+            appState.wallets[target] = (appState.wallets[target] || 0) + amount;
+            appState.fundTransfers.unshift({
+                date: new Date().toISOString(),
+                from: getWalletNameById(source),
+                to: getWalletNameById(target),
+                amount: amount,
+                note: note
+            });
+
+            document.getElementById('dep-note').value = '';
+            await saveAppState();
+            showToast(`Deposit ${formatRp(amount)} ke ${getWalletNameById(target)} berhasil!`, 'success');
+        }
+
+        // =========================================================================
+        // 10. LAPORAN TRANSAKSI, AKUNTANSI & CETAK STRUK
+        // =========================================================================
+        function renderTransactionsTable() {
+            const tbody = document.getElementById('riwayat-tbody');
+            if (!tbody) return;
+            const filter = document.getElementById('riwayat-filter-type')?.value || 'ALL';
+            const list = appState.transactions.filter(t => filter === 'ALL' || t.module === filter);
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 italic">Belum ada data transaksi.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = list.map(t => `
+                <tr>
+                    <td class="font-mono text-[11px]">${new Date(t.date).toLocaleString('id-ID')}</td>
+                    <td class="font-mono font-bold text-sky-900">${t.id}</td>
+                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[10px] font-bold">${t.module}</span></td>
+                    <td>${t.description}</td>
+                    <td class="text-right font-mono">${formatRp(t.modal)}</td>
+                    <td class="text-right font-mono font-bold">${formatRp(t.total)}</td>
+                    <td class="text-right font-mono font-bold text-emerald-700">${formatRp(t.profit)}</td>
+                    <td class="text-center space-x-1">
+                        <button type="button" onclick="showReceiptModalById('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]" title="Cetak Struk"><i class="fas fa-print"></i></button>
+                        <button type="button" onclick="openEditTransactionModal('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700" title="Edit Transaksi"><i class="fas fa-edit"></i></button>
+                        <button type="button" onclick="openDeleteTransactionModal('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus Transaksi"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function exportTransactionsCSV() {
+            const rows = [['Tanggal', 'No_Transaksi', 'Modul', 'Keterangan', 'Modal', 'Total_Jual', 'Laba_Bersih']];
+            appState.transactions.forEach(t => {
+                rows.push([t.date, t.id, t.module, `"${(t.description || '').replace(/"/g, '""')}"`, t.modal, t.total, t.profit]);
+            });
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Laporan_Transaksi_${activeDatabaseName}.csv`;
+            a.click();
+        }
+
+        function renderProfitLossSummary() {
+            let revPos = 0, revPpob = 0, revBrilink = 0, cogs = 0;
+            appState.transactions.forEach(t => {
+                if (t.module === 'POS') revPos += Number(t.total) || 0;
+                else if (t.module === 'PPOB') revPpob += Number(t.total) || 0;
+                else if (t.module === 'BRILINK') revBrilink += Number(t.total) || 0;
+                else revPos += Number(t.total) || 0;
+                cogs += Number(t.modal) || 0;
+            });
+            const net = (revPos + revPpob + revBrilink) - cogs;
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            set('pl-rev-pos', formatRp(revPos));
+            set('pl-rev-ppob', formatRp(revPpob));
+            set('pl-rev-brilink', formatRp(revBrilink));
+            set('pl-cogs', `(${formatRp(cogs)})`);
+            set('pl-net-profit', formatRp(net));
+        }
+
+        // =========================================================================
+        // 10B. MANAJEMEN UTANG & PIUTANG
+        // =========================================================================
+        let activeUpSubTab = 'PIUTANG';
+
+        function switchUpSubTab(tab) {
+            activeUpSubTab = tab.toUpperCase();
+            document.getElementById('upsub-piutang')?.classList.toggle('active', activeUpSubTab === 'PIUTANG');
+            document.getElementById('upsub-utang')?.classList.toggle('active', activeUpSubTab === 'UTANG');
+            const colHdr = document.getElementById('up-party-col-header');
+            if (colHdr) colHdr.textContent = activeUpSubTab === 'PIUTANG' ? 'Nama Pelanggan' : 'Nama Supplier / Pihak';
+            renderUtangPiutangTable();
+        }
+
+        function renderUtangPiutangTable() {
+            const listAll = appState.debtsReceivables || [];
+            const totalPiutang = listAll
+                .filter(d => d.type === 'PIUTANG')
+                .reduce((s, d) => s + Math.max(0, (Number(d.totalAmount) || 0) - (Number(d.paidAmount) || 0)), 0);
+            const totalUtang = listAll
+                .filter(d => d.type === 'UTANG')
+                .reduce((s, d) => s + Math.max(0, (Number(d.totalAmount) || 0) - (Number(d.paidAmount) || 0)), 0);
+
+            const elP = document.getElementById('up-total-piutang');
+            const elU = document.getElementById('up-total-utang');
+            if (elP) elP.textContent = formatRp(totalPiutang);
+            if (elU) elU.textContent = formatRp(totalUtang);
+
+            const tbody = document.getElementById('up-tbody');
+            if (!tbody) return;
+
+            const q = (document.getElementById('up-search-input')?.value || '').toLowerCase();
+            const statusFilter = document.getElementById('up-filter-status')?.value || 'BELUM_LUNAS';
+
+            const filtered = listAll.filter(d => {
+                if (d.type !== activeUpSubTab) return false;
+                const rem = Math.max(0, (Number(d.totalAmount) || 0) - (Number(d.paidAmount) || 0));
+                const isLunas = rem <= 0 || d.status === 'LUNAS';
+                if (statusFilter === 'BELUM_LUNAS' && isLunas) return false;
+                if (statusFilter === 'LUNAS' && !isLunas) return false;
+                if (q && !(d.party || '').toLowerCase().includes(q) && !(d.id || '').toLowerCase().includes(q) && !(d.description || '').toLowerCase().includes(q)) {
+                    return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-6 text-slate-400 italic">Tidak ada data ${activeUpSubTab.toLowerCase()} pada filter saat ini.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(d => {
+                const total = Number(d.totalAmount) || 0;
+                const paid = Number(d.paidAmount) || 0;
+                const rem = Math.max(0, total - paid);
+                const isLunas = rem <= 0;
+                const tglStr = new Date(d.date).toLocaleDateString('id-ID');
                 return `
                     <tr>
-                        <td class="font-mono font-bold text-rose-900">${t.id}</td>
-                        <td class="font-mono text-[11px] text-slate-600">${new Date(t.date).toLocaleDateString('id-ID')}</td>
-                        <td>
-                            <div class="font-bold text-slate-800">${t.device}</div>
-                            <div class="text-[11px] text-slate-600">${t.customer} (${t.phone || '-'})</div>
-                        </td>
-                        <td>
-                            <div class="text-slate-700">${t.issue}</div>
-                            ${isDone ? `
-                                <div class="mt-1 text-[10.5px] font-mono bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 text-emerald-900">
-                                    Biaya: <b>${formatRp(t.price)}</b> | Modal: ${formatRp(t.cost)} | Laba: <b class="text-emerald-700">${formatRp(profit)}</b>
-                                </div>
-                            ` : `<div class="text-[10px] text-amber-700 italic mt-0.5">Menunggu penyelesaian & input biaya toko</div>`}
-                        </td>
+                        <td class="font-mono text-[11px]">${tglStr}</td>
+                        <td class="font-mono font-bold text-sky-900">${d.id}</td>
+                        <td class="font-bold text-slate-800">${d.party}</td>
+                        <td>${d.description}</td>
+                        <td class="text-center font-mono text-[11px]">${d.dueDate || '-'}</td>
+                        <td class="text-right font-mono">${formatRp(total)}</td>
+                        <td class="text-right font-mono text-emerald-700">${formatRp(paid)}</td>
+                        <td class="text-right font-mono font-extrabold ${isLunas ? 'text-slate-400' : 'text-red-700'}">${formatRp(rem)}</td>
                         <td class="text-center">
-                            <span class="px-2 py-0.5 rounded font-bold text-[10px] ${isDone ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                                ${t.status}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isLunas ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                                ${isLunas ? 'LUNAS' : 'BELUM LUNAS'}
                             </span>
                         </td>
-                        <td class="text-center space-y-1">
-                            <button type="button" onclick="showServiceReceiptModalById('${t.id}')" class="ipos-btn w-full px-2 py-0.5 rounded text-[11px] font-semibold text-slate-700" title="Cetak Ulang Tanda Terima Pelanggan">
-                                <i class="fas fa-print mr-1"></i> Tanda Terima
-                            </button>
-                            ${!isDone ? `
-                                <button type="button" onclick="openCompleteServiceModal('${t.id}')" class="ipos-btn-success w-full px-2 py-0.5 rounded text-[11px] font-bold">
-                                    <i class="fas fa-coins mr-1"></i> Input Biaya
-                                </button>
-                            ` : ''}
+                        <td class="text-center space-x-1">
+                            ${!isLunas ? `<button type="button" onclick="openDebtPaymentModal('${d.id}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold"><i class="fas fa-check mr-0.5"></i> Bayar</button>` : ''}
+                            <button type="button" onclick="deleteDebtRecord('${d.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus Catatan"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        function populateVoucherAssemblyForm() {
-            const zeroSel = document.getElementById('vf-zero-item');
-            const targetSel = document.getElementById('vf-target-item');
-            if (zeroSel) {
-                const zeros = appState.items.filter(i => i.code.includes('ZERO') || i.category === 'Voucher Fisik');
-                zeroSel.innerHTML = zeros.map(i => `<option value="${i.code}">${i.code} - ${i.name} (Stok: ${i.stock})</option>`).join('');
+        function openDebtModal(defaultType = 'PIUTANG') {
+            document.getElementById('debt-type-input').value = defaultType || activeUpSubTab;
+            document.getElementById('debt-due-input').value = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+            document.getElementById('debt-party-input').value = '';
+            document.getElementById('debt-amount-input').value = '';
+            document.getElementById('debt-desc-input').value = '';
+
+            const wSel = document.getElementById('debt-wallet-effect');
+            if (wSel) {
+                wSel.innerHTML = `<option value="NONE">Hanya Catat Buku (Tanpa Ubah Saldo)</option>` +
+                    (appState.walletList || []).map(w => `<option value="${w.id}">${w.name} (${formatRp(appState.wallets[w.id] || 0)})</option>`).join('');
             }
-            if (targetSel) {
-                const vcrs = appState.items.filter(i => i.category === 'Voucher Fisik' && !i.code.includes('ZERO'));
-                targetSel.innerHTML = vcrs.map(i => `<option value="${i.code}">${i.code} - ${i.name} (Stok: ${i.stock})</option>`).join('');
-            }
+            document.getElementById('debt-modal').classList.remove('hidden');
         }
 
-        async function submitVoucherAssembly(e) {
+        function toggleDebtWalletOption() {}
+
+        async function saveManualDebtRecord(e) {
             e.preventDefault();
-            const zeroCode = document.getElementById('vf-zero-item').value;
-            const targetCode = document.getElementById('vf-target-item').value;
-            const qty = Math.max(1, Number(document.getElementById('vf-qty').value) || 1);
-            const injectCost = Math.max(0, Number(document.getElementById('vf-inject-cost').value) || 0);
-            const srcWallet = document.getElementById('vf-source-wallet').value || 'SALDO_PULSA';
+            const type = document.getElementById('debt-type-input').value;
+            const dueDate = document.getElementById('debt-due-input').value;
+            const party = document.getElementById('debt-party-input').value.trim();
+            const amount = Number(document.getElementById('debt-amount-input').value) || 0;
+            const walletEffect = document.getElementById('debt-wallet-effect').value;
+            const desc = document.getElementById('debt-desc-input').value.trim();
 
-            const zeroItem = appState.items.find(i => i.code === zeroCode);
-            const targetItem = appState.items.find(i => i.code === targetCode);
-            if (!zeroItem || !targetItem) return;
-
-            const totalInject = qty * injectCost;
-            if (zeroItem.stock < qty) {
-                showToast(`Stok ${zeroItem.name} tidak mencukupi (Tersisa ${zeroItem.stock})!`, 'error');
-                return;
-            }
-            if ((appState.wallets[srcWallet] || 0) < totalInject) {
-                showToast(`Saldo ${getWalletNameById(srcWallet)} tidak mencukupi!`, 'error');
+            if (!party || amount <= 0) {
+                showToast('Nama pihak dan nominal wajib diisi!', 'error');
                 return;
             }
 
-            const nowIso = new Date().toISOString();
-            const ref = generateInvoiceId('VCR');
+            if (walletEffect !== 'NONE' && appState.wallets[walletEffect] !== undefined) {
+                if (type === 'PIUTANG') {
+                    if ((appState.wallets[walletEffect] || 0) < amount) {
+                        showToast(`Saldo ${getWalletNameById(walletEffect)} tidak mencukupi!`, 'error');
+                        return;
+                    }
+                    appState.wallets[walletEffect] -= amount;
+                } else {
+                    appState.wallets[walletEffect] += amount;
+                }
+            }
 
-            zeroItem.stock -= qty;
-            targetItem.stock += qty;
-            targetItem.cost = (Number(zeroItem.cost) || 0) + injectCost;
-            appState.wallets[srcWallet] -= totalInject;
-
-            appState.stockLedger.unshift({
-                date: nowIso, ref: ref, code: zeroItem.code, name: zeroItem.name,
-                type: 'PERAKITAN VOUCHER (KELUAR)', inQty: 0, outQty: qty, balance: zeroItem.stock
+            if (!Array.isArray(appState.debtsReceivables)) appState.debtsReceivables = [];
+            const prefix = type === 'PIUTANG' ? 'PIU' : 'UTG';
+            appState.debtsReceivables.unshift({
+                id: generateInvoiceId(prefix),
+                type,
+                date: new Date().toISOString(),
+                dueDate,
+                party,
+                description: desc,
+                totalAmount: amount,
+                paidAmount: 0,
+                status: 'BELUM_LUNAS',
+                payments: []
             });
-            appState.stockLedger.unshift({
-                date: nowIso, ref: ref, code: targetItem.code, name: targetItem.name,
-                type: 'PERAKITAN VOUCHER (JADI)', inQty: qty, outQty: 0, balance: targetItem.stock
-            });
 
-            appState.voucherProductions.unshift({
-                date: nowIso,
-                targetName: targetItem.name,
-                qty: qty,
-                totalModal: qty * targetItem.cost
-            });
-
+            closeModal('debt-modal');
+            switchUpSubTab(type);
             await saveAppState();
-            showToast(`Berhasil merakit ${qty} PCS ${targetItem.name}!`, 'success');
+            showToast(`Catatan ${type.toLowerCase()} berhasil disimpan!`, 'success');
         }
 
-        function renderVoucherAssemblyHistory() {
-            const tbody = document.getElementById('vf-history-tbody');
-            if (!tbody) return;
-            const list = appState.voucherProductions || [];
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-400 italic">Belum ada riwayat perakitan voucher fisik.</td></tr>`;
-                return;
+        function openDebtPaymentModal(recordId) {
+            const rec = (appState.debtsReceivables || []).find(d => d.id === recordId);
+            if (!rec) return;
+            const rem = Math.max(0, (Number(rec.totalAmount) || 0) - (Number(rec.paidAmount) || 0));
+            document.getElementById('dp-record-id').value = rec.id;
+            document.getElementById('dp-ref-display').textContent = rec.id;
+            document.getElementById('dp-party-display').textContent = rec.party;
+            document.getElementById('dp-remaining-display').textContent = formatRp(rem);
+            document.getElementById('dp-pay-amount').value = rem;
+            document.getElementById('dp-pay-amount').max = rem;
+            document.getElementById('dp-note-input').value = '';
+
+            const lbl = document.getElementById('dp-wallet-label');
+            if (lbl) {
+                lbl.textContent = rec.type === 'PIUTANG'
+                    ? 'Masuk ke Sumber Dana (Penerimaan Tagihan)'
+                    : 'Potong dari Sumber Dana (Pembayaran Utang)';
             }
-            tbody.innerHTML = list.map(v => `
-                <tr>
-                    <td class="font-mono text-[11px]">${new Date(v.date).toLocaleString('id-ID')}</td>
-                    <td class="font-semibold">${v.targetName}</td>
-                    <td class="text-right font-mono font-bold">${v.qty} PCS</td>
-                    <td class="text-right font-mono">${formatRp(v.totalModal)}</td>
-                </tr>
-            `).join('');
+            document.getElementById('debt-pay-modal').classList.remove('hidden');
         }
 
-        // =========================================================================
-        // 11. LAPORAN, KARTU STOK, AKUNTANSI & STRUK THERMAL
-        // =========================================================================
-        function renderTransactionsTable() {
-            const tbody = document.getElementById('riwayat-tbody');
-            if (!tbody) return;
-            const filter = document.getElementById('riwayat-filter-type')?.value || 'ALL';
-            const list = (appState.transactions || []).filter(t => filter === 'ALL' || t.module === filter);
-            tbody.innerHTML = list.map(t => `
-                <tr>
-                    <td class="font-mono text-[11px]">${new Date(t.date).toLocaleString('id-ID')}</td>
-                    <td class="font-mono font-bold text-sky-900">${t.id}</td>
-                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 font-bold text-[10px]">${t.module}</span></td>
-                    <td>
-                        <div class="font-semibold">${t.description}</div>
-                        <div class="text-[10.5px] text-slate-500">Pelanggan: ${t.customer || '-'} &bull; Akun: ${getWalletNameById(t.paymentMethod)}</div>
-                    </td>
-                    <td class="text-right font-mono">${formatRp(t.modal)}</td>
-                    <td class="text-right font-mono font-bold">${formatRp(t.total)}</td>
-                    <td class="text-right font-mono font-bold ${t.profit >= 0 ? 'text-emerald-700' : 'text-red-600'}">${formatRp(t.profit)}</td>
-                    <td class="text-center space-x-1">
-                        <button type="button" onclick="showReceiptModalById('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]" title="Cetak Struk"><i class="fas fa-print"></i></button>
-                        <button type="button" onclick="openEditTransactionModal('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button type="button" onclick="openDeleteTransactionModal('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+        function setFullDebtPayAmount() {
+            const id = document.getElementById('dp-record-id').value;
+            const rec = (appState.debtsReceivables || []).find(d => d.id === id);
+            if (!rec) return;
+            const rem = Math.max(0, (Number(rec.totalAmount) || 0) - (Number(rec.paidAmount) || 0));
+            document.getElementById('dp-pay-amount').value = rem;
         }
 
-        function renderStockLedgerTable() {
-            const tbody = document.getElementById('kartustok-tbody');
-            if (!tbody) return;
-            const catFilter = document.getElementById('kartustok-filter-category')?.value || 'ALL';
-            const filter = document.getElementById('kartustok-filter-item')?.value || 'ALL';
-            const codeCategoryMap = {};
-            (appState.items || []).forEach(it => {
-                codeCategoryMap[it.code] = it.category;
-            });
+        async function submitDebtPayment(e) {
+            e.preventDefault();
+            const id = document.getElementById('dp-record-id').value;
+            const rec = (appState.debtsReceivables || []).find(d => d.id === id);
+            if (!rec) return;
 
-            const list = (appState.stockLedger || []).filter(s => {
-                const matchCat = catFilter === 'ALL' || codeCategoryMap[s.code] === catFilter;
-                const matchItem = filter === 'ALL' || s.code === filter;
-                return matchCat && matchItem;
-            });
+            const rem = Math.max(0, (Number(rec.totalAmount) || 0) - (Number(rec.paidAmount) || 0));
+            const payAmt = Math.min(rem, Math.max(1, Number(document.getElementById('dp-pay-amount').value) || 0));
+            const walletId = document.getElementById('dp-wallet-select').value;
+            const note = document.getElementById('dp-note-input').value.trim() || 'Cicilan / Pelunasan';
 
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 italic">Tidak ada mutasi kartu stok untuk filter yang dipilih.</td></tr>`;
-                return;
+            if (rec.type === 'UTANG') {
+                if ((appState.wallets[walletId] || 0) < payAmt) {
+                    showToast(`Saldo ${getWalletNameById(walletId)} tidak cukup untuk membayar utang!`, 'error');
+                    return;
+                }
+                appState.wallets[walletId] -= payAmt;
+            } else {
+                appState.wallets[walletId] = (appState.wallets[walletId] || 0) + payAmt;
             }
 
-            tbody.innerHTML = list.map(s => `
-                <tr>
-                    <td class="font-mono text-[11px]">${new Date(s.date).toLocaleString('id-ID')}</td>
-                    <td class="font-mono font-semibold">${s.ref}</td>
-                    <td class="font-mono">${s.code}</td>
-                    <td>${s.name}</td>
-                    <td class="text-center text-[11px] font-semibold">${s.type}</td>
-                    <td class="text-right font-mono text-emerald-700 font-bold">${s.inQty || '-'}</td>
-                    <td class="text-right font-mono text-red-600 font-bold">${s.outQty || '-'}</td>
-                    <td class="text-right font-mono font-extrabold">${s.balance}</td>
-                </tr>
-            `).join('');
+            rec.paidAmount = (Number(rec.paidAmount) || 0) + payAmt;
+            if (rec.paidAmount >= (Number(rec.totalAmount) || 0)) {
+                rec.status = 'LUNAS';
+            }
+            if (!Array.isArray(rec.payments)) rec.payments = [];
+            rec.payments.push({
+                date: new Date().toISOString(),
+                amount: payAmt,
+                wallet: walletId,
+                note
+            });
+
+            closeModal('debt-pay-modal');
+            await saveAppState();
+            showToast(`Pembayaran ${formatRp(payAmt)} untuk ${rec.party} berhasil diproses!`, 'success');
         }
 
-        function renderProfitLossSummary() {
-            const trxs = appState.transactions || [];
-            const revPos = trxs.filter(t => t.module === 'POS' || t.module === 'SERVICE').reduce((s, t) => s + (Number(t.total) || 0), 0);
-            const revPpob = trxs.filter(t => t.module === 'PPOB').reduce((s, t) => s + (Number(t.total) || 0), 0);
-            const revBri = trxs.filter(t => t.module === 'BRILINK').reduce((s, t) => s + (Number(t.total) || 0), 0);
-            const cogs = trxs.reduce((s, t) => s + (Number(t.modal) || 0), 0);
-            const net = (revPos + revPpob + revBri) - cogs;
-
-            const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-            setText('pl-rev-pos', formatRp(revPos));
-            setText('pl-rev-ppob', formatRp(revPpob));
-            setText('pl-rev-brilink', formatRp(revBri));
-            setText('pl-cogs', `(${formatRp(cogs)})`);
-            setText('pl-net-profit', formatRp(net));
-        }
-
-        function exportTransactionsCSV() {
-            if (!window.XLSX) return;
-            const ws = XLSX.utils.json_to_sheet(appState.transactions);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Laporan_Transaksi');
-            XLSX.writeFile(wb, `Laporan_Transaksi_${activeDatabaseName}.xlsx`);
-        }
-
-        function showReceiptModalById(id) {
-            const trx = (appState.transactions || []).find(t => t.id === id);
-            if (trx) showReceiptModal(trx);
+        async function deleteDebtRecord(recordId) {
+            appState.debtsReceivables = (appState.debtsReceivables || []).filter(d => d.id !== recordId);
+            await saveAppState();
+            showToast('Catatan utang/piutang dihapus.', 'info');
         }
 
         function showReceiptModal(trx) {
@@ -4683,34 +5118,34 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             if (!area) return;
             const itemsHtml = (trx.items || []).map(it => `
                 <div class="flex justify-between">
-                    <span>${it.name} (${it.qty}x)</span>
+                    <span>${it.name} x${it.qty}</span>
                     <span>${formatNum(it.qty * it.price)}</span>
                 </div>
             `).join('');
 
             area.innerHTML = `
                 <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="font-bold text-sm">${appState.settings.storeName}</div>
+                    <div class="font-extrabold text-xs">${appState.settings.storeName}</div>
                     <div class="text-[10px]">${appState.settings.storeAddress}</div>
-                    <div class="text-[10px]">Telp/WA: ${appState.settings.storePhone || '-'}</div>
+                    <div class="text-[10px]">Telp: ${appState.settings.storePhone || '-'}</div>
                 </div>
-                <div class="text-[10px] border-b border-dashed border-slate-400 pb-1.5 mb-2 space-y-0.5">
-                    <div>No: <b>${trx.id}</b></div>
+                <div class="text-[10px] border-b border-dashed border-slate-400 pb-1.5 mb-1.5">
+                    <div>No: ${trx.id}</div>
                     <div>Tgl: ${new Date(trx.date).toLocaleString('id-ID')}</div>
-                    <div>Plg: ${trx.customer || 'UMUM'}</div>
+                    <div>Kasir: ${currentUser.username} | Plg: ${trx.customer || 'UMUM'}</div>
                 </div>
-                <div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
+                <div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2 text-[10.5px]">
                     ${itemsHtml || `<div>${trx.description}</div>`}
                 </div>
-                <div class="space-y-0.5 font-bold">
-                    <div class="flex justify-between text-xs">
-                        <span>TOTAL BAYAR</span>
-                        <span>${formatRp(trx.total)}</span>
-                    </div>
-                    ${trx.paid ? `<div class="flex justify-between font-normal text-[10px]"><span>Tunai</span><span>${formatRp(trx.paid)}</span></div>` : ''}
-                    ${trx.change !== undefined ? `<div class="flex justify-between font-normal text-[10px]"><span>Kembali</span><span>${formatRp(trx.change)}</span></div>` : ''}
+                <div class="flex justify-between font-bold text-xs">
+                    <span>TOTAL</span>
+                    <span>${formatRp(trx.total)}</span>
                 </div>
-                <div class="text-center text-[10px] mt-3 pt-2 border-t border-dashed border-slate-400">
+                ${trx.paid !== undefined ? `
+                    <div class="flex justify-between text-[10px]"><span>Bayar</span><span>${formatRp(trx.paid)}</span></div>
+                    <div class="flex justify-between text-[10px]"><span>Kembali</span><span>${formatRp(trx.change || 0)}</span></div>
+                ` : ''}
+                <div class="text-center text-[9.5px] mt-3 pt-2 border-t border-dashed border-slate-400">
                     ${appState.settings.storeFooter}
                 </div>
             `;
@@ -4718,96 +5153,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         }
 
         // =========================================================================
-        // 12. EDIT & HAPUS TRANSAKSI
-        // =========================================================================
-        function openEditTransactionModal(id) {
-            const trx = appState.transactions.find(t => t.id === id);
-            if (!trx) return;
-            document.getElementById('edit-trx-id').value = trx.id;
-            document.getElementById('edit-trx-code').value = trx.id;
-            document.getElementById('edit-trx-module').value = trx.module;
-            document.getElementById('edit-trx-customer').value = trx.customer || '';
-            document.getElementById('edit-trx-desc').value = trx.description || '';
-            document.getElementById('edit-trx-modal').value = trx.modal || 0;
-            document.getElementById('edit-trx-total').value = trx.total || 0;
-            try {
-                document.getElementById('edit-trx-date').value = new Date(trx.date).toISOString().slice(0, 16);
-            } catch (e) {}
-            recalcEditTrxProfit();
-            document.getElementById('edit-trx-modal').classList.remove('hidden');
-        }
-
-        function recalcEditTrxProfit() {
-            const modal = Number(document.getElementById('edit-trx-modal')?.value) || 0;
-            const total = Number(document.getElementById('edit-trx-total')?.value) || 0;
-            const profit = total - modal;
-            const el = document.getElementById('edit-trx-profit-display');
-            if (el) {
-                el.textContent = formatRp(profit);
-                el.className = profit >= 0
-                    ? 'border border-emerald-300 bg-emerald-50 text-emerald-700 rounded px-2 py-1 font-mono font-extrabold'
-                    : 'border border-red-300 bg-red-50 text-red-700 rounded px-2 py-1 font-mono font-extrabold';
-            }
-        }
-
-        async function saveEditedTransaction(e) {
-            e.preventDefault();
-            const id = document.getElementById('edit-trx-id').value;
-            const trx = appState.transactions.find(t => t.id === id);
-            if (!trx) return;
-
-            const oldTotal = Number(trx.total) || 0;
-            const newModal = Number(document.getElementById('edit-trx-modal').value) || 0;
-            const newTotal = Number(document.getElementById('edit-trx-total').value) || 0;
-
-            if (trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined) {
-                appState.wallets[trx.paymentMethod] += (newTotal - oldTotal);
-            }
-
-            trx.customer = document.getElementById('edit-trx-customer').value.trim();
-            trx.description = document.getElementById('edit-trx-desc').value.trim();
-            trx.modal = newModal;
-            trx.total = newTotal;
-            trx.profit = newTotal - newModal;
-            const dVal = document.getElementById('edit-trx-date').value;
-            if (dVal) trx.date = new Date(dVal).toISOString();
-
-            closeModal('edit-trx-modal');
-            await saveAppState();
-            showToast(`Transaksi ${id} berhasil diperbarui!`, 'success');
-        }
-
-        function openDeleteTransactionModal(id) {
-            document.getElementById('delete-trx-id').value = id;
-            document.getElementById('delete-trx-label').textContent = id;
-            document.getElementById('delete-trx-modal').classList.remove('hidden');
-        }
-
-        async function confirmDeleteTransaction() {
-            const id = document.getElementById('delete-trx-id').value;
-            const idx = appState.transactions.findIndex(t => t.id === id);
-            if (idx < 0) return;
-
-            const trx = appState.transactions[idx];
-            if (trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined) {
-                appState.wallets[trx.paymentMethod] -= (Number(trx.total) || 0);
-            }
-            if (trx.module === 'POS' && Array.isArray(trx.items)) {
-                trx.items.forEach(it => {
-                    const master = appState.items.find(m => m.code === it.code);
-                    if (master && master.category !== 'Jasa Servis') {
-                        master.stock += (Number(it.qty) || 0);
-                    }
-                });
-            }
-            appState.transactions.splice(idx, 1);
-            closeModal('delete-trx-modal');
-            await saveAppState();
-            showToast(`Transaksi ${id} telah dihapus.`, 'info');
-        }
-
-        // =========================================================================
-        // 13. PENGATURAN SISTEM, KELOLA USER & CLOUD SUPABASE
+        // 11. PENGATURAN SISTEM, KELOLA USER & PASSWORD
         // =========================================================================
         function openSettingsModal(tab = 'general') {
             document.getElementById('set-store-name').value = appState.settings.storeName || '';
@@ -4818,11 +5164,6 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             document.getElementById('set-sb-url').value = appState.settings.supabaseUrl || '';
             document.getElementById('set-sb-key').value = appState.settings.supabaseKey || '';
 
-            document.getElementById('users-modal-db-name').textContent = activeDatabaseName;
-            document.getElementById('users-modal-current-user').textContent = currentUser.username;
-            document.getElementById('users-modal-current-role').textContent = currentUser.role;
-
-            renderSettingsUsersTable();
             switchSettingsTab(tab);
             document.getElementById('settings-modal').classList.remove('hidden');
         }
@@ -4834,6 +5175,7 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             });
             document.getElementById(`settings-pane-${tab}`)?.classList.remove('hidden');
             document.getElementById(`stab-${tab}`)?.classList.add('active');
+            if (tab === 'users') renderSettingsUsersTable();
         }
 
         async function saveStoreSettings() {
@@ -4843,59 +5185,91 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
             appState.settings.storeWebsite = document.getElementById('set-store-website').value.trim();
             appState.settings.storeFooter = document.getElementById('set-store-footer').value.trim();
             await saveAppState();
-            showToast('Profil toko berhasil disimpan!', 'success');
+            showToast('Profil & identitas toko berhasil disimpan!', 'success');
         }
 
         function renderSettingsUsersTable() {
+            document.getElementById('users-modal-db-name').textContent = activeDatabaseName;
+            document.getElementById('users-modal-current-user').textContent = currentUser.username;
+            document.getElementById('users-modal-current-role').textContent = currentUser.role;
+
+            const addBtn = document.getElementById('btn-show-add-user');
+            if (addBtn) {
+                if (isCurrentUserAdmin()) addBtn.classList.remove('hidden');
+                else addBtn.classList.add('hidden');
+            }
+
             const tbody = document.getElementById('settings-users-tbody');
             if (!tbody) return;
-            const users = appState.users || [];
-            tbody.innerHTML = users.map((u, idx) => `
-                <tr>
-                    <td class="text-center">${idx + 1}</td>
-                    <td class="font-bold">${u.username}</td>
-                    <td class="font-mono">••••••</td>
-                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-sky-100 text-sky-900 font-bold text-[10px]">${u.role}</span></td>
-                    <td class="text-center font-mono">${u.location}</td>
-                    <td class="text-center space-x-1">
-                        <button type="button" onclick="openUserFormModal('${u.username}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700"><i class="fas fa-edit"></i></button>
-                        ${users.length > 1 ? `<button type="button" onclick="deleteUserAccount('${u.username}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600"><i class="fas fa-trash"></i></button>` : ''}
-                    </td>
-                </tr>
-            `).join('');
+            const users = appState.users || getDefaultUsersSeed();
+            tbody.innerHTML = users.map((u, idx) => {
+                const isSelf = u.username.toLowerCase() === currentUser.rawUsername.toLowerCase();
+                const canEdit = isCurrentUserAdmin() || isSelf;
+                const canDelete = isCurrentUserAdmin() && !isSelf && users.length > 1;
+                return `
+                    <tr>
+                        <td class="text-center">${idx + 1}</td>
+                        <td class="font-bold">${u.username} ${isSelf ? '<span class="text-[10px] text-sky-700">(Anda)</span>' : ''}</td>
+                        <td class="font-mono">••••••</td>
+                        <td class="text-center font-bold">${u.role}</td>
+                        <td class="text-center font-mono">${u.location}</td>
+                        <td class="text-center space-x-1">
+                            ${canEdit ? `<button type="button" onclick="openUserFormModal('${u.username}')" class="ipos-btn px-2 py-0.5 rounded text-[11px] text-sky-700">Edit</button>` : '-'}
+                            ${canDelete ? `<button type="button" onclick="deleteUserAccount('${u.username}')" class="ipos-btn px-2 py-0.5 rounded text-[11px] text-red-600">Hapus</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        function openUserFormModal(username = '') {
-            document.getElementById('uf-original-username').value = username;
-            if (username) {
-                const u = appState.users.find(x => x.username === username);
-                document.getElementById('user-form-title').textContent = `Edit User: ${username}`;
-                document.getElementById('uf-username').value = u.username;
-                document.getElementById('uf-password').value = u.password;
-                document.getElementById('uf-role').value = u.role;
-                document.getElementById('uf-location').value = u.location;
+        function openUserFormModal(usernameToEdit = '') {
+            const box = document.getElementById('user-form-box');
+            const title = document.getElementById('user-form-title');
+            const origInput = document.getElementById('uf-original-username');
+            const userInput = document.getElementById('uf-username');
+            const passInput = document.getElementById('uf-password');
+            const roleSelect = document.getElementById('uf-role');
+            const locSelect = document.getElementById('uf-location');
+
+            if (usernameToEdit) {
+                const target = (appState.users || []).find(u => u.username.toLowerCase() === usernameToEdit.toLowerCase());
+                if (!target) return;
+                title.textContent = `Edit Akun User: ${target.username}`;
+                origInput.value = target.username;
+                userInput.value = target.username;
+                passInput.value = target.password;
+                roleSelect.value = target.role || 'KASIR';
+                locSelect.value = target.location || 'UTM';
+                roleSelect.disabled = !isCurrentUserAdmin();
             } else {
-                document.getElementById('user-form-title').textContent = 'Tambah User Baru';
-                document.getElementById('uf-username').value = '';
-                document.getElementById('uf-password').value = '';
-                document.getElementById('uf-role').value = 'KASIR';
-                document.getElementById('uf-location').value = 'UTM';
+                if (!isCurrentUserAdmin()) {
+                    showToast('Hanya role ADMIN yang dapat menambah user baru!', 'error');
+                    return;
+                }
+                title.textContent = 'Tambah User Baru';
+                origInput.value = '';
+                userInput.value = '';
+                passInput.value = '';
+                roleSelect.value = 'KASIR';
+                locSelect.value = 'KSR1';
+                roleSelect.disabled = false;
             }
-            document.getElementById('user-form-box').classList.remove('hidden');
+            box.classList.remove('hidden');
         }
 
         function closeUserFormModal() {
-            document.getElementById('user-form-box').classList.add('hidden');
+            document.getElementById('user-form-box')?.classList.add('hidden');
         }
 
         function togglePasswordVisibility(inputId, btn) {
             const inp = document.getElementById(inputId);
             if (!inp) return;
             inp.type = inp.type === 'password' ? 'text' : 'password';
+            btn.innerHTML = inp.type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
         }
 
         async function saveUserAccount() {
-            const orig = document.getElementById('uf-original-username').value;
+            const origUsername = document.getElementById('uf-original-username').value.trim();
             const username = document.getElementById('uf-username').value.trim();
             const password = document.getElementById('uf-password').value;
             const role = document.getElementById('uf-role').value;
@@ -4905,9 +5279,21 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 showToast('Username dan Password wajib diisi!', 'error');
                 return;
             }
-            if (orig) {
-                const idx = appState.users.findIndex(u => u.username === orig);
-                if (idx >= 0) appState.users[idx] = { username, password, role, location };
+
+            if (!Array.isArray(appState.users)) appState.users = getDefaultUsersSeed();
+
+            if (origUsername) {
+                const idx = appState.users.findIndex(u => u.username.toLowerCase() === origUsername.toLowerCase());
+                if (idx >= 0) {
+                    appState.users[idx] = { username, password, role, location };
+                    if (origUsername.toLowerCase() === currentUser.rawUsername.toLowerCase()) {
+                        currentUser.username = username.toUpperCase();
+                        currentUser.rawUsername = username;
+                        currentUser.role = role;
+                        currentUser.location = location;
+                        updateDatabaseIdentityUI();
+                    }
+                }
             } else {
                 if (appState.users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
                     showToast('Username sudah digunakan!', 'error');
@@ -4915,17 +5301,19 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
                 }
                 appState.users.push({ username, password, role, location });
             }
+
             closeUserFormModal();
-            renderSettingsUsersTable();
             await saveAppState();
-            showToast('Akun user berhasil disimpan!', 'success');
+            renderSettingsUsersTable();
+            showToast(`Akun user "${username}" berhasil disimpan!`, 'success');
         }
 
         async function deleteUserAccount(username) {
-            appState.users = appState.users.filter(u => u.username !== username);
-            renderSettingsUsersTable();
+            if (!isCurrentUserAdmin()) return;
+            appState.users = appState.users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
             await saveAppState();
-            showToast(`User ${username} dihapus.`, 'info');
+            renderSettingsUsersTable();
+            showToast(`User "${username}" dihapus.`, 'info');
         }
 
         async function saveSupabaseConfig() {
@@ -4937,8 +5325,12 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         }
 
         async function syncNowWithSupabase() {
+            if (!supabaseClient) {
+                showToast('Masukkan URL & Anon Key Supabase terlebih dahulu!', 'error');
+                return;
+            }
             await pushToSupabase();
-            showToast('Sinkronisasi ke Supabase Cloud selesai!', 'success');
+            showToast('Sinkronisasi data ke Supabase selesai!', 'success');
         }
 
         function showSqlSchemaHelp() {
@@ -4947,23 +5339,21 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
 
         function downloadBackupJSON() {
             const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `Backup_DONETCELL_${activeDatabaseName}_${new Date().toISOString().slice(0, 10)}.json`;
+            a.href = URL.createObjectURL(blob);
+            a.download = `Backup_iPos5_${activeDatabaseName}_${new Date().toISOString().slice(0, 10)}.json`;
             a.click();
-            URL.revokeObjectURL(url);
         }
 
         async function resetDemoData() {
             appState = createDefaultState(activeDatabaseName);
             await saveAppState();
             closeModal('settings-modal');
-            showToast('Database telah di-reset ke data awal!', 'info');
+            showToast('Data berhasil dikembalikan ke pengaturan awal!', 'info');
         }
 
         // =========================================================================
-        // 14. AUTO-SCAN OCR NOTA & BUKTI TRANSFER (TESSERACT.JS)
+        // 12. AUTO-SCAN OCR NOTA & STRUK (TESSERACT.JS)
         // =========================================================================
         function openOcrScannerModal(mode = 'ppob') {
             if (mode !== 'auto') {
@@ -4975,61 +5365,83 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
         async function handleOcrImageUpload(e) {
             const file = e.target.files?.[0];
             if (!file) return;
-            const imgEl = document.getElementById('ocr-preview-img');
-            imgEl.src = URL.createObjectURL(file);
-            imgEl.classList.remove('hidden');
-            document.getElementById('ocr-upload-placeholder').classList.add('hidden');
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const img = document.getElementById('ocr-preview-img');
+                img.src = ev.target.result;
+                img.classList.remove('hidden');
+                document.getElementById('ocr-upload-placeholder').classList.add('hidden');
+                await runTesseractOcr(ev.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
 
+        async function runTesseractOcr(imageSrc) {
+            if (!window.Tesseract) {
+                showToast('Library OCR belum siap, silakan ketik manual atau coba lagi.', 'error');
+                return;
+            }
             const progBox = document.getElementById('ocr-progress-box');
             const progBar = document.getElementById('ocr-progress-bar');
-            const pctLbl = document.getElementById('ocr-percent-label');
+            const pctLabel = document.getElementById('ocr-percent-label');
             progBox.classList.remove('hidden');
 
             try {
-                if (window.Tesseract) {
-                    const res = await Tesseract.recognize(file, 'ind+eng', {
-                        logger: m => {
-                            if (m.status === 'recognizing text') {
-                                const p = Math.round((m.progress || 0) * 100);
-                                progBar.style.width = `${p}%`;
-                                pctLbl.textContent = `${p}%`;
-                            }
+                const result = await Tesseract.recognize(imageSrc, 'eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const pct = Math.round((m.progress || 0) * 100);
+                            progBar.style.width = `${pct}%`;
+                            pctLabel.textContent = `${pct}%`;
                         }
-                    });
-                    document.getElementById('ocr-raw-text').value = res.data.text || '';
-                    parseRawOcrTextManual();
-                    document.getElementById('ocr-detected-badge').classList.remove('hidden');
-                }
+                    }
+                });
+                const rawText = result.data.text || '';
+                document.getElementById('ocr-raw-text').value = rawText;
+                parseOcrText(rawText);
+                document.getElementById('ocr-detected-badge').classList.remove('hidden');
+                showToast('Gambar berhasil dipindai oleh OCR!', 'success');
             } catch (err) {
-                showToast('Gagal memproses OCR gambar.', 'error');
+                showToast('Gagal memindai gambar OCR.', 'error');
             } finally {
                 progBox.classList.add('hidden');
             }
         }
 
         function parseRawOcrTextManual() {
-            const raw = document.getElementById('ocr-raw-text').value || '';
-            const amountMatch = raw.match(/(?:Rp\.?\s*|IDR\s*)?([1-9]\d{0,2}(?:[.,]\d{3})+)/i);
-            if (amountMatch) {
-                const numeric = Number(amountMatch[1].replace(/[.,]/g, ''));
-                if (numeric > 0) document.getElementById('ocr-ext-amount').value = numeric;
-            }
-            const phoneMatch = raw.match(/(08\d{8,12})/);
-            if (phoneMatch) {
-                document.getElementById('ocr-ext-target').value = phoneMatch[1];
-            }
-            const upper = raw.toUpperCase();
-            if (upper.includes('BRI')) document.getElementById('ocr-ext-provider').value = 'BRI';
-            else if (upper.includes('BCA')) document.getElementById('ocr-ext-provider').value = 'BCA';
-            else if (upper.includes('MANDIRI')) document.getElementById('ocr-ext-provider').value = 'MANDIRI';
-            else if (upper.includes('DANA')) document.getElementById('ocr-ext-provider').value = 'DANA';
-            else if (upper.includes('TELKOMSEL')) document.getElementById('ocr-ext-provider').value = 'TELKOMSEL';
+            const raw = document.getElementById('ocr-raw-text').value;
+            parseOcrText(raw);
+            showToast('Teks OCR dianalisa ulang.', 'info');
+        }
 
-            document.getElementById('ocr-ext-desc').value = raw.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 2).join(' - ');
+        function parseOcrText(text) {
+            const upper = (text || '').toUpperCase();
+            let provider = 'BRI';
+            if (upper.includes('BCA')) provider = 'BCA';
+            else if (upper.includes('MANDIRI')) provider = 'MANDIRI';
+            else if (upper.includes('BNI')) provider = 'BNI';
+            else if (upper.includes('DANA')) provider = 'DANA';
+            else if (upper.includes('TELKOMSEL')) provider = 'TELKOMSEL';
+
+            const phoneMatch = upper.match(/08[0-9]{8,11}/);
+            const rekMatch = upper.match(/[0-9]{10,16}/);
+            const target = phoneMatch ? phoneMatch[0] : (rekMatch ? rekMatch[0] : '');
+
+            const moneyMatches = [...upper.matchAll(/(?:RP\.?\s*)([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,9})/g)];
+            let maxAmt = 0;
+            moneyMatches.forEach(m => {
+                const num = Number(m[1].replace(/[.,]/g, ''));
+                if (num > maxAmt && num < 500000000) maxAmt = num;
+            });
+
+            document.getElementById('ocr-ext-provider').value = provider;
+            document.getElementById('ocr-ext-target').value = target;
+            if (maxAmt > 0) document.getElementById('ocr-ext-amount').value = maxAmt;
+            document.getElementById('ocr-ext-desc').value = `Hasil Scan ${provider} ${target ? '(' + target + ')' : ''}`;
         }
 
         function applyOcrResultToSystem() {
-            const targetMode = document.getElementById('ocr-target-mode').value;
+            const mode = document.getElementById('ocr-target-mode').value;
             const target = document.getElementById('ocr-ext-target').value.trim();
             const amount = Number(document.getElementById('ocr-ext-amount').value) || 0;
             const qty = Math.max(1, Number(document.getElementById('ocr-ext-qty').value) || 1);
@@ -5037,54 +5449,327 @@ CREATE POLICY "Allow anon all service" ON donet_cell_service_tickets FOR ALL USI
 
             closeModal('ocr-scanner-modal');
 
-            if (targetMode === 'pembelian') {
+            if (mode === 'pembelian') {
                 switchTab('pembelian');
                 document.getElementById('buy-item-qty').value = qty;
                 if (amount > 0) document.getElementById('buy-item-cost').value = Math.round(amount / qty);
-                showToast('Data hasil scan diisi ke form Pembelian!', 'success');
-            } else if (targetMode === 'pos') {
+            } else if (mode === 'pos') {
                 switchTab('kasir');
-                if (target) document.getElementById('pos-barcode-input').value = target;
-                showToast('Data hasil scan dikirim ke Kasir POS!', 'success');
+                if (target) {
+                    const found = appState.items.find(i => i.code.toLowerCase().includes(target.toLowerCase()));
+                    if (found) addItemToPosCart(found.code);
+                }
             } else {
                 switchTab('ppob', 'transfer');
-                if (target) document.getElementById('ppob-target-number').value = target;
-                if (desc) document.getElementById('ppob-product-desc').value = desc;
+                document.getElementById('ppob-target-number').value = target;
+                document.getElementById('ppob-product-desc').value = desc || 'Transfer Bank Hasil Scan';
                 if (amount > 0) {
                     document.getElementById('ppob-modal-amount').value = amount;
                     document.getElementById('ppob-sell-amount').value = amount + 5000;
                     recalcPpobProfit();
                 }
-                showToast('Data bukti transfer berhasil diisi ke loket PPOB / BRILink!', 'success');
             }
+            showToast('Data hasil scan OCR berhasil diisikan ke formulir!', 'success');
         }
 
         // =========================================================================
-        // 15. INITIALIZATION ON WINDOW LOAD
+        // 13. EDIT & HAPUS TRANSAKSI (DENGAN SINKRONISASI SALDO & STOK)
         // =========================================================================
-        function updateClockAndNetwork() {
-            const clockEl = document.getElementById('status-clock');
-            if (clockEl) {
-                clockEl.textContent = new Date().toLocaleTimeString('id-ID');
+        function openEditTransactionModal(trxId) {
+            const trx = appState.transactions.find(t => t.id === trxId);
+            if (!trx) return;
+            document.getElementById('edit-trx-id').value = trx.id;
+            document.getElementById('edit-trx-code').value = trx.id;
+            document.getElementById('edit-trx-module').value = trx.module;
+            document.getElementById('edit-trx-date').value = new Date(trx.date).toISOString().slice(0, 16);
+            document.getElementById('edit-trx-customer').value = trx.customer || 'Umum';
+            document.getElementById('edit-trx-desc').value = trx.description || '';
+            document.getElementById('edit-trx-modal').value = trx.modal || 0;
+            document.getElementById('edit-trx-total').value = trx.total || 0;
+            recalcEditTrxProfit();
+            document.getElementById('edit-trx-modal').classList.remove('hidden');
+        }
+
+        function recalcEditTrxProfit() {
+            const modalVal = Number(document.getElementById('edit-trx-modal').value) || 0;
+            const totalVal = Number(document.getElementById('edit-trx-total').value) || 0;
+            const profit = totalVal - modalVal;
+            const displayEl = document.getElementById('edit-trx-profit-display');
+            if (displayEl) displayEl.textContent = formatRp(profit);
+        }
+
+        async function saveEditedTransaction(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-trx-id').value;
+            const trx = appState.transactions.find(t => t.id === id);
+            if (!trx) return;
+
+            const oldTotal = Number(trx.total) || 0;
+            const newModal = Number(document.getElementById('edit-trx-modal').value) || 0;
+            const newTotal = Number(document.getElementById('edit-trx-total').value) || 0;
+            const payMethod = trx.paymentMethod || 'KAS_TOKO';
+
+            if (appState.wallets[payMethod] !== undefined) {
+                appState.wallets[payMethod] += (newTotal - oldTotal);
             }
-            const netEl = document.getElementById('footer-internet-status');
-            if (netEl) {
-                netEl.innerHTML = navigator.onLine
-                    ? `<i class="fas fa-wifi text-emerald-600"></i> Online (Sinkronisasi Siap)`
-                    : `<i class="fas fa-plane text-amber-600"></i> Offline (Penyimpanan Lokal Aktif)`;
+
+            trx.date = new Date(document.getElementById('edit-trx-date').value).toISOString();
+            trx.customer = document.getElementById('edit-trx-customer').value.trim();
+            trx.description = document.getElementById('edit-trx-desc').value.trim();
+            trx.modal = newModal;
+            trx.total = newTotal;
+            trx.profit = newTotal - newModal;
+
+            closeModal('edit-trx-modal');
+            await saveAppState();
+            showToast(`Transaksi ${id} berhasil diperbarui!`, 'success');
+        }
+
+        function openDeleteTransactionModal(trxId) {
+            const trx = appState.transactions.find(t => t.id === trxId);
+            if (!trx) return;
+            document.getElementById('delete-trx-id').value = trx.id;
+            document.getElementById('delete-trx-label').textContent = `${trx.id} (${formatRp(trx.total)})`;
+            document.getElementById('delete-trx-modal').classList.remove('hidden');
+        }
+
+        async function confirmDeleteTransaction() {
+            const id = document.getElementById('delete-trx-id').value;
+            const idx = appState.transactions.findIndex(t => t.id === id);
+            if (idx < 0) return;
+            const trx = appState.transactions[idx];
+
+            if (trx.paymentMethod && appState.wallets[trx.paymentMethod] !== undefined) {
+                appState.wallets[trx.paymentMethod] -= (Number(trx.total) || 0);
+            }
+            if (trx.module === 'POS' && Array.isArray(trx.items)) {
+                trx.items.forEach(it => {
+                    const master = appState.items.find(m => m.code === it.code);
+                    if (master && master.category !== 'Jasa Servis') {
+                        master.stock += (Number(it.qty) || 0);
+                    }
+                });
+            }
+
+            appState.transactions.splice(idx, 1);
+            closeModal('delete-trx-modal');
+            await saveAppState();
+            showToast(`Transaksi ${id} dihapus & saldo/stok dikembalikan.`, 'info');
+        }
+
+        // =========================================================================
+        // 14. INITIALIZATION ON WINDOW LOAD
+        // =========================================================================
+        function initPosHeader() {
+            const invEl = document.getElementById('pos-invoice-no');
+            const dateEl = document.getElementById('pos-date');
+            if (invEl) invEl.value = generateInvoiceId('POS');
+            if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
+        }
+
+        function populatePosCustomerDropdown() {
+            const sel = document.getElementById('pos-customer');
+            if (!sel) return;
+            const prev = sel.value;
+            const custs = appState.customers || [];
+            sel.innerHTML = custs.map(c =>
+                `<option value="${c.group === 'RESELLER' ? 'COUNTER' : c.code}" data-name="${c.name}">${c.name} (${c.group})</option>`
+            ).join('');
+            if (prev && Array.from(sel.options).some(o => o.value === prev)) {
+                sel.value = prev;
             }
         }
 
-        window.addEventListener('load', async () => {
+        function populateCategoryDropdowns(selectedCat = '') {
+            ensureCategoriesIntegrity();
+            const cats = appState.categories;
+
+            const itemCatSel = document.getElementById('item-category');
+            if (itemCatSel) {
+                itemCatSel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (selectedCat && cats.includes(selectedCat)) {
+                    itemCatSel.value = selectedCat;
+                }
+            }
+
+            const quickCatSel = document.getElementById('pos-quick-cat');
+            if (quickCatSel) {
+                const prevQ = quickCatSel.value;
+                quickCatSel.innerHTML = `<option value="ALL">Semua Kategori</option>` +
+                    cats.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (prevQ && Array.from(quickCatSel.options).some(o => o.value === prevQ)) {
+                    quickCatSel.value = prevQ;
+                }
+            }
+
+            const ksCatSel = document.getElementById('kartustok-filter-category');
+            if (ksCatSel) {
+                const prevKs = ksCatSel.value;
+                ksCatSel.innerHTML = `<option value="ALL">Semua Kategori</option>` +
+                    cats.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (prevKs && Array.from(ksCatSel.options).some(o => o.value === prevKs)) {
+                    ksCatSel.value = prevKs;
+                }
+            }
+
+            onKartuStokCategoryChange(false);
+            renderCustomCategoriesList();
+        }
+
+        function onKartuStokCategoryChange(shouldRenderTable = true) {
+            const catFilter = document.getElementById('kartustok-filter-category')?.value || 'ALL';
+            const ksItemSel = document.getElementById('kartustok-filter-item');
+            if (ksItemSel) {
+                const prevItem = ksItemSel.value;
+                const filteredItems = (appState.items || []).filter(i => catFilter === 'ALL' || i.category === catFilter);
+                ksItemSel.innerHTML = `<option value="ALL">Semua Item (${filteredItems.length})</option>` +
+                    filteredItems.map(i => `<option value="${i.code}">${i.code} - ${i.name}</option>`).join('');
+                if (prevItem && Array.from(ksItemSel.options).some(o => o.value === prevItem)) {
+                    ksItemSel.value = prevItem;
+                } else {
+                    ksItemSel.value = 'ALL';
+                }
+            }
+            if (shouldRenderTable) {
+                renderStockLedgerTable();
+            }
+        }
+
+        function toggleNewCategoryBox() {
+            const box = document.getElementById('new-category-box');
+            if (!box) return;
+            box.classList.toggle('hidden');
+            if (!box.classList.contains('hidden')) {
+                renderCustomCategoriesList();
+                setTimeout(() => document.getElementById('new-category-input')?.focus(), 50);
+            }
+        }
+
+        function openWalletModal(walletId = '') {
+            const modalTitle = document.getElementById('wallet-modal-title');
+            const editIdInput = document.getElementById('edit-wallet-id');
+            const codeInput = document.getElementById('wallet-code-input');
+            const typeInput = document.getElementById('wallet-type-input');
+            const nameInput = document.getElementById('wallet-name-input');
+            const balInput = document.getElementById('wallet-balance-input');
+            const colorInput = document.getElementById('wallet-color-input');
+            const descInput = document.getElementById('wallet-desc-input');
+
+            if (walletId) {
+                const existing = (appState.walletList || []).find(w => w.id === walletId);
+                if (!existing) return;
+                modalTitle.innerHTML = `<i class="fas fa-edit mr-1.5 text-sky-600"></i> Edit Sumber Dana: ${existing.name}`;
+                editIdInput.value = existing.id;
+                codeInput.value = existing.id;
+                codeInput.readOnly = true;
+                codeInput.classList.add('bg-slate-100');
+                typeInput.value = existing.type || 'BANK';
+                nameInput.value = existing.name;
+                balInput.value = Number(appState.wallets[existing.id]) || 0;
+                colorInput.value = existing.color || 'teal';
+                descInput.value = existing.desc || '';
+            } else {
+                modalTitle.innerHTML = `<i class="fas fa-wallet mr-1.5 text-teal-600"></i> Tambah Sumber Dana Baru`;
+                editIdInput.value = '';
+                codeInput.value = '';
+                codeInput.readOnly = false;
+                codeInput.classList.remove('bg-slate-100');
+                typeInput.value = 'BANK';
+                nameInput.value = '';
+                balInput.value = 0;
+                colorInput.value = 'teal';
+                descInput.value = '';
+            }
+            document.getElementById('wallet-modal').classList.remove('hidden');
+        }
+
+        async function saveWalletAccount(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-wallet-id').value.trim();
+            const rawCode = document.getElementById('wallet-code-input').value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+            const type = document.getElementById('wallet-type-input').value;
+            const name = document.getElementById('wallet-name-input').value.trim();
+            const balance = Number(document.getElementById('wallet-balance-input').value) || 0;
+            const color = document.getElementById('wallet-color-input').value;
+            const desc = document.getElementById('wallet-desc-input').value.trim();
+
+            if (!rawCode || !name) {
+                showToast('Kode akun dan nama sumber dana wajib diisi!', 'error');
+                return;
+            }
+
+            ensureWalletListIntegrity();
+
+            if (editId) {
+                const idx = appState.walletList.findIndex(w => w.id === editId);
+                if (idx >= 0) {
+                    appState.walletList[idx] = { id: editId, name, type, color, desc };
+                    appState.wallets[editId] = balance;
+                    showToast(`Sumber dana "${name}" berhasil diperbarui!`, 'success');
+                }
+            } else {
+                if (appState.walletList.some(w => w.id === rawCode)) {
+                    showToast(`Kode akun "${rawCode}" sudah digunakan!`, 'error');
+                    return;
+                }
+                appState.walletList.push({ id: rawCode, name, type, color, desc });
+                appState.wallets[rawCode] = balance;
+                showToast(`Sumber dana baru "${name}" berhasil ditambahkan!`, 'success');
+            }
+
+            closeModal('wallet-modal');
+            await saveAppState();
+        }
+
+        async function deleteWalletAccount(walletId) {
+            if ((appState.walletList || []).length <= 1) {
+                showToast('Minimal harus tersisa 1 akun sumber dana!', 'error');
+                return;
+            }
+            const target = appState.walletList.find(w => w.id === walletId);
+            if (!target) return;
+            appState.walletList = appState.walletList.filter(w => w.id !== walletId);
+            delete appState.wallets[walletId];
+            await saveAppState();
+            showToast(`Sumber dana "${target.name}" telah dihapus.`, 'info');
+        }
+
+        function showReceiptModalById(trxId) {
+            const trx = (appState.transactions || []).find(t => t.id === trxId);
+            if (trx) showReceiptModal(trx);
+        }
+
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+        function updateNetworkStatus() {
+            const el = document.getElementById('footer-internet-status');
+            if (!el) return;
+            if (navigator.onLine) {
+                el.innerHTML = `<i class="fas fa-wifi text-emerald-600"></i> Online (Terhubung ke Internet)`;
+                pushToSupabase();
+            } else {
+                el.innerHTML = `<i class="fas fa-plane text-amber-600"></i> Offline (Penyimpanan Lokal Aktif)`;
+            }
+        }
+
+        setInterval(() => {
+            const clock = document.getElementById('status-clock');
+            if (clock) {
+                clock.textContent = new Date().toLocaleTimeString('id-ID');
+            }
+        }, 1000);
+
+        window.onload = async () => {
             initPosHeader();
+            initServiceFormHeader();
+            setPpobMode('pulsa');
+            updateNetworkStatus();
             await loadDatabaseForActiveTenant();
             updateDatabaseIdentityUI();
-            setPpobMode('pulsa');
             refreshAllUI();
-            renderDbList();
-            updateClockAndNetwork();
-            setInterval(updateClockAndNetwork, 1000);
-        });
+            openDbModal();
+        };
     </script>
 </body>
 </html>
