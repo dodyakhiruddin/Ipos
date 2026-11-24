@@ -2079,6 +2079,17 @@
             </div>
             <form onsubmit="saveMasterItem(event)" class="p-4 space-y-3 text-xs">
                 <input type="hidden" id="edit-item-index" value="-1">
+                <!-- Export / Import Data Barang (hanya saat tambah baru) -->
+                <div id="item-io-box" class="bg-emerald-50 border border-emerald-200 rounded p-2.5 space-y-1.5">
+                    <div class="font-bold text-[11px] text-emerald-900"><i class="fas fa-file-excel mr-1"></i> Input Massal via Excel / CSV</div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="downloadItemTemplate()" class="ipos-btn px-2.5 py-1 rounded text-[11px] font-bold text-slate-700"><i class="fas fa-download mr-1"></i> Unduh Template</button>
+                        <button type="button" onclick="exportItemsToExcel()" class="ipos-btn px-2.5 py-1 rounded text-[11px] font-bold text-sky-800"><i class="fas fa-file-export mr-1"></i> Export Data Barang</button>
+                        <button type="button" onclick="document.getElementById('item-import-file').click()" class="ipos-btn-success px-2.5 py-1 rounded text-[11px] font-bold"><i class="fas fa-file-import mr-1"></i> Import Excel/CSV</button>
+                        <input type="file" id="item-import-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importItemsFromFile(event)">
+                    </div>
+                    <div class="text-[10px] text-emerald-900">Kolom: No, Kode, Kategori, Nama Barang, Satuan, HPP, Harga Umum, Harga Grosir. Kode &amp; nama yang sama tidak dibuat ganda (hanya harga diperbarui). Kode kosong = dibuat otomatis.</div>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block font-bold mb-1 flex items-center justify-between">
@@ -4074,6 +4085,7 @@
                 document.getElementById('item-price').value = 13000;
                 document.getElementById('item-wholesale-price').value = 12000;
             }
+            document.getElementById('item-io-box')?.classList.toggle('hidden', idx >= 0);
             document.getElementById('item-modal').classList.remove('hidden');
         }
 
@@ -4101,6 +4113,205 @@
             closeModal('item-modal');
             await saveAppState();
             showToast(`Data barang ${itemObj.name} tersimpan!`, 'success');
+        }
+
+                // ---------- EXPORT / IMPORT DATA BARANG (Excel & CSV) ----------
+        const ITEM_IO_HEADERS = ['No', 'Kode', 'Kategori', 'Nama Barang', 'Satuan', 'HPP', 'Harga Umum', 'Harga Grosir'];
+        const ITEM_IO_COLS = [{ wch: 6 }, { wch: 14 }, { wch: 16 }, { wch: 38 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+
+        function itemIoCheckLib() {
+            if (typeof XLSX === 'undefined') {
+                showToast('Library Excel (SheetJS) belum termuat. Cek koneksi internet lalu muat ulang halaman.', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        function itemIoToday() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function itemIoNameKey(v) {
+            return String(v ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+        }
+
+        function downloadItemTemplate() {
+            if (!itemIoCheckLib()) return;
+            const rows = [
+                ITEM_IO_HEADERS,
+                [1, 'VCR-001', 'Voucher', 'Voucher Telkomsel 3GB / 5 Hari', 'PCS', 10000, 13000, 12000],
+                [2, '', 'Aksesoris', 'Kabel Data Type-C', 'PCS', 15000, 25000, 20000]
+            ];
+            const guide = [
+                ['Petunjuk Pengisian'],
+                ['1. Jangan ubah nama kolom pada baris pertama sheet "Data Barang". Kolom No hanya nomor urut.'],
+                ['2. Kode boleh dikosongkan (dibuat otomatis). Nama Barang wajib diisi.'],
+                ['3. Jika Kode dan Nama Barang sama dengan data yang sudah ada, barang TIDAK dibuat ganda; hanya HPP/Harga yang diperbarui.'],
+                ['4. Jika Kode sama tetapi Nama Barang berbeda, baris dilewati agar kode tidak bentrok.'],
+                ['5. Kategori baru otomatis ditambahkan. Satuan kosong = PCS. Stok tidak diimpor (barang baru stok 0).'],
+                ['6. HPP, Harga Umum, Harga Grosir diisi angka tanpa titik/Rp.']
+            ];
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            ws['!cols'] = ITEM_IO_COLS;
+            XLSX.utils.book_append_sheet(wb, ws, 'Data Barang');
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(guide), 'Petunjuk');
+            XLSX.writeFile(wb, 'Template_Import_Barang.xlsx');
+            showToast('Template import barang diunduh.', 'success');
+        }
+
+        function exportItemsToExcel() {
+            if (!itemIoCheckLib()) return;
+            const items = appState.items || [];
+            if (!items.length) {
+                showToast('Belum ada data barang untuk di-export. Gunakan "Unduh Template" untuk contoh format.', 'info');
+                return;
+            }
+            const rows = [ITEM_IO_HEADERS].concat(items.map((it, i) => [
+                i + 1, it.code || '', it.category || '', it.name || '', it.unit || 'PCS',
+                Number(it.cost) || 0, Number(it.price) || 0,
+                Number(it.wholesalePrice) || Number(it.price) || 0
+            ]));
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            ws['!cols'] = ITEM_IO_COLS;
+            XLSX.utils.book_append_sheet(wb, ws, 'Data Barang');
+            XLSX.writeFile(wb, `Data_Barang_${activeDatabaseName}_${itemIoToday()}.xlsx`);
+            showToast(`${items.length} barang berhasil di-export.`, 'success');
+        }
+
+        function itemIoNum(v) {
+            if (typeof v === 'number') return isFinite(v) ? v : 0;
+            let t = String(v ?? '').replace(/rp/ig, '').replace(/[^\d.,-]/g, '');
+            if (!t) return 0;
+            if (t.includes('.') && t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+            else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+            else if (/^-?\d{1,3}(,\d{3})+$/.test(t)) t = t.replace(/,/g, '');
+            else t = t.replace(',', '.');
+            const n = Number(t);
+            return isFinite(n) ? n : 0;
+        }
+
+        function itemIoKey(h) {
+            const k = String(h ?? '').toLowerCase().replace(/[^a-z]/g, '');
+            const map = {
+                kode: 'code', kodeitem: 'code', kodebarang: 'code', barcode: 'code', code: 'code', sku: 'code',
+                kategori: 'category', jenis: 'category', category: 'category',
+                namabarang: 'name', nama: 'name', namaitem: 'name', barang: 'name', name: 'name', produk: 'name',
+                satuan: 'unit', sat: 'unit', unit: 'unit',
+                hpp: 'cost', hargapokok: 'cost', modal: 'cost', cost: 'cost',
+                hargaumum: 'price', hargajual: 'price', hargaeceran: 'price', harga: 'price', price: 'price',
+                hargagrosir: 'wholesale', grosir: 'wholesale', hargareseller: 'wholesale', wholesale: 'wholesale'
+            };
+            return map[k] || null; // kolom No dan Stok diabaikan
+        }
+
+        function importItemsFromFile(ev) {
+            const input = ev.target;
+            const file = input.files && input.files[0];
+            if (!file) return;
+            if (!itemIoCheckLib()) { input.value = ''; return; }
+            const reader = new FileReader();
+            reader.onerror = () => { showToast('Gagal membaca file.', 'error'); input.value = ''; };
+            reader.onload = async (e) => {
+                try {
+                    const wb = XLSX.read(e.target.result, { type: 'array' });
+                    const sheetName = wb.SheetNames.find(n => n.toLowerCase() === 'data barang') || wb.SheetNames[0];
+                    const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+                    if (!raw.length) { showToast('File kosong atau tidak ada baris data.', 'error'); return; }
+
+                    const rows = raw.map(r => {
+                        const o = {};
+                        Object.keys(r).forEach(h => { const key = itemIoKey(h); if (key) o[key] = r[h]; });
+                        return o;
+                    });
+                    if (!rows.some(r => 'name' in r)) {
+                        showToast('Kolom "Nama Barang" tidak ditemukan. Gunakan template dari tombol "Unduh Template".', 'error');
+                        return;
+                    }
+
+                    ensureCategoriesIntegrity();
+                    const items = appState.items;
+                    const usedCodes = new Set(items.map(i => String(i.code).toUpperCase()));
+                    const newCats = new Set();
+                    const parsed = new Map(); // kunci: kode|nama -> baris terakhir menang (harga boleh beda)
+                    let skippedEmpty = 0, skippedConflict = 0, mergedInFile = 0;
+
+                    rows.forEach(r => {
+                        const name = String(r.name ?? '').trim().replace(/\s+/g, ' ');
+                        if (!name) { skippedEmpty++; return; }
+                        const code = String(r.code ?? '').trim().toUpperCase();
+                        const category = String(r.category ?? '').trim() || (appState.categories[0] || 'Umum');
+                        const price = Math.max(0, itemIoNum(r.price));
+                        const obj = {
+                            code, category, name,
+                            unit: String(r.unit ?? '').trim().toUpperCase() || 'PCS',
+                            cost: Math.max(0, itemIoNum(r.cost)),
+                            price,
+                            wholesalePrice: Math.max(0, ('wholesale' in r && r.wholesale !== '') ? itemIoNum(r.wholesale) : price)
+                        };
+                        const key = `${code}|${itemIoNameKey(name)}`;
+                        if (parsed.has(key)) mergedInFile++;
+                        parsed.set(key, obj);
+                    });
+
+                    const toAdd = [], toUpdate = [];
+                    parsed.forEach(obj => {
+                        const nk = itemIoNameKey(obj.name);
+                        let existing = null;
+                        if (obj.code) {
+                            const byCode = items.find(x => String(x.code).toUpperCase() === obj.code);
+                            if (byCode) {
+                                if (itemIoNameKey(byCode.name) !== nk) { skippedConflict++; return; }
+                                existing = byCode;
+                            }
+                        } else {
+                            existing = items.find(x => itemIoNameKey(x.name) === nk) || null; // tanpa kode: cocokkan via nama
+                        }
+                        if (existing) { toUpdate.push({ existing, obj }); return; }
+                        if (!obj.code) {
+                            const prefix = obj.category.slice(0, 3).toUpperCase();
+                            let c;
+                            do { c = `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`; } while (usedCodes.has(c));
+                            obj.code = c;
+                        }
+                        usedCodes.add(obj.code);
+                        if (!appState.categories.includes(obj.category)) newCats.add(obj.category);
+                        toAdd.push(Object.assign({ stock: 0 }, obj));
+                    });
+
+                    if (!toAdd.length && !toUpdate.length) {
+                        showToast('Tidak ada data baru. Semua baris sudah ada, kosong, atau bentrok kode.', 'info');
+                        return;
+                    }
+                    const msg = `Import dari "${file.name}":\n` +
+                        `• Barang baru: ${toAdd.length}\n` +
+                        `• Sudah ada (kode & nama sama) → hanya harga diperbarui: ${toUpdate.length}\n` +
+                        `• Dilewati (nama kosong): ${skippedEmpty}\n` +
+                        `• Dilewati (kode sama, nama beda): ${skippedConflict}\n` +
+                        `• Baris ganda dalam file digabung: ${mergedInFile}\n` +
+                        (newCats.size ? `• Kategori baru: ${[...newCats].join(', ')}\n` : '') + `\nLanjutkan?`;
+                    if (!confirm(msg)) { showToast('Import dibatalkan.', 'info'); return; }
+
+                    newCats.forEach(c => appState.categories.push(c));
+                    toUpdate.forEach(({ existing, obj }) => {
+                        existing.cost = obj.cost;
+                        existing.price = obj.price;
+                        existing.wholesalePrice = obj.wholesalePrice;
+                    });
+                    toAdd.forEach(o => items.unshift(o));
+
+                    closeModal('item-modal');
+                    await saveAppState();
+                    showToast(`Import selesai: ${toAdd.length} barang baru, ${toUpdate.length} harga diperbarui.`, 'success');
+                } catch (err) {
+                    console.error(err);
+                    showToast('Gagal memproses file: ' + (err.message || err), 'error');
+                } finally {
+                    input.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         async function deleteMasterItem(idx) {
