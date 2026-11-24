@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Utama - DONET CELL [GROSIRDONET]</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Library SheetJS (XLSX) untuk Import & Export Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -20,6 +20,12 @@
             background-color: #d8e6f3;
             overflow: hidden;
             user-select: none;
+        }
+
+        /* Kolom isian harus tetap bisa diketik/diseleksi (terutama Safari/iOS) */
+        input, textarea, select, [contenteditable="true"] {
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         .ipos-topbar {
@@ -2700,10 +2706,12 @@
         let selectedDbCandidate = activeDatabaseName;
         let dbFormMode = 'create';
         let dbEditOldName = '';
+        // Belum login: akun sementara tanpa hak akses (bukan ADMIN)
+        let isLoggedIn = false;
         let currentUser = {
-            username: 'ADMIN',
-            rawUsername: 'admin',
-            role: 'ADMIN',
+            username: 'TAMU',
+            rawUsername: '',
+            role: 'TAMU',
             location: 'UTM'
         };
 
@@ -2714,6 +2722,239 @@
             } catch (e) {
                 console.warn('Gagal menyimpan daftar database ke localStorage:', e);
             }
+        }
+
+        // ---------- Helper umum: escape HTML ----------
+        function esc(v) {
+            return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        // Untuk teks di dalam string JS pada atribut HTML, mis. onclick="fn('${escJs(x)}')"
+        function escJs(v) {
+            return esc(String(v ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' '));
+        }
+
+        // ---------- Hash password (PBKDF2-HMAC-SHA256, murni JS agar jalan di semua browser/konteks) ----------
+        const PW_PREFIX = 'pbkdf2$';
+        const PW_ITER = 40000;
+        const SHA256_K = new Uint32Array([
+            0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+            0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+            0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+            0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+            0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+            0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+            0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+            0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+        ]);
+
+        function sha256Bytes(data) {
+            const h = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]);
+            const len = data.length;
+            const padded = new Uint8Array(((len + 9 + 63) >> 6) << 6);
+            padded.set(data);
+            padded[len] = 0x80;
+            const dv = new DataView(padded.buffer);
+            dv.setUint32(padded.length - 8, Math.floor(len / 0x20000000));
+            dv.setUint32(padded.length - 4, (len * 8) >>> 0);
+            const w = new Uint32Array(64);
+            for (let off = 0; off < padded.length; off += 64) {
+                for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+                for (let i = 16; i < 64; i++) {
+                    const x0 = w[i - 15], x1 = w[i - 2];
+                    const s0 = ((x0 >>> 7) | (x0 << 25)) ^ ((x0 >>> 18) | (x0 << 14)) ^ (x0 >>> 3);
+                    const s1 = ((x1 >>> 17) | (x1 << 15)) ^ ((x1 >>> 19) | (x1 << 13)) ^ (x1 >>> 10);
+                    w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+                }
+                let a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+                for (let i = 0; i < 64; i++) {
+                    const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+                    const ch = (e & f) ^ (~e & g);
+                    const t1 = (hh + S1 + ch + SHA256_K[i] + w[i]) >>> 0;
+                    const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+                    const maj = (a & b) ^ (a & c) ^ (b & c);
+                    const t2 = (S0 + maj) >>> 0;
+                    hh = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+                }
+                h[0] = (h[0] + a) >>> 0; h[1] = (h[1] + b) >>> 0; h[2] = (h[2] + c) >>> 0; h[3] = (h[3] + d) >>> 0;
+                h[4] = (h[4] + e) >>> 0; h[5] = (h[5] + f) >>> 0; h[6] = (h[6] + g) >>> 0; h[7] = (h[7] + hh) >>> 0;
+            }
+            const out = new Uint8Array(32);
+            const ov = new DataView(out.buffer);
+            for (let i = 0; i < 8; i++) ov.setUint32(i * 4, h[i]);
+            return out;
+        }
+
+        function pbkdf2Sha256(passBytes, salt, iterations) {
+            const k = passBytes.length > 64 ? sha256Bytes(passBytes) : passBytes;
+            const ipad = new Uint8Array(64).fill(0x36);
+            const opad = new Uint8Array(64).fill(0x5c);
+            for (let i = 0; i < k.length; i++) { ipad[i] ^= k[i]; opad[i] ^= k[i]; }
+            const hmac = (m) => {
+                const a = new Uint8Array(64 + m.length);
+                a.set(ipad); a.set(m, 64);
+                const inner = sha256Bytes(a);
+                const b = new Uint8Array(96);
+                b.set(opad); b.set(inner, 64);
+                return sha256Bytes(b);
+            };
+            const first = new Uint8Array(salt.length + 4);
+            first.set(salt);
+            first[salt.length + 3] = 1;
+            let u = hmac(first);
+            const t = u.slice();
+            for (let i = 1; i < iterations; i++) {
+                u = hmac(u);
+                for (let j = 0; j < 32; j++) t[j] ^= u[j];
+            }
+            return t;
+        }
+
+        function bytesToHex(bytes) {
+            return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+        }
+        function hexToBytes(hex) {
+            const out = new Uint8Array(Math.floor(hex.length / 2));
+            for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16) || 0;
+            return out;
+        }
+
+        function isPasswordHashed(v) {
+            return typeof v === 'string' && v.startsWith(PW_PREFIX);
+        }
+
+        function hashPassword(plain) {
+            const salt = new Uint8Array(16);
+            if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(salt);
+            else for (let i = 0; i < salt.length; i++) salt[i] = Math.floor(Math.random() * 256);
+            const dk = pbkdf2Sha256(new TextEncoder().encode(String(plain ?? '')), salt, PW_ITER);
+            return `${PW_PREFIX}${PW_ITER}$${bytesToHex(salt)}$${bytesToHex(dk)}`;
+        }
+
+        function verifyPassword(stored, plain) {
+            if (!isPasswordHashed(stored)) return stored === plain; // data lama (teks biasa), dimigrasi saat login
+            const parts = stored.split('$'); // ['pbkdf2', iterasi, salt, hash]
+            if (parts.length !== 4) return false;
+            const iter = parseInt(parts[1], 10);
+            if (!(iter > 0)) return false;
+            const dk = bytesToHex(pbkdf2Sha256(new TextEncoder().encode(String(plain ?? '')), hexToBytes(parts[2]), iter));
+            let diff = dk.length ^ parts[3].length;
+            for (let i = 0; i < dk.length; i++) diff |= dk.charCodeAt(i) ^ (parts[3].charCodeAt(i) || 0);
+            return diff === 0;
+        }
+
+        function migrateLegacyPasswords() {
+            let changed = false;
+            (appState.users || []).forEach(u => {
+                if (u && !isPasswordHashed(u.password)) {
+                    u.password = hashPassword(String(u.password ?? ''));
+                    changed = true;
+                }
+            });
+            return changed;
+        }
+
+        // Salinan data untuk cloud & file backup tanpa kunci rahasia Supabase
+        function getSanitizedStateForExport() {
+            const copy = JSON.parse(JSON.stringify(appState));
+            if (copy.settings) {
+                delete copy.settings.supabaseKey;
+                delete copy.settings.supabaseUrl;
+            }
+            return copy;
+        }
+
+        // ---------- Helper dompet, utang/piutang & pembatalan transaksi ----------
+        function walletExists(id) {
+            return Boolean(id) && appState.wallets[id] !== undefined;
+        }
+
+        function confirmIfInsufficient(walletId, amount) {
+            if (!walletExists(walletId)) return true;
+            const bal = Number(appState.wallets[walletId]) || 0;
+            if (bal >= amount) return true;
+            return confirm(`Saldo ${getWalletNameById(walletId)} hanya Rp ${formatRp(bal)}, kurang dari Rp ${formatRp(amount)}.\n\nLanjutkan dan biarkan saldo menjadi minus?`);
+        }
+
+        // Hapus catatan utang/piutang beserta pengembalian saldo dari cicilan yang tercatat.
+        function removeLinkedDebt(debtId) {
+            const idx = appState.debtsReceivables.findIndex(d => d.id === debtId);
+            if (idx < 0) return { found: false, unknownPaid: 0 };
+            const rec = appState.debtsReceivables[idx];
+            let known = 0;
+            (Array.isArray(rec.payments) ? rec.payments : []).forEach(p => {
+                const amt = Number(p.amount) || 0;
+                known += amt;
+                if (walletExists(p.wallet)) {
+                    if (rec.type === 'PIUTANG') appState.wallets[p.wallet] -= amt;
+                    else appState.wallets[p.wallet] += amt;
+                }
+            });
+            const unknownPaid = Math.max(0, (Number(rec.paidAmount) || 0) - known);
+            appState.debtsReceivables.splice(idx, 1);
+            return { found: true, unknownPaid };
+        }
+
+        function findLinkedReceivableId(trx) {
+            const candidates = [String(trx.id).replace(/^(JUA|BRI|PPB|SRV)/, 'PIU'), trx.id];
+            return candidates.find(cid => appState.debtsReceivables.some(d => d.id === cid && d.type === 'PIUTANG')) || null;
+        }
+
+        // Mengembalikan stok, saldo dompet, piutang & tiket servis akibat sebuah transaksi yang dibatalkan.
+        function reverseTransactionEffects(trx) {
+            const notes = [];
+            const nowIso = new Date().toISOString();
+
+            const stockRefs = Array.isArray(trx.stockOut) ? trx.stockOut : (trx.module === 'POS' ? (trx.items || []) : []);
+            stockRefs.forEach(r => {
+                const it = appState.items.find(x => x.code === r.code);
+                const q = Number(r.qty) || 0;
+                if (it && q > 0) {
+                    it.stock = (Number(it.stock) || 0) + q;
+                    appState.stockLedger.unshift({
+                        date: nowIso, ref: trx.id, code: it.code, name: it.name,
+                        type: 'BATAL TRANSAKSI', inQty: q, outQty: 0, balance: it.stock
+                    });
+                }
+            });
+
+            if (trx.paymentMethod === 'PIUTANG_TEMPO') {
+                const debtId = findLinkedReceivableId(trx);
+                if (debtId) {
+                    const r = removeLinkedDebt(debtId);
+                    if (r.unknownPaid > 0) notes.push(`cicilan lama Rp ${formatRp(r.unknownPaid)} tidak tercatat dompetnya, cek manual`);
+                }
+            } else if (walletExists(trx.paymentMethod)) {
+                appState.wallets[trx.paymentMethod] -= Number(trx.total) || 0;
+            }
+
+            if (trx.module === 'PPOB' || trx.module === 'BRILINK') {
+                if (walletExists(trx.sourceWallet)) appState.wallets[trx.sourceWallet] += Number(trx.modal) || 0;
+                else notes.push('dompet sumber transaksi lama tidak tercatat, cek saldo manual');
+            }
+
+            if (trx.module === 'SERVICE') {
+                const t = appState.serviceTickets.find(x => x.id === trx.id);
+                if (t) {
+                    t.status = 'PROSES';
+                    t.cost = 0;
+                    t.price = 0;
+                    t.destWallet = '';
+                    t.sparepartCode = '';
+                    t.sparepartQty = 0;
+                }
+            }
+            return notes;
+        }
+
+        // Tanggal transaksi kasir: pakai tanggal di form (jam diambil dari waktu sekarang)
+        function getPosTrxDateIso() {
+            const v = document.getElementById('pos-date')?.value;
+            const now = new Date();
+            if (!v || v === getTodayIsoDate()) return now.toISOString();
+            const pad = n => String(n).padStart(2, '0');
+            const d = new Date(`${v}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`);
+            return isNaN(d.getTime()) ? now.toISOString() : d.toISOString();
         }
 
         function getDefaultUsersSeed() {
@@ -2794,6 +3035,11 @@
         }
 
         function closeDbModal() {
+            // Sebelum login, jendela ini tidak boleh ditutup
+            if (!isLoggedIn) {
+                showToast('Pilih database lalu login terlebih dahulu.', 'error');
+                return;
+            }
             document.getElementById('ipos-db-select-modal').classList.add('hidden');
         }
 
@@ -2804,13 +3050,13 @@
                 const isSelected = dbName === selectedDbCandidate;
                 const isActive = dbName === activeDatabaseName;
                 return `
-                    <div onclick="selectDbCandidate('${dbName}')" ondblclick="selectDbCandidate('${dbName}'); confirmSelectDatabase();"
+                    <div onclick="selectDbCandidate('${escJs(dbName)}')" ondblclick="selectDbCandidate('${escJs(dbName)}'); confirmSelectDatabase();"
                          class="px-2.5 py-1.5 rounded cursor-pointer flex items-center justify-between text-xs transition ${
                              isSelected ? 'bg-sky-600 text-white font-bold shadow-sm' : 'hover:bg-sky-50 text-slate-800'
                          }">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-database ${isSelected ? 'text-amber-300' : 'text-sky-600'}"></i>
-                            <span>${dbName}</span>
+                            <span>${esc(dbName)}</span>
                         </div>
                         ${isActive ? `<span class="text-[10px] px-1.5 py-0.2 rounded ${isSelected ? 'bg-sky-800 text-sky-200' : 'bg-emerald-100 text-emerald-800'} font-semibold">Aktif</span>` : ''}
                     </div>
@@ -2901,10 +3147,10 @@
             banner.id = 'db-delete-confirm-banner';
             banner.className = 'mt-2 bg-red-50 border border-red-300 rounded p-2 text-[11px] text-red-900 flex items-center justify-between gap-2';
             banner.innerHTML = `
-                <span>Hapus permanen database <b>[${dbName}]</b>?</span>
+                <span>Hapus permanen database <b>[${esc(dbName)}]</b>?</span>
                 <div class="flex gap-1.5 shrink-0">
                     <button type="button" onclick="this.closest('#db-delete-confirm-banner').remove()" class="ipos-btn px-2 py-0.5 rounded font-semibold">Batal</button>
-                    <button type="button" onclick="executeDeleteDatabase('${dbName}')" class="ipos-btn-danger px-2.5 py-0.5 rounded font-bold">Ya, Hapus</button>
+                    <button type="button" onclick="executeDeleteDatabase('${escJs(dbName)}')" class="ipos-btn-danger px-2.5 py-0.5 rounded font-bold">Ya, Hapus</button>
                 </div>
             `;
             document.getElementById('ipos-db-list').after(banner);
@@ -2934,7 +3180,8 @@
             if (!selectedDbCandidate) return;
             activeDatabaseName = selectedDbCandidate;
             saveAvailableDatabasesList();
-            closeDbModal();
+            isLoggedIn = false;
+            document.getElementById('ipos-db-select-modal').classList.add('hidden');
             openLoginModal();
         }
 
@@ -2950,13 +3197,15 @@
             document.getElementById('ipos-login-error').classList.add('hidden');
             const firstUser = appState.users[0] || { username: 'admin', password: '' };
             document.getElementById('ipos-login-user').value = firstUser.username;
-            document.getElementById('ipos-login-pass').value = firstUser.username === 'admin' && firstUser.password === 'admin' ? 'admin' : '';
+            document.getElementById('ipos-login-pass').value = '';
             document.getElementById('ipos-login-modal').classList.remove('hidden');
             setTimeout(() => document.getElementById('ipos-login-user').focus(), 60);
         }
 
         function closeLoginModal() {
             document.getElementById('ipos-login-modal').classList.add('hidden');
+            // Belum berhasil login: kembali ke pemilihan database, aplikasi tetap terkunci
+            if (!isLoggedIn) openDbModal();
         }
 
         async function handleIposLogin(e) {
@@ -2970,7 +3219,7 @@
                 : getDefaultUsersSeed();
 
             const matchedAccount = usersList.find(
-                u => u.username.toLowerCase() === userInput.toLowerCase() && u.password === passInput
+                u => u.username.toLowerCase() === userInput.toLowerCase() && verifyPassword(u.password, passInput)
             );
 
             if (!matchedAccount) {
@@ -2979,6 +3228,8 @@
             }
 
             errEl.classList.add('hidden');
+            const usingWeakPw = passInput.toLowerCase() === String(matchedAccount.username).toLowerCase();
+            isLoggedIn = true;
             currentUser = {
                 username: matchedAccount.username.toUpperCase(),
                 rawUsername: matchedAccount.username,
@@ -2986,12 +3237,14 @@
                 location: matchedAccount.location || 'UTM'
             };
 
-            closeLoginModal();
+            document.getElementById('ipos-login-modal').classList.add('hidden');
 
             await loadDatabaseForActiveTenant();
+            if (migrateLegacyPasswords()) await saveAppState(); // ubah password teks biasa menjadi hash
             updateDatabaseIdentityUI();
             refreshAllUI();
             showToast(`Berhasil login ke [${activeDatabaseName}] sebagai ${currentUser.username} (${currentUser.role})`, 'success');
+            if (usingWeakPw) showToast('Password Anda masih bawaan/mudah ditebak. Segera ganti di Pengaturan > Kelola User.', 'error');
         }
 
         function updateDatabaseIdentityUI() {
@@ -3247,23 +3500,57 @@
             }
         }
 
-        async function pushToSupabase() {
-            if (!supabaseClient) return;
-            try {
-                await supabaseClient.from('donet_cell_state').upsert({
-                    id: `tenant_${activeDatabaseName}`,
-                    payload: appState,
-                    updated_at: new Date().toISOString()
-                });
-            } catch (e) {
-                console.warn('Supabase sync skipped:', e);
+        function setCloudSyncStatus(ok, msg = '') {
+            const badge = document.getElementById('cloud-status-badge');
+            const dot = document.getElementById('cloud-dot');
+            const txt = document.getElementById('cloud-status-text');
+            if (!badge || !dot || !txt) return;
+            if (ok) {
+                badge.className = 'flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer';
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+                txt.textContent = 'Supabase Cloud Aktif';
+                badge.title = '';
+            } else {
+                badge.className = 'flex items-center gap-1.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer';
+                dot.className = 'w-2 h-2 rounded-full bg-red-500';
+                txt.textContent = 'Cloud Gagal Sinkron';
+                badge.title = msg;
             }
         }
 
+        // Mengembalikan { ok, error }. Supabase tidak melempar exception untuk error API,
+        // melainkan mengembalikan { error }, jadi hasilnya harus diperiksa.
+        async function pushToSupabase() {
+            if (!supabaseClient) return { ok: false, error: 'Supabase belum dikonfigurasi' };
+            try {
+                const { error } = await supabaseClient.from('donet_cell_state').upsert({
+                    id: `tenant_${activeDatabaseName}`,
+                    payload: getSanitizedStateForExport(),
+                    updated_at: new Date().toISOString()
+                });
+                if (error) throw error;
+                setCloudSyncStatus(true);
+                return { ok: true };
+            } catch (e) {
+                const msg = (e && e.message) ? e.message : String(e);
+                console.warn('Supabase sync gagal:', e);
+                setCloudSyncStatus(false, msg);
+                return { ok: false, error: msg };
+            }
+        }
+
+        let lastSyncErrorToastAt = 0;
         async function saveAppState() {
             await saveStateToIndexedDBForDb(activeDatabaseName, appState);
             refreshAllUI();
-            if (supabaseClient) pushToSupabase();
+            if (supabaseClient) {
+                pushToSupabase().then(r => {
+                    if (!r.ok && Date.now() - lastSyncErrorToastAt > 60000) {
+                        lastSyncErrorToastAt = Date.now();
+                        showToast('Data tersimpan lokal, tetapi gagal sinkron ke cloud: ' + r.error, 'error');
+                    }
+                });
+            }
         }
 
         // =========================================================================
@@ -3285,11 +3572,27 @@
             return `${year}-${month}-${day}`;
         }
 
+        // Nomor urut harian dipakai bersama oleh semua jenis dokumen (JUA, PPB, BRI, SRV, BLI, PO, RTR, PIU, UTG),
+        // sehingga nomor tidak pernah kembar, termasuk ID piutang/utang turunan (PIU-/UTG- hasil replace prefix).
+        const reservedInvoiceSeq = {};
         function generateInvoiceId(prefix = 'TRX') {
             const d = new Date();
             const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-            const rnd = String(Math.floor(100 + Math.random() * 900));
-            return `${prefix}-${ymd}-${rnd}`;
+            const re = new RegExp(`-${ymd}-(\\d+)$`);
+            let maxSeq = reservedInvoiceSeq[ymd] || 0;
+            const pools = [
+                appState.transactions, appState.purchaseOrders, appState.purchaseRecords,
+                appState.purchaseReturns, appState.serviceTickets, appState.debtsReceivables
+            ];
+            pools.forEach(list => {
+                (Array.isArray(list) ? list : []).forEach(r => {
+                    const m = re.exec(String((r && r.id) || ''));
+                    if (m) maxSeq = Math.max(maxSeq, parseInt(m[1], 10));
+                });
+            });
+            const next = maxSeq + 1;
+            reservedInvoiceSeq[ymd] = next;
+            return `${prefix}-${ymd}-${String(next).padStart(3, '0')}`;
         }
 
         function closeModal(id) {
@@ -3306,7 +3609,7 @@
             };
             const el = document.createElement('div');
             el.className = `px-3.5 py-2 rounded shadow-lg border text-xs font-semibold flex items-center gap-2 pointer-events-auto transition-all ${colors[type] || colors.info}`;
-            el.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i><span>${msg}</span>`;
+            el.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i><span>${esc(msg)}</span>`;
             container.appendChild(el);
             setTimeout(() => el.remove(), 3400);
         }
@@ -3343,9 +3646,9 @@
             bar.innerHTML = openTabs.map(t => {
                 const isActive = t === activeTabId;
                 return `
-                    <button type="button" onclick="switchTab('${t}')" id="tab-${t}" class="ipos-tab ${isActive ? 'active' : ''} px-3 py-1 rounded-t text-xs flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="switchTab('${escJs(t)}')" id="tab-${t}" class="ipos-tab ${isActive ? 'active' : ''} px-3 py-1 rounded-t text-xs flex items-center gap-2 shrink-0">
                         <span>${TAB_LABELS[t] || t}</span>
-                        ${t !== 'dashboard' ? `<span onclick="closeMdiTab(event, '${t}')" class="hover:text-red-600 font-bold ml-1">&times;</span>` : ''}
+                        ${t !== 'dashboard' ? `<span onclick="closeMdiTab(event, '${escJs(t)}')" class="hover:text-red-600 font-bold ml-1">&times;</span>` : ''}
                     </button>
                 `;
             }).join('');
@@ -3438,15 +3741,15 @@
                             <div>
                                 <div class="flex items-start justify-between gap-2">
                                     <div>
-                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.badge} uppercase">${w.type || 'AKUN'}</span>
-                                        <div class="font-bold ${c.title} text-sm mt-1">${idx + 1}. ${w.name}</div>
+                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.badge} uppercase">${esc(w.type || 'AKUN')}</span>
+                                        <div class="font-bold ${c.title} text-sm mt-1">${idx + 1}. ${esc(w.name)}</div>
                                     </div>
                                     <div class="flex items-center gap-1 shrink-0">
-                                        <button type="button" onclick="openWalletModal('${w.id}')" class="ipos-btn px-2 py-1 rounded text-[11px] text-sky-800" title="Edit Nama / Saldo Sumber Dana">
+                                        <button type="button" onclick="openWalletModal('${escJs(w.id)}')" class="ipos-btn px-2 py-1 rounded text-[11px] text-sky-800" title="Edit Nama / Saldo Sumber Dana">
                                             <i class="fas fa-edit"></i> Edit
                                         </button>
                                         ${appState.walletList.length > 1 ? `
-                                            <button type="button" onclick="deleteWalletAccount('${w.id}')" class="ipos-btn px-2 py-1 rounded text-[11px] text-red-600" title="Hapus Sumber Dana">
+                                            <button type="button" onclick="deleteWalletAccount('${escJs(w.id)}')" class="ipos-btn px-2 py-1 rounded text-[11px] text-red-600" title="Hapus Sumber Dana">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
                                         ` : ''}
@@ -3455,8 +3758,8 @@
                                 <div class="text-2xl font-extrabold ${c.amount} my-1.5 font-mono">${formatRp(bal)}</div>
                             </div>
                             <div class="text-[11px] text-slate-600 border-t border-slate-200/70 pt-1.5 flex items-center justify-between">
-                                <span class="truncate">${w.desc || '-'}</span>
-                                <span class="font-mono text-[10px] text-slate-400 ml-2 shrink-0">${w.id}</span>
+                                <span class="truncate">${esc(w.desc || '-')}</span>
+                                <span class="font-mono text-[10px] text-slate-400 ml-2 shrink-0">${esc(w.id)}</span>
                             </div>
                         </div>
                     `;
@@ -3495,9 +3798,9 @@
                     const accCode = 1101 + idx;
                     return `
                         <div class="ipos-panel rounded-lg p-4 border-l-4 ${c.accBorder}">
-                            <div class="text-xs font-bold text-slate-500 uppercase">${accCode} - ${w.name}</div>
+                            <div class="text-xs font-bold text-slate-500 uppercase">${esc(accCode)} - ${esc(w.name)}</div>
                             <div class="text-2xl font-extrabold ${c.amount} mt-1 font-mono">${formatRp(bal)}</div>
-                            <div class="text-[11px] text-slate-500 mt-1">${w.desc || 'Saldo aktif sumber dana'}</div>
+                            <div class="text-[11px] text-slate-500 mt-1">${esc(w.desc || 'Saldo aktif sumber dana')}</div>
                         </div>
                     `;
                 }).join('');
@@ -3514,7 +3817,7 @@
             }
 
             const walletOptionsHtml = appState.walletList.map(w =>
-                `<option value="${w.id}">${w.name} (${formatRp(appState.wallets[w.id] || 0)})</option>`
+                `<option value="${esc(w.id)}">${esc(w.name)} (${formatRp(appState.wallets[w.id] || 0)})</option>`
             ).join('');
 
             const syncSelect = (elId, extraPrefix = '', extraSuffix = '') => {
@@ -3537,7 +3840,7 @@
             if (posPayEl) {
                 const prevPos = posPayEl.value;
                 posPayEl.innerHTML = appState.walletList.map(w =>
-                    `<option value="${w.id}">${w.type === 'TUNAI' ? 'TUNAI - ' : 'NON-TUNAI - '}${w.name}</option>`
+                    `<option value="${esc(w.id)}">${w.type === 'TUNAI' ? 'TUNAI - ' : 'NON-TUNAI - '}${esc(w.name)}</option>`
                 ).join('') + `<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>`;
                 if (prevPos && Array.from(posPayEl.options).some(o => o.value === prevPos)) {
                     posPayEl.value = prevPos;
@@ -3644,10 +3947,10 @@
                 const realIdx = appState.items.indexOf(it);
                 return `
                     <tr>
-                        <td class="font-mono font-bold text-sky-900">${it.code}</td>
-                        <td class="font-semibold">${it.name}</td>
-                        <td>${it.category}</td>
-                        <td class="text-center">${it.unit}</td>
+                        <td class="font-mono font-bold text-sky-900">${esc(it.code)}</td>
+                        <td class="font-semibold">${esc(it.name)}</td>
+                        <td>${esc(it.category)}</td>
+                        <td class="text-center">${esc(it.unit)}</td>
                         <td class="text-right font-mono font-bold ${it.stock <= 5 ? 'text-red-600' : 'text-slate-800'}">${it.stock}</td>
                         <td class="text-right font-mono">${formatRp(it.cost)}</td>
                         <td class="text-right font-mono font-bold text-blue-800">${formatRp(it.price)}</td>
@@ -3673,7 +3976,7 @@
             box.innerHTML = appState.categories.map(c => `
                 <span class="inline-flex items-center gap-1 bg-white border border-sky-300 rounded px-2 py-0.5 text-[11px]">
                     ${c}
-                    ${appState.categories.length > 1 ? `<button type="button" onclick="removeCustomCategory('${c}')" class="text-red-600 font-bold ml-0.5">&times;</button>` : ''}
+                    ${appState.categories.length > 1 ? `<button type="button" onclick="removeCustomCategory('${escJs(c)}')" class="text-red-600 font-bold ml-0.5">&times;</button>` : ''}
                 </span>
             `).join('');
         }
@@ -3722,7 +4025,7 @@
             if (!sel) return;
             const prev = sel.value;
             sel.innerHTML = (appState.customers || []).map(c =>
-                `<option value="${c.name}">${c.name} [${c.group}]</option>`
+                `<option value="${esc(c.name)}">${esc(c.name)} [${esc(c.group)}]</option>`
             ).join('');
             if (prev && Array.from(sel.options).some(o => o.value === prev)) {
                 sel.value = prev;
@@ -3811,11 +4114,11 @@
             if (!tbody) return;
             tbody.innerHTML = appState.suppliers.map((s, idx) => `
                 <tr>
-                    <td class="font-mono font-bold">${s.code}</td>
-                    <td class="font-semibold">${s.name}</td>
-                    <td class="font-mono">${s.phone || '-'}</td>
-                    <td>${s.address || '-'}</td>
-                    <td>${s.note || '-'}</td>
+                    <td class="font-mono font-bold">${esc(s.code)}</td>
+                    <td class="font-semibold">${esc(s.name)}</td>
+                    <td class="font-mono">${esc(s.phone || '-')}</td>
+                    <td>${esc(s.address || '-')}</td>
+                    <td>${esc(s.note || '-')}</td>
                     <td class="text-center space-x-1">
                         <button type="button" onclick="openSupplierModal(${idx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700"><i class="fas fa-edit"></i></button>
                         <button type="button" onclick="deleteMasterSupplier(${idx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600"><i class="fas fa-trash"></i></button>
@@ -3873,11 +4176,11 @@
             if (!tbody) return;
             tbody.innerHTML = appState.customers.map((c, idx) => `
                 <tr>
-                    <td class="font-mono font-bold">${c.code}</td>
-                    <td class="font-semibold">${c.name}</td>
-                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-bold text-[10.5px]">${c.group}</span></td>
-                    <td class="font-mono">${c.phone || '-'}</td>
-                    <td>${c.address || '-'}</td>
+                    <td class="font-mono font-bold">${esc(c.code)}</td>
+                    <td class="font-semibold">${esc(c.name)}</td>
+                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-bold text-[10.5px]">${esc(c.group)}</span></td>
+                    <td class="font-mono">${esc(c.phone || '-')}</td>
+                    <td>${esc(c.address || '-')}</td>
                     <td class="text-center space-x-1">
                         <button type="button" onclick="openCustomerModal(${idx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700"><i class="fas fa-edit"></i></button>
                         <button type="button" onclick="deleteMasterCustomer(${idx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600"><i class="fas fa-trash"></i></button>
@@ -3935,7 +4238,7 @@
             const itemSel = document.getElementById('kartustok-filter-item');
             if (itemSel) {
                 const filtered = cat === 'ALL' ? appState.items : appState.items.filter(i => i.category === cat);
-                itemSel.innerHTML = `<option value="ALL">Semua Barang</option>` + filtered.map(i => `<option value="${i.code}">${i.code} - ${i.name}</option>`).join('');
+                itemSel.innerHTML = `<option value="ALL">Semua Barang</option>` + filtered.map(i => `<option value="${esc(i.code)}">${esc(i.code)} - ${esc(i.name)}</option>`).join('');
             }
             renderStockLedgerTable();
         }
@@ -3956,10 +4259,10 @@
             tbody.innerHTML = rows.map(r => `
                 <tr>
                     <td class="font-mono text-[11px]">${new Date(r.date).toLocaleString('id-ID')}</td>
-                    <td class="font-mono font-bold">${r.ref}</td>
-                    <td class="font-mono">${r.code}</td>
-                    <td>${r.name}</td>
-                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-slate-100 font-bold text-[10.5px]">${r.type}</span></td>
+                    <td class="font-mono font-bold">${esc(r.ref)}</td>
+                    <td class="font-mono">${esc(r.code)}</td>
+                    <td>${esc(r.name)}</td>
+                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-slate-100 font-bold text-[10.5px]">${esc(r.type)}</span></td>
                     <td class="text-right font-mono text-emerald-700 font-bold">${r.inQty || 0}</td>
                     <td class="text-right font-mono text-red-700 font-bold">${r.outQty || 0}</td>
                     <td class="text-right font-mono font-extrabold">${r.balance}</td>
@@ -4006,7 +4309,7 @@
         }
 
         function populatePurchaseDropdowns() {
-            const supHtml = appState.suppliers.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
+            const supHtml = appState.suppliers.map(s => `<option value="${esc(s.name)}">${esc(s.code)} - ${esc(s.name)}</option>`).join('');
             ['po-form-supplier', 'buy-item-supplier', 'ret-form-supplier'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -4016,7 +4319,7 @@
                 }
             });
 
-            const itemHtml = appState.items.map(it => `<option value="${it.code}">${it.code} - ${it.name} (Stok: ${it.stock})</option>`).join('');
+            const itemHtml = appState.items.map(it => `<option value="${esc(it.code)}">${esc(it.code)} - ${esc(it.name)} (Stok: ${it.stock})</option>`).join('');
             ['po-form-item', 'buy-item-select', 'ret-form-item'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -4033,7 +4336,7 @@
                     openPos.map(p => {
                         const items = normalizeOrderItems(p);
                         const summary = items.map(i => `${i.name} (${i.qty})`).join(', ');
-                        return `<option value="${p.id}">[${p.status}] ${p.id} - ${p.supplier} | ${summary.slice(0, 45)}</option>`;
+                        return `<option value="${esc(p.id)}">[${p.status}] ${esc(p.id)} - ${esc(p.supplier)} | ${summary.slice(0, 45)}</option>`;
                     }).join('');
             }
         }
@@ -4064,7 +4367,7 @@
                 const items = normalizeOrderItems(p);
                 const totalQty = items.reduce((s, it) => s + (Number(it.qty) || 0), 0);
                 const totalEst = items.reduce((s, it) => s + (Number(it.subtotal) || (it.qty * it.cost)), 0);
-                const itemSummary = items.map(it => `<span class="inline-block bg-slate-100 border border-slate-300 rounded px-1.5 py-0.2 mr-1 mb-0.5 text-[11px]">${it.name} (<b>${it.qty}</b>)</span>`).join('');
+                const itemSummary = items.map(it => `<span class="inline-block bg-slate-100 border border-slate-300 rounded px-1.5 py-0.2 mr-1 mb-0.5 text-[11px]">${esc(it.name)} (<b>${it.qty}</b>)</span>`).join('');
                 const statusBadge = p.status === 'SELESAI'
                     ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                     : p.status === 'BATAL'
@@ -4075,8 +4378,8 @@
                     <tr onclick="selectPoRow(${realIdx})" ondblclick="openPoFormModal(${realIdx})" class="cursor-pointer ${isSelected ? '!bg-amber-100/90 font-semibold' : ''}">
                         <td class="text-center"><input type="radio" name="po-row-radio" ${isSelected ? 'checked' : ''} onchange="selectPoRow(${realIdx})"></td>
                         <td class="font-mono">${(p.date || '').slice(0, 10)}</td>
-                        <td class="font-mono font-bold text-amber-900">${p.id}</td>
-                        <td>${p.supplier}</td>
+                        <td class="font-mono font-bold text-amber-900">${esc(p.id)}</td>
+                        <td>${esc(p.supplier)}</td>
                         <td>${itemSummary || '-'}</td>
                         <td class="text-right font-mono font-bold">${totalQty}</td>
                         <td class="text-right font-mono font-bold text-blue-900">${formatRp(totalEst)}</td>
@@ -4111,8 +4414,8 @@
                 return `
                     <tr>
                         <td class="text-center">${idx + 1}</td>
-                        <td class="font-mono font-bold">${it.code}</td>
-                        <td class="font-semibold">${it.name}</td>
+                        <td class="font-mono font-bold">${esc(it.code)}</td>
+                        <td class="font-semibold">${esc(it.name)}</td>
                         <td class="text-center">
                             <input type="number" min="1" value="${it.qty}" onchange="updatePoDraftItem(${idx}, 'qty', this.value)" class="w-16 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
                         </td>
@@ -4178,7 +4481,7 @@
             document.getElementById('edit-po-index').value = idx;
             if (idx >= 0 && appState.purchaseOrders[idx]) {
                 const p = appState.purchaseOrders[idx];
-                document.getElementById('po-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-amber-600"></i> Edit Pesanan Pembelian: ${p.id}`;
+                document.getElementById('po-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-amber-600"></i> Edit Pesanan Pembelian: ${esc(p.id)}`;
                 document.getElementById('po-form-no').value = p.id;
                 document.getElementById('po-form-date').value = (p.date || '').slice(0, 10) || getTodayIsoDate();
                 document.getElementById('po-form-status').value = p.status || 'DIPESAN';
@@ -4330,20 +4633,20 @@
             tbody.innerHTML = combinedList.map((rec) => {
                 const totalQty = rec.items.reduce((s, it) => s + (Number(it.qty) || 0), 0);
                 const totalNominal = rec.items.reduce((s, it) => s + (Number(it.subtotal) || (it.qty * it.cost)), 0);
-                const itemBadges = rec.items.map(it => `<span class="inline-block bg-slate-100 border border-slate-300 rounded px-1.5 py-0.2 mr-1 mb-0.5 text-[11px]">${it.name} (<b>${it.qty}</b>)</span>`).join('');
+                const itemBadges = rec.items.map(it => `<span class="inline-block bg-slate-100 border border-slate-300 rounded px-1.5 py-0.2 mr-1 mb-0.5 text-[11px]">${esc(it.name)} (<b>${it.qty}</b>)</span>`).join('');
 
                 if (rec.isPoPending) {
                     return `
-                        <tr ondblclick="openPurchaseFromPendingPo('${rec.id}')" class="bg-amber-50/70 hover:bg-amber-100/80 cursor-pointer">
+                        <tr ondblclick="openPurchaseFromPendingPo('${escJs(rec.id)}')" class="bg-amber-50/70 hover:bg-amber-100/80 cursor-pointer">
                             <td class="text-center"><span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 font-bold text-[10px]">PO</span></td>
                             <td class="font-mono">${(rec.date || '').slice(0, 10)}</td>
-                            <td class="font-mono font-bold text-amber-800">${rec.id}</td>
-                            <td class="font-semibold">${rec.supplier}</td>
+                            <td class="font-mono font-bold text-amber-800">${esc(rec.id)}</td>
+                            <td class="font-semibold">${esc(rec.supplier)}</td>
                             <td>${itemBadges}</td>
                             <td class="text-right font-mono font-bold">${totalQty}</td>
                             <td class="text-right font-mono font-bold text-amber-900">${formatRp(totalNominal)}</td>
                             <td>
-                                <button type="button" onclick="openPurchaseFromPendingPo('${rec.id}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold shadow-sm">
+                                <button type="button" onclick="openPurchaseFromPendingPo('${escJs(rec.id)}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold shadow-sm">
                                     <i class="fas fa-check-circle mr-1"></i> Terima PO Jadi Beli
                                 </button>
                             </td>
@@ -4358,10 +4661,10 @@
                         <td class="text-center"><input type="radio" name="beli-row-radio" ${isSelected ? 'checked' : ''} onchange="selectPurchaseRow(${realIdx})"></td>
                         <td class="font-mono">${(rec.date || '').slice(0, 10)}</td>
                         <td class="font-mono font-bold text-indigo-900">
-                            ${rec.id}
-                            ${rec.poRef ? `<div class="text-[10px] text-amber-700 font-normal">Ref PO: ${rec.poRef}</div>` : ''}
+                            ${esc(rec.id)}
+                            ${rec.poRef ? `<div class="text-[10px] text-amber-700 font-normal">Ref PO: ${esc(rec.poRef)}</div>` : ''}
                         </td>
-                        <td>${rec.supplier}</td>
+                        <td>${esc(rec.supplier)}</td>
                         <td>${itemBadges}</td>
                         <td class="text-right font-mono font-bold">${totalQty}</td>
                         <td class="text-right font-mono font-bold text-blue-900">${formatRp(totalNominal)}</td>
@@ -4405,8 +4708,8 @@
                 return `
                     <tr>
                         <td class="text-center">${idx + 1}</td>
-                        <td class="font-mono font-bold">${it.code}</td>
-                        <td class="font-semibold">${it.name}</td>
+                        <td class="font-mono font-bold">${esc(it.code)}</td>
+                        <td class="font-semibold">${esc(it.name)}</td>
                         <td class="text-center">
                             <input type="number" min="1" value="${it.qty}" onchange="updatePurchaseDraftItem(${idx}, 'qty', this.value)" class="w-16 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
                         </td>
@@ -4489,7 +4792,7 @@
             document.getElementById('buy-linked-po-id').value = '';
             if (idx >= 0 && appState.purchaseRecords[idx]) {
                 const p = appState.purchaseRecords[idx];
-                document.getElementById('purchase-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-indigo-600"></i> Edit Transaksi Pembelian: ${p.id}`;
+                document.getElementById('purchase-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-indigo-600"></i> Edit Transaksi Pembelian: ${esc(p.id)}`;
                 document.getElementById('buy-form-no').value = p.id;
                 document.getElementById('buy-form-date').value = (p.date || '').slice(0, 10) || getTodayIsoDate();
                 document.getElementById('buy-item-supplier').value = p.supplier;
@@ -4565,6 +4868,7 @@
             const dueDate = document.getElementById('buy-due-date').value;
             const linkedPoId = document.getElementById('buy-linked-po-id').value;
             const isTempo = (srcWallet === 'UTANG_TEMPO' || Boolean(dueDate));
+            const oldDocId = (idx >= 0 && appState.purchaseRecords[idx]) ? appState.purchaseRecords[idx].id : docNo;
 
             // Jika mode edit, rollback stok & saldo pembelian lama dulu
             if (idx >= 0 && appState.purchaseRecords[idx]) {
@@ -4607,23 +4911,40 @@
                 return { code: di.code, name: di.name, qty, cost, subtotal: sub };
             });
 
+            const debtId = docNo.replace('BLI', 'UTG');
+            const debtDesc = `Kulakan Faktur ${docNo} (${savedItems.map(x => `${x.name} x${x.qty}`).join(', ')})`;
+            const existingDebt = appState.debtsReceivables.find(d => d.id === oldDocId.replace('BLI', 'UTG') && d.type === 'UTANG');
             if (isTempo) {
-                if (idx < 0) {
+                if (existingDebt) {
+                    // Edit faktur tempo: perbarui utang yang sudah ada
+                    existingDebt.id = debtId;
+                    existingDebt.party = supplier;
+                    existingDebt.dueDate = dueDate || existingDebt.dueDate;
+                    existingDebt.description = debtDesc;
+                    existingDebt.totalAmount = grandTotal;
+                    if ((Number(existingDebt.paidAmount) || 0) >= grandTotal) {
+                        existingDebt.paidAmount = grandTotal;
+                        existingDebt.status = 'LUNAS';
+                    } else {
+                        existingDebt.status = 'BELUM_LUNAS';
+                    }
+                } else {
                     appState.debtsReceivables.unshift({
-                        id: docNo.replace('BLI', 'UTG'),
+                        id: debtId,
                         type: 'UTANG',
                         date: new Date().toISOString(),
                         dueDate: dueDate || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
                         party: supplier,
-                        description: `Kulakan Faktur ${docNo} (${savedItems.map(x => `${x.name} x${x.qty}`).join(', ')})`,
+                        description: debtDesc,
                         totalAmount: grandTotal,
                         paidAmount: 0,
                         status: 'BELUM_LUNAS',
                         payments: []
                     });
                 }
-            } else if (appState.wallets[srcWallet] !== undefined) {
-                appState.wallets[srcWallet] -= grandTotal;
+            } else {
+                if (existingDebt) removeLinkedDebt(existingDebt.id); // sebelumnya tempo, kini dibayar langsung
+                if (appState.wallets[srcWallet] !== undefined) appState.wallets[srcWallet] -= grandTotal;
             }
 
             // Jika ditarik dari Pesanan (PO), otomatis tandai PO sebagai SELESAI
@@ -4669,10 +4990,15 @@
             if (!old.isTempo && old.sourceWallet && appState.wallets[old.sourceWallet] !== undefined) {
                 appState.wallets[old.sourceWallet] += oldTotal;
             }
+            let debtNote = '';
+            if (old.isTempo) {
+                const r = removeLinkedDebt(String(old.id).replace('BLI', 'UTG'));
+                if (r.found && r.unknownPaid > 0) debtNote = ` Catatan: cicilan lama Rp ${formatRp(r.unknownPaid)} tidak tercatat dompetnya, cek manual.`;
+            }
             selectedPurchaseIndex = -1;
             document.getElementById('selected-beli-label').textContent = 'Belum ada yang dipilih';
             await saveAppState();
-            showToast(`Transaksi Pembelian ${old.id} dihapus & stok/saldo dikembalikan!`, 'info');
+            showToast(`Transaksi Pembelian ${old.id} dihapus & stok/saldo/utang dikembalikan!${debtNote}`, 'info');
         }
 
         // --- PREVIEW & PRINT DOKUMEN PO / FAKTUR PEMBELIAN ---
@@ -4692,8 +5018,8 @@
                 return `
                     <tr class="border-b border-slate-300">
                         <td class="py-1.5 px-2 text-center border-r border-slate-300">${idx + 1}</td>
-                        <td class="py-1.5 px-2 font-mono border-r border-slate-300">${it.code}</td>
-                        <td class="py-1.5 px-2 border-r border-slate-300">${it.name}</td>
+                        <td class="py-1.5 px-2 font-mono border-r border-slate-300">${esc(it.code)}</td>
+                        <td class="py-1.5 px-2 border-r border-slate-300">${esc(it.name)}</td>
                         <td class="py-1.5 px-2 text-center font-mono border-r border-slate-300">${it.qty}</td>
                         <td class="py-1.5 px-2 text-right font-mono border-r border-slate-300">${formatRp(it.cost)}</td>
                         <td class="py-1.5 px-2 text-right font-mono font-bold">${formatRp(sub)}</td>
@@ -4704,27 +5030,27 @@
             document.getElementById('doc-print-sheet').innerHTML = `
                 <div class="border-b-2 border-slate-800 pb-3 mb-3 flex justify-between items-start">
                     <div>
-                        <div class="text-base font-extrabold text-slate-900 uppercase">${appState.settings.storeName}</div>
-                        <div class="text-[11px] text-slate-600">${appState.settings.storeAddress}</div>
-                        <div class="text-[11px] text-slate-600">Telp/WA: ${appState.settings.storePhone}</div>
+                        <div class="text-base font-extrabold text-slate-900 uppercase">${esc(appState.settings.storeName)}</div>
+                        <div class="text-[11px] text-slate-600">${esc(appState.settings.storeAddress)}</div>
+                        <div class="text-[11px] text-slate-600">Telp/WA: ${esc(appState.settings.storePhone)}</div>
                     </div>
                     <div class="text-right">
                         <div class="text-sm font-extrabold uppercase px-2.5 py-1 rounded ${isPo ? 'bg-amber-100 text-amber-900 border border-amber-400' : 'bg-indigo-100 text-indigo-900 border border-indigo-400'}">
                             ${isPo ? 'SURAT PESANAN (PO)' : 'FAKTUR PEMBELIAN'}
                         </div>
-                        <div class="font-mono font-bold text-xs mt-1">No: ${data.docNo}</div>
-                        ${data.poRef ? `<div class="font-mono text-[10.5px] text-slate-600">Ref PO: ${data.poRef}</div>` : ''}
+                        <div class="font-mono font-bold text-xs mt-1">No: ${esc(data.docNo)}</div>
+                        ${data.poRef ? `<div class="font-mono text-[10.5px] text-slate-600">Ref PO: ${esc(data.poRef)}</div>` : ''}
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 mb-3 bg-slate-50 p-2.5 rounded border border-slate-300 text-[11px]">
                     <div>
                         <div class="text-slate-500">Kepada Supplier:</div>
-                        <div class="font-bold text-xs text-slate-900">${data.supplier}</div>
+                        <div class="font-bold text-xs text-slate-900">${esc(data.supplier)}</div>
                     </div>
                     <div class="text-right">
                         <div>Tanggal: <b class="font-mono">${(data.date || '').slice(0, 10)}</b></div>
-                        <div>${isPo ? `Status: <b>${data.status}</b>` : `Pembayaran: <b>${data.paymentInfo}</b>`}</div>
+                        <div>${isPo ? `Status: <b>${data.status}</b>` : `Pembayaran: <b>${esc(data.paymentInfo)}</b>`}</div>
                     </div>
                 </div>
 
@@ -4752,13 +5078,13 @@
                     </tfoot>
                 </table>
 
-                ${data.note && data.note !== '-' ? `<div class="text-[11px] mb-4"><b>Catatan:</b> ${data.note}</div>` : ''}
+                ${data.note && data.note !== '-' ? `<div class="text-[11px] mb-4"><b>Catatan:</b> ${esc(data.note)}</div>` : ''}
 
                 <div class="grid grid-cols-2 gap-8 pt-4 text-center text-[11px]">
                     <div>
                         <div>Dibuat Oleh,</div>
                         <div class="h-12"></div>
-                        <div class="font-bold underline">(${currentUser.username})</div>
+                        <div class="font-bold underline">(${esc(currentUser.username)})</div>
                     </div>
                     <div>
                         <div>Diterima / Disetujui Supplier,</div>
@@ -4783,7 +5109,7 @@
                 <html>
                 <head>
                     <title>Cetak Dokumen Pembelian - DONET CELL</title>
-                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <script src="https://cdn.tailwindcss.com/3.4.17"><\/script>
                     <style>
                         @media print {
                             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -4826,13 +5152,13 @@
                     <tr onclick="selectReturnRow(${realIdx})" ondblclick="openReturnFormModal(${realIdx})" class="cursor-pointer ${isSelected ? '!bg-rose-100/90 font-semibold' : ''}">
                         <td class="text-center"><input type="radio" name="retur-row-radio" ${isSelected ? 'checked' : ''} onchange="selectReturnRow(${realIdx})"></td>
                         <td class="font-mono">${(r.date || '').slice(0, 10)}</td>
-                        <td class="font-mono font-bold text-rose-900">${r.id}</td>
-                        <td>${r.supplier}</td>
-                        <td>${r.itemCode} - ${r.itemName}</td>
+                        <td class="font-mono font-bold text-rose-900">${esc(r.id)}</td>
+                        <td>${esc(r.supplier)}</td>
+                        <td>${esc(r.itemCode)} - ${esc(r.itemName)}</td>
                         <td class="text-right font-mono font-bold text-red-700">-${r.qty}</td>
                         <td class="text-right font-mono">${formatRp(r.cost)}</td>
                         <td class="text-right font-mono font-bold text-emerald-800">${formatRp(r.total)}</td>
-                        <td>${r.reason} (${r.wallet === 'POTONG_UTANG' ? 'Potong Utang' : getWalletNameById(r.wallet)})</td>
+                        <td>${esc(r.reason)} (${r.wallet === 'POTONG_UTANG' ? 'Potong Utang' : getWalletNameById(r.wallet)})</td>
                     </tr>
                 `;
             }).join('');
@@ -4856,7 +5182,7 @@
             document.getElementById('edit-return-index').value = idx;
             if (idx >= 0 && appState.purchaseReturns[idx]) {
                 const r = appState.purchaseReturns[idx];
-                document.getElementById('return-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-rose-600"></i> Edit Retur Pembelian: ${r.id}`;
+                document.getElementById('return-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-rose-600"></i> Edit Retur Pembelian: ${esc(r.id)}`;
                 document.getElementById('ret-form-no').value = r.id;
                 document.getElementById('ret-form-date').value = (r.date || '').slice(0, 10) || getTodayIsoDate();
                 document.getElementById('ret-form-supplier').value = r.supplier;
@@ -5071,12 +5397,12 @@
                 return `
                     <tr>
                         <td class="text-center">${idx + 1}</td>
-                        <td class="font-mono font-bold">${c.code}</td>
-                        <td class="font-semibold">${c.name}</td>
+                        <td class="font-mono font-bold">${esc(c.code)}</td>
+                        <td class="font-semibold">${esc(c.name)}</td>
                         <td class="text-center">
                             <input type="number" min="1" value="${c.qty}" onchange="updatePosCartQty(${idx}, this.value)" class="w-14 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
                         </td>
-                        <td class="text-center">${c.unit}</td>
+                        <td class="text-center">${esc(c.unit)}</td>
                         <td class="text-right font-mono">${formatRp(unitPrice)}</td>
                         <td class="text-right font-mono font-bold text-blue-900">${formatRp(sub)}</td>
                         <td class="text-center"><button type="button" onclick="removePosCartItem(${idx})" class="text-red-600 font-bold">&times;</button></td>
@@ -5109,6 +5435,8 @@
         function clearPosCart() {
             posCart = [];
             document.getElementById('pos-cash-paid').value = '';
+            const posDateEl = document.getElementById('pos-date');
+            if (posDateEl) posDateEl.value = getTodayIsoDate();
             document.getElementById('pos-invoice-no').value = generateInvoiceId('JUA');
             renderPosCart();
         }
@@ -5141,8 +5469,8 @@
             grid.innerHTML = list.map(it => {
                 const price = getEffectiveItemPrice(it);
                 return `
-                    <button type="button" onclick="addToPosCart('${it.code}')" class="ipos-btn p-2.5 rounded text-left flex flex-col justify-between">
-                        <div class="font-bold text-[11px] text-slate-800 line-clamp-2">${it.name}</div>
+                    <button type="button" onclick="addToPosCart('${escJs(it.code)}')" class="ipos-btn p-2.5 rounded text-left flex flex-col justify-between">
+                        <div class="font-bold text-[11px] text-slate-800 line-clamp-2">${esc(it.name)}</div>
                         <div class="mt-1.5 flex items-center justify-between">
                             <span class="font-mono font-extrabold text-blue-800 text-xs">${formatRp(price)}</span>
                             <span class="text-[10px] px-1.5 py-0.2 rounded ${it.stock <= 5 ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-700'}">Stok: ${it.stock}</span>
@@ -5165,12 +5493,12 @@
             const list = appState.items.filter(i => i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q));
             tbody.innerHTML = list.map(it => `
                 <tr>
-                    <td class="font-mono font-bold">${it.code}</td>
-                    <td>${it.name}</td>
+                    <td class="font-mono font-bold">${esc(it.code)}</td>
+                    <td>${esc(it.name)}</td>
                     <td class="text-right font-mono">${it.stock}</td>
                     <td class="text-right font-mono">${formatRp(it.price)}</td>
                     <td class="text-right font-mono">${formatRp(it.wholesalePrice || it.price)}</td>
-                    <td class="text-center"><button type="button" onclick="addToPosCart('${it.code}'); closeModal('item-picker-modal');" class="ipos-btn-primary px-2 py-0.5 rounded text-[11px] font-bold">Pilih</button></td>
+                    <td class="text-center"><button type="button" onclick="addToPosCart('${escJs(it.code)}'); closeModal('item-picker-modal');" class="ipos-btn-primary px-2 py-0.5 rounded text-[11px] font-bold">Pilih</button></td>
                 </tr>
             `).join('');
         }
@@ -5186,6 +5514,22 @@
             const total = getPosGrandTotal();
             let totalModal = 0;
 
+            const cashPaid = Number(document.getElementById('pos-cash-paid')?.value) || 0;
+            if (payWallet !== 'PIUTANG_TEMPO' && cashPaid > 0 && cashPaid < total) {
+                showToast(`Uang bayar (Rp ${formatRp(cashPaid)}) kurang dari total (Rp ${formatRp(total)})!`, 'error');
+                return;
+            }
+            if (payWallet === 'PIUTANG_TEMPO' && /^UMUM\b/i.test(customer)) {
+                showToast('Pilih pelanggan terlebih dahulu untuk transaksi tempo/kasbon!', 'error');
+                return;
+            }
+            const shortItems = posCart.filter(c => {
+                const it = appState.items.find(x => x.code === c.code);
+                return it && c.qty > (Number(it.stock) || 0);
+            });
+            if (shortItems.length && !confirm(`Stok tidak cukup untuk: ${shortItems.map(c => c.name).join(', ')}.\n\nTetap lanjutkan? (stok akan menjadi 0)`)) return;
+            const trxDateIso = getPosTrxDateIso();
+
             const soldItems = posCart.map(c => {
                 const it = appState.items.find(x => x.code === c.code);
                 const unitPrice = getEffectiveItemPrice(it || c);
@@ -5194,7 +5538,7 @@
                 if (it) {
                     it.stock = Math.max(0, it.stock - c.qty);
                     appState.stockLedger.unshift({
-                        date: new Date().toISOString(),
+                        date: trxDateIso,
                         ref: invNo,
                         code: it.code,
                         name: it.name,
@@ -5211,7 +5555,7 @@
                 appState.debtsReceivables.unshift({
                     id: invNo.replace('JUA', 'PIU'),
                     type: 'PIUTANG',
-                    date: new Date().toISOString(),
+                    date: trxDateIso,
                     dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
                     party: customer,
                     description: `Penjualan Kasir ${invNo}`,
@@ -5226,7 +5570,7 @@
 
             const trx = {
                 id: invNo,
-                date: new Date().toISOString(),
+                date: trxDateIso,
                 module: 'POS',
                 description: `Penjualan Kasir (${soldItems.map(i => `${i.name} x${i.qty}`).join(', ')})`,
                 customer,
@@ -5302,8 +5646,8 @@
             const presetBox = document.getElementById('ppob-quick-presets');
             if (presetBox) {
                 presetBox.innerHTML = cfg.presets.map((pr, idx) => `
-                    <button type="button" onclick="applyPpobPreset('${mode}', ${idx})" class="ipos-btn p-2 rounded text-left">
-                        <div class="font-bold text-slate-800">${pr.desc}</div>
+                    <button type="button" onclick="applyPpobPreset('${escJs(mode)}', ${idx})" class="ipos-btn p-2 rounded text-left">
+                        <div class="font-bold text-slate-800">${esc(pr.desc)}</div>
                         <div class="text-[11px] font-mono text-blue-800 font-bold">Jual: ${formatRp(pr.sell)}</div>
                     </button>
                 `).join('');
@@ -5345,7 +5689,7 @@
             if (infoEl) {
                 const src = getWalletNameById(document.getElementById('ppob-source-wallet')?.value);
                 const dst = getWalletNameById(document.getElementById('ppob-dest-wallet')?.value);
-                infoEl.innerHTML = `<i class="fas fa-info-circle mr-1"></i> <b>Jurnal Otomatis:</b> Saldo <b>${src}</b> berkurang <b>${formatRp(modal)}</b>, dan <b>${dst}</b> bertambah <b>${formatRp(sell)}</b>.`;
+                infoEl.innerHTML = `<i class="fas fa-info-circle mr-1"></i> <b>Jurnal Otomatis:</b> Saldo <b>${esc(src)}</b> berkurang <b>${formatRp(modal)}</b>, dan <b>${esc(dst)}</b> bertambah <b>${formatRp(sell)}</b>.`;
             }
         }
 
@@ -5360,6 +5704,13 @@
             const dstWallet = document.getElementById('ppob-dest-wallet').value;
             const modal = Number(document.getElementById('ppob-modal-amount').value) || 0;
             const sell = Number(document.getElementById('ppob-sell-amount').value) || 0;
+
+            if (modal <= 0 || sell <= 0) {
+                showToast('Harga modal dan harga jual harus lebih dari 0!', 'error');
+                return;
+            }
+            if (sell < modal && !confirm(`Harga jual (Rp ${formatRp(sell)}) lebih kecil dari modal (Rp ${formatRp(modal)}). Transaksi ini rugi.\n\nTetap lanjutkan?`)) return;
+            if (!confirmIfInsufficient(srcWallet, modal)) return;
 
             if (appState.wallets[srcWallet] !== undefined) {
                 appState.wallets[srcWallet] -= modal;
@@ -5393,6 +5744,7 @@
                 total: sell,
                 profit: sell - modal,
                 paymentMethod: dstWallet,
+                sourceWallet: srcWallet,
                 items: [{ name: `${provider} (${prodDesc}) - ${target}`, qty: 1, price: sell }]
             };
 
@@ -5410,8 +5762,8 @@
             box.innerHTML = list.map(t => `
                 <div class="bg-white border border-slate-200 rounded p-2 flex items-center justify-between">
                     <div class="truncate pr-2">
-                        <div class="font-bold text-slate-800 truncate">${t.description}</div>
-                        <div class="text-[10px] text-slate-500 font-mono">${t.id} &bull; ${t.customer}</div>
+                        <div class="font-bold text-slate-800 truncate">${esc(t.description)}</div>
+                        <div class="text-[10px] text-slate-500 font-mono">${esc(t.id)} &bull; ${esc(t.customer)}</div>
                     </div>
                     <div class="text-right shrink-0">
                         <div class="font-mono font-bold text-blue-800">${formatRp(t.total)}</div>
@@ -5472,27 +5824,27 @@
             if (!area) return;
             area.innerHTML = `
                 <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="font-bold text-sm uppercase">${appState.settings.storeName}</div>
-                    <div class="text-[10px]">${appState.settings.storeAddress}</div>
-                    <div class="text-[10px]">WA/Telp: ${appState.settings.storePhone}</div>
+                    <div class="font-bold text-sm uppercase">${esc(appState.settings.storeName)}</div>
+                    <div class="text-[10px]">${esc(appState.settings.storeAddress)}</div>
+                    <div class="text-[10px]">WA/Telp: ${esc(appState.settings.storePhone)}</div>
                     <div class="font-bold text-xs mt-1.5 border-y border-slate-800 py-0.5 uppercase">TANDA TERIMA SERVICE HP</div>
                 </div>
                 <div class="space-y-1 text-[10.5px] border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="flex justify-between"><span>No. Transaksi:</span><b>${t.id}</b></div>
+                    <div class="flex justify-between"><span>No. Transaksi:</span><b>${esc(t.id)}</b></div>
                     <div class="flex justify-between"><span>Tanggal Masuk:</span><span>${new Date(t.date).toLocaleString('id-ID')}</span></div>
-                    <div class="flex justify-between"><span>Nama Pelanggan:</span><b>${t.customer}</b></div>
-                    <div class="flex justify-between"><span>No. HP / WA:</span><span>${t.phone || '-'}</span></div>
+                    <div class="flex justify-between"><span>Nama Pelanggan:</span><b>${esc(t.customer)}</b></div>
+                    <div class="flex justify-between"><span>No. HP / WA:</span><span>${esc(t.phone || '-')}</span></div>
                 </div>
                 <div class="space-y-1 text-[10.5px] border-b border-dashed border-slate-400 pb-2 mb-2">
                     <div><b>Merk / Tipe HP:</b></div>
-                    <div class="pl-1 font-bold">${t.device}</div>
+                    <div class="pl-1 font-bold">${esc(t.device)}</div>
                     <div class="mt-1"><b>Keluhan / Kerusakan:</b></div>
-                    <div class="pl-1">${t.issue}</div>
+                    <div class="pl-1">${esc(t.issue)}</div>
                 </div>
                 <div class="text-center text-[9.5px] text-slate-700 space-y-1">
                     <div>* Simpan nota ini sebagai bukti pengambilan unit.</div>
                     <div>* Biaya perbaikan akan diinformasikan setelah pengecekan teknisi.</div>
-                    <div class="pt-1 font-bold">${appState.settings.storeFooter}</div>
+                    <div class="pt-1 font-bold">${esc(appState.settings.storeFooter)}</div>
                 </div>
             `;
             document.getElementById('receipt-modal').classList.remove('hidden');
@@ -5513,25 +5865,25 @@
 
             tbody.innerHTML = appState.serviceTickets.map(t => `
                 <tr>
-                    <td class="font-mono font-bold text-rose-900">${t.id}</td>
+                    <td class="font-mono font-bold text-rose-900">${esc(t.id)}</td>
                     <td class="font-mono text-[11px]">${new Date(t.date).toLocaleDateString('id-ID')}</td>
                     <td>
-                        <b>${t.customer}</b> <span class="text-slate-500">(${t.phone || '-'})</span>
-                        <div class="text-[11px] font-semibold text-sky-900">${t.device}</div>
+                        <b>${esc(t.customer)}</b> <span class="text-slate-500">(${esc(t.phone || '-')})</span>
+                        <div class="text-[11px] font-semibold text-sky-900">${esc(t.device)}</div>
                     </td>
                     <td>
-                        <div class="text-[11px]">${t.issue}</div>
+                        <div class="text-[11px]">${esc(t.issue)}</div>
                         ${t.status === 'SELESAI' ? `<div class="text-[10.5px] font-mono text-emerald-700 font-bold mt-0.5">Biaya: Rp ${formatRp(t.price)} (Modal: Rp ${formatRp(t.cost)})</div>` : ''}
                     </td>
                     <td class="text-center">
                         <span class="px-2 py-0.5 rounded text-[10.5px] font-bold ${t.status === 'SELESAI' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${t.status}</span>
                     </td>
                     <td class="text-center space-x-1">
-                        <button type="button" onclick="printServiceIntakeById('${t.id}')" class="ipos-btn px-2 py-0.5 rounded text-[11px]" title="Cetak Ulang Tanda Terima">
+                        <button type="button" onclick="printServiceIntakeById('${escJs(t.id)}')" class="ipos-btn px-2 py-0.5 rounded text-[11px]" title="Cetak Ulang Tanda Terima">
                             <i class="fas fa-print text-sky-700"></i>
                         </button>
                         ${t.status !== 'SELESAI'
-                            ? `<button type="button" onclick="openCompleteServiceModal('${t.id}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold">Input Biaya</button>`
+                            ? `<button type="button" onclick="openCompleteServiceModal('${escJs(t.id)}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold">Input Biaya</button>`
                             : `<span class="text-[10px] text-emerald-700 font-bold">Lunas</span>`}
                     </td>
                 </tr>
@@ -5548,7 +5900,7 @@
 
             const partSel = document.getElementById('sc-sparepart-item');
             partSel.innerHTML = `<option value="">-- Tanpa Sparepart Fisik (Jasa Saja) --</option>` +
-                appState.items.map(it => `<option value="${it.code}">${it.code} - ${it.name} (Stok: ${it.stock} | HPP: ${formatRp(it.cost)})</option>`).join('');
+                appState.items.map(it => `<option value="${esc(it.code)}">${esc(it.code)} - ${esc(it.name)} (Stok: ${it.stock} | HPP: ${formatRp(it.cost)})</option>`).join('');
             document.getElementById('sc-sparepart-qty').value = 0;
             document.getElementById('sc-modal-cost').value = 0;
             document.getElementById('sc-service-price').value = 0;
@@ -5603,6 +5955,8 @@
             }
 
             t.status = 'SELESAI';
+            t.sparepartCode = partCode || '';
+            t.sparepartQty = partCode ? partQty : 0;
             t.cost = modal;
             t.price = sell;
             t.destWallet = dstWallet;
@@ -5634,6 +5988,7 @@
                 total: sell,
                 profit: sell - modal,
                 paymentMethod: dstWallet,
+                stockOut: (partCode && partQty > 0) ? [{ code: partCode, qty: partQty }] : [],
                 items: [{ name: `Jasa Service ${t.device}`, qty: 1, price: sell }]
             };
             appState.transactions.unshift(trx);
@@ -5650,7 +6005,7 @@
             const zeroSel = document.getElementById('vf-zero-item');
             const targetSel = document.getElementById('vf-target-item');
             if (!zeroSel || !targetSel) return;
-            const opts = appState.items.map(i => `<option value="${i.code}">${i.code} - ${i.name} (Stok: ${i.stock})</option>`).join('');
+            const opts = appState.items.map(i => `<option value="${esc(i.code)}">${esc(i.code)} - ${esc(i.name)} (Stok: ${i.stock})</option>`).join('');
             zeroSel.innerHTML = opts;
             targetSel.innerHTML = opts;
             if (appState.items.length > 1) targetSel.selectedIndex = 1;
@@ -5694,7 +6049,7 @@
             tbody.innerHTML = (appState.voucherProductions || []).map(v => `
                 <tr>
                     <td class="font-mono text-[11px]">${new Date(v.date).toLocaleString('id-ID')}</td>
-                    <td class="font-semibold">${v.targetName}</td>
+                    <td class="font-semibold">${esc(v.targetName)}</td>
                     <td class="text-right font-mono font-bold">${v.qty}</td>
                     <td class="text-right font-mono">${formatRp(v.totalModal)}</td>
                 </tr>
@@ -5711,6 +6066,7 @@
                 showToast('Pilih sumber dan tujuan dana yang berbeda!', 'error');
                 return;
             }
+            if (!confirmIfInsufficient(from, amount)) return;
             if (appState.wallets[from] !== undefined) appState.wallets[from] -= amount;
             if (appState.wallets[to] !== undefined) appState.wallets[to] += amount;
 
@@ -5732,10 +6088,10 @@
             tbody.innerHTML = (appState.fundTransfers || []).map(m => `
                 <tr>
                     <td class="font-mono text-[11px]">${new Date(m.date).toLocaleString('id-ID')}</td>
-                    <td>${m.from}</td>
-                    <td>${m.to}</td>
+                    <td>${esc(m.from)}</td>
+                    <td>${esc(m.to)}</td>
                     <td class="text-right font-mono font-bold text-blue-900">${formatRp(m.amount)}</td>
-                    <td>${m.note}</td>
+                    <td>${esc(m.note)}</td>
                 </tr>
             `).join('');
         }
@@ -5781,16 +6137,16 @@
                 return `
                     <tr>
                         <td class="font-mono text-[11px]">${new Date(x.date).toLocaleDateString('id-ID')}</td>
-                        <td class="font-mono font-bold">${x.id}</td>
-                        <td class="font-semibold">${x.party}</td>
-                        <td>${x.description}</td>
-                        <td class="text-center font-mono">${x.dueDate || '-'}</td>
+                        <td class="font-mono font-bold">${esc(x.id)}</td>
+                        <td class="font-semibold">${esc(x.party)}</td>
+                        <td>${esc(x.description)}${Array.isArray(x.payments) && x.payments.length ? `<div class="text-[10px] text-slate-500 mt-0.5">Cicilan: ${x.payments.map(p => `${new Date(p.date).toLocaleDateString('id-ID')} ${formatRp(p.amount)}${p.wallet ? ' (' + esc(getWalletNameById(p.wallet)) + ')' : ''}`).join(' &bull; ')}</div>` : ''}</td>
+                        <td class="text-center font-mono">${esc(x.dueDate || '-')}</td>
                         <td class="text-right font-mono">${formatRp(x.totalAmount)}</td>
                         <td class="text-right font-mono text-emerald-700">${formatRp(x.paidAmount)}</td>
                         <td class="text-right font-mono font-bold text-red-700">${formatRp(rem)}</td>
                         <td class="text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${x.status === 'LUNAS' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${x.status}</span></td>
                         <td class="text-center">
-                            ${rem > 0 ? `<button type="button" onclick="openDebtPayModal('${x.id}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold">Bayar</button>` : '<span class="text-slate-400">Selesai</span>'}
+                            ${rem > 0 ? `<button type="button" onclick="openDebtPayModal('${escJs(x.id)}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold">Bayar</button>` : '<span class="text-slate-400">Selesai</span>'}
                         </td>
                     </tr>
                 `;
@@ -5808,7 +6164,7 @@
             const sel = document.getElementById('debt-wallet-effect');
             if (!sel) return;
             sel.innerHTML = `<option value="NONE">Catat Saldo Awal Saja (Tanpa Kas Keluar/Masuk)</option>` +
-                appState.walletList.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+                appState.walletList.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
         }
 
         async function saveManualDebtRecord(e) {
@@ -5866,11 +6222,26 @@
             const id = document.getElementById('dp-record-id').value;
             const rec = appState.debtsReceivables.find(x => x.id === id);
             if (!rec) return;
-            const pay = Number(document.getElementById('dp-pay-amount').value) || 0;
+            let pay = Number(document.getElementById('dp-pay-amount').value) || 0;
             const wallet = document.getElementById('dp-wallet-select').value;
-            if (pay <= 0) return;
+            const remaining = Math.max(0, (Number(rec.totalAmount) || 0) - (Number(rec.paidAmount) || 0));
+            if (pay <= 0) {
+                showToast('Nominal pembayaran harus lebih dari 0!', 'error');
+                return;
+            }
+            if (remaining <= 0) {
+                closeModal('debt-pay-modal');
+                return;
+            }
+            if (pay > remaining) {
+                showToast(`Nominal melebihi sisa tagihan, disesuaikan menjadi Rp ${formatRp(remaining)}.`, 'info');
+                pay = remaining;
+            }
+            if (rec.type !== 'PIUTANG' && !confirmIfInsufficient(wallet, pay)) return;
 
-            rec.paidAmount += pay;
+            rec.paidAmount = (Number(rec.paidAmount) || 0) + pay;
+            if (!Array.isArray(rec.payments)) rec.payments = [];
+            rec.payments.push({ date: new Date().toISOString(), amount: pay, wallet });
             if (rec.paidAmount >= rec.totalAmount) {
                 rec.paidAmount = rec.totalAmount;
                 rec.status = 'LUNAS';
@@ -5911,16 +6282,16 @@
             tbody.innerHTML = list.map(t => `
                 <tr>
                     <td class="font-mono text-[11px]">${new Date(t.date).toLocaleString('id-ID')}</td>
-                    <td class="font-mono font-bold text-sky-900">${t.id}</td>
+                    <td class="font-mono font-bold text-sky-900">${esc(t.id)}</td>
                     <td class="text-center"><span class="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-bold text-[10px]">${t.module}</span></td>
-                    <td>${t.description} <span class="text-slate-500">(${t.customer})</span></td>
+                    <td>${esc(t.description)} <span class="text-slate-500">(${esc(t.customer)})</span></td>
                     <td class="text-right font-mono">${formatRp(t.modal)}</td>
                     <td class="text-right font-mono font-bold text-blue-900">${formatRp(t.total)}</td>
                     <td class="text-right font-mono font-bold text-emerald-700">${formatRp(t.profit)}</td>
                     <td class="text-center space-x-1">
-                        <button type="button" onclick="reprintTransactionById('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]" title="Cetak Struk"><i class="fas fa-print"></i></button>
-                        <button type="button" onclick="openEditTransactionModal('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button type="button" onclick="openDeleteTransactionModal('${t.id}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus"><i class="fas fa-trash"></i></button>
+                        <button type="button" onclick="reprintTransactionById('${escJs(t.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]" title="Cetak Struk"><i class="fas fa-print"></i></button>
+                        <button type="button" onclick="openEditTransactionModal('${escJs(t.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button type="button" onclick="openDeleteTransactionModal('${escJs(t.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -5931,19 +6302,19 @@
             if (!area) return;
             area.innerHTML = `
                 <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
-                    <div class="font-bold text-sm">${appState.settings.storeName}</div>
-                    <div class="text-[10px]">${appState.settings.storeAddress}</div>
-                    <div class="text-[10px]">Telp: ${appState.settings.storePhone}</div>
+                    <div class="font-bold text-sm">${esc(appState.settings.storeName)}</div>
+                    <div class="text-[10px]">${esc(appState.settings.storeAddress)}</div>
+                    <div class="text-[10px]">Telp: ${esc(appState.settings.storePhone)}</div>
                 </div>
                 <div class="text-[10px] border-b border-dashed border-slate-400 pb-1.5 mb-2">
-                    <div>No: <b>${trx.id}</b></div>
+                    <div>No: <b>${esc(trx.id)}</b></div>
                     <div>Tgl: ${new Date(trx.date).toLocaleString('id-ID')}</div>
-                    <div>Plg: ${trx.customer}</div>
+                    <div>Plg: ${esc(trx.customer)}</div>
                 </div>
                 <div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
                     ${(trx.items || []).map(i => `
                         <div class="flex justify-between">
-                            <span>${i.name} x${i.qty}</span>
+                            <span>${esc(i.name)} x${i.qty}</span>
                             <b>${formatRp(i.price * i.qty)}</b>
                         </div>
                     `).join('')}
@@ -5952,7 +6323,7 @@
                     <span>TOTAL BAYAR</span>
                     <span>Rp ${formatRp(trx.total)}</span>
                 </div>
-                <div class="text-center text-[10px] text-slate-600">${appState.settings.storeFooter}</div>
+                <div class="text-center text-[10px] text-slate-600">${esc(appState.settings.storeFooter)}</div>
             `;
             document.getElementById('receipt-modal').classList.remove('hidden');
         }
@@ -5992,14 +6363,43 @@
             const id = document.getElementById('edit-trx-id').value;
             const trx = appState.transactions.find(t => t.id === id);
             if (!trx) return;
+            const oldTotal = Number(trx.total) || 0;
+            const oldModal = Number(trx.modal) || 0;
+            const newModal = Number(document.getElementById('edit-trx-cost').value) || 0;
+            const newTotal = Number(document.getElementById('edit-trx-total').value) || 0;
+
+            // Sesuaikan saldo dompet / piutang dengan selisih nilai transaksi
+            if (newTotal !== oldTotal) {
+                if (trx.paymentMethod === 'PIUTANG_TEMPO') {
+                    const debt = appState.debtsReceivables.find(d => d.id === findLinkedReceivableId(trx));
+                    if (debt) {
+                        debt.totalAmount = newTotal;
+                        if ((Number(debt.paidAmount) || 0) >= newTotal) {
+                            debt.paidAmount = newTotal;
+                            debt.status = 'LUNAS';
+                        } else {
+                            debt.status = 'BELUM_LUNAS';
+                        }
+                    }
+                } else if (walletExists(trx.paymentMethod)) {
+                    appState.wallets[trx.paymentMethod] += (newTotal - oldTotal);
+                }
+                if (trx.module !== 'POS' && Array.isArray(trx.items) && trx.items.length === 1) {
+                    trx.items[0].price = newTotal / (Number(trx.items[0].qty) || 1);
+                }
+            }
+            if (newModal !== oldModal && (trx.module === 'PPOB' || trx.module === 'BRILINK') && walletExists(trx.sourceWallet)) {
+                appState.wallets[trx.sourceWallet] -= (newModal - oldModal);
+            }
+
             trx.customer = document.getElementById('edit-trx-customer').value;
             trx.description = document.getElementById('edit-trx-desc').value;
-            trx.modal = Number(document.getElementById('edit-trx-cost').value) || 0;
-            trx.total = Number(document.getElementById('edit-trx-total').value) || 0;
+            trx.modal = newModal;
+            trx.total = newTotal;
             trx.profit = trx.total - trx.modal;
             closeModal('edit-trx-modal');
             await saveAppState();
-            showToast('Transaksi berhasil diperbarui!', 'success');
+            showToast('Transaksi diperbarui; saldo/piutang ikut disesuaikan.', 'success');
         }
 
         function openDeleteTransactionModal(id) {
@@ -6010,10 +6410,13 @@
 
         async function confirmDeleteTransaction() {
             const id = document.getElementById('delete-trx-id').value;
-            appState.transactions = appState.transactions.filter(t => t.id !== id);
+            const idx = appState.transactions.findIndex(t => t.id === id);
             closeModal('delete-trx-modal');
+            if (idx < 0) return;
+            const trx = appState.transactions.splice(idx, 1)[0]; // hanya satu transaksi, bukan semua ber-ID sama
+            const notes = reverseTransactionEffects(trx);
             await saveAppState();
-            showToast(`Transaksi ${id} dihapus!`, 'info');
+            showToast(`Transaksi ${id} dihapus; stok & saldo dikembalikan.${notes.length ? ' Catatan: ' + notes.join('; ') + '.' : ''}`, 'info');
         }
 
         function exportTransactionsCSV() {
@@ -6033,6 +6436,10 @@
         // 12. PENGATURAN SISTEM, KELOLA USER, SUPABASE & BACKUP
         // =========================================================================
         function openSettingsModal(tab = 'general') {
+            if (tab === 'users' && !isCurrentUserAdmin()) {
+                showToast('Hanya ADMIN yang boleh mengelola user.', 'error');
+                return;
+            }
             document.getElementById('set-store-name').value = appState.settings.storeName || '';
             document.getElementById('set-store-address').value = appState.settings.storeAddress || '';
             document.getElementById('set-store-phone').value = appState.settings.storePhone || '';
@@ -6047,6 +6454,10 @@
         }
 
         function switchSettingsTab(tab) {
+            if (tab === 'users' && !isCurrentUserAdmin()) {
+                showToast('Hanya ADMIN yang boleh mengelola user.', 'error');
+                return;
+            }
             ['general', 'users', 'supabase', 'backup'].forEach(t => {
                 document.getElementById(`settings-pane-${t}`)?.classList.add('hidden');
                 document.getElementById(`stab-${t}`)?.classList.remove('active');
@@ -6115,10 +6526,10 @@
             tbody.innerHTML = (appState.users || []).map((u, idx) => `
                 <tr>
                     <td class="text-center">${idx + 1}</td>
-                    <td class="font-bold">${u.username}</td>
+                    <td class="font-bold">${esc(u.username)}</td>
                     <td class="font-mono">••••••</td>
-                    <td class="text-center">${u.role}</td>
-                    <td class="text-center font-mono">${u.location || 'UTM'}</td>
+                    <td class="text-center">${esc(u.role)}</td>
+                    <td class="text-center font-mono">${esc(u.location || 'UTM')}</td>
                     <td class="text-center space-x-1">
                         <button type="button" onclick="openUserFormModal(${idx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]"><i class="fas fa-edit"></i></button>
                         ${appState.users.length > 1 ? `<button type="button" onclick="deleteUserAccount(${idx})" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600"><i class="fas fa-trash"></i></button>` : ''}
@@ -6135,7 +6546,8 @@
                 document.getElementById('user-form-title').textContent = `Edit User: ${u.username}`;
                 document.getElementById('uf-original-username').value = u.username;
                 document.getElementById('uf-username').value = u.username;
-                document.getElementById('uf-password').value = u.password;
+                document.getElementById('uf-password').value = '';
+                document.getElementById('uf-password').placeholder = 'Kosongkan jika tidak diganti';
                 document.getElementById('uf-role').value = u.role;
                 document.getElementById('uf-location').value = u.location || 'UTM';
             } else {
@@ -6143,6 +6555,7 @@
                 document.getElementById('uf-original-username').value = '';
                 document.getElementById('uf-username').value = '';
                 document.getElementById('uf-password').value = '';
+                document.getElementById('uf-password').placeholder = 'Password';
                 document.getElementById('uf-role').value = 'KASIR';
                 document.getElementById('uf-location').value = 'UTM';
             }
@@ -6158,13 +6571,33 @@
             const password = document.getElementById('uf-password').value;
             const role = document.getElementById('uf-role').value;
             const location = document.getElementById('uf-location').value.trim().toUpperCase() || 'UTM';
-            if (!username || !password) return;
+            if (!isCurrentUserAdmin()) {
+                showToast('Hanya ADMIN yang boleh mengelola user.', 'error');
+                return;
+            }
+            if (!username) {
+                showToast('Username wajib diisi!', 'error');
+                return;
+            }
+            if (!orig && !password) {
+                showToast('Password wajib diisi untuk user baru!', 'error');
+                return;
+            }
+            if (appState.users.some(x => x.username.toLowerCase() === username.toLowerCase() && x.username !== orig)) {
+                showToast('Username sudah dipakai user lain!', 'error');
+                return;
+            }
 
             if (orig) {
                 const u = appState.users.find(x => x.username === orig);
-                if (u) Object.assign(u, { username, password, role, location });
+                if (u) {
+                    u.username = username;
+                    u.role = role;
+                    u.location = location;
+                    if (password) u.password = hashPassword(password); // kosong = password lama dipertahankan
+                }
             } else {
-                appState.users.push({ username, password, role, location });
+                appState.users.push({ username, password: hashPassword(password), role, location });
             }
             closeUserFormModal();
             await saveAppState();
@@ -6173,6 +6606,16 @@
         }
 
         async function deleteUserAccount(idx) {
+            if (!isCurrentUserAdmin()) {
+                showToast('Hanya ADMIN yang boleh mengelola user.', 'error');
+                return;
+            }
+            const target = appState.users[idx];
+            if (!target) return;
+            if (String(target.username).toLowerCase() === String(currentUser.rawUsername).toLowerCase()) {
+                showToast('Anda tidak bisa menghapus akun yang sedang dipakai login!', 'error');
+                return;
+            }
             appState.users.splice(idx, 1);
             await saveAppState();
             renderSettingsUsersTable();
@@ -6195,12 +6638,13 @@
                 showToast('Isi URL dan Anon Key Supabase terlebih dahulu!', 'error');
                 return;
             }
-            await pushToSupabase();
-            showToast('Sinkronisasi ke Supabase Cloud selesai!', 'success');
+            const r = await pushToSupabase();
+            if (r.ok) showToast('Sinkronisasi ke Supabase Cloud selesai!', 'success');
+            else showToast('Sinkronisasi gagal: ' + r.error, 'error');
         }
 
         function downloadBackupJSON() {
-            const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify(getSanitizedStateForExport(), null, 2)], { type: 'application/json' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = `Backup_${activeDatabaseName}_${getTodayIsoDate()}.json`;
@@ -6233,9 +6677,9 @@
                     const summaryEl = document.getElementById('import-json-summary');
                     if (summaryEl) {
                         summaryEl.innerHTML = `
-                            <div class="font-bold text-emerald-900 mb-0.5"><i class="fas fa-file-code mr-1"></i> File Siap Dipulihkan: ${file.name}</div>
-                            <div>Profil: <b>${storeLabel}</b> &bull; Master Barang: <b>${itemCount}</b> &bull; Transaksi: <b>${trxCount}</b> &bull; PO/Beli: <b>${poCount + buyCount}</b></div>
-                            <div class="text-[10.5px] text-amber-800 mt-0.5">Perhatian: Menekan tombol di bawah akan menimpa data pada database aktif <b>[${activeDatabaseName}]</b>.</div>
+                            <div class="font-bold text-emerald-900 mb-0.5"><i class="fas fa-file-code mr-1"></i> File Siap Dipulihkan: ${esc(file.name)}</div>
+                            <div>Profil: <b>${esc(storeLabel)}</b> &bull; Master Barang: <b>${itemCount}</b> &bull; Transaksi: <b>${trxCount}</b> &bull; PO/Beli: <b>${poCount + buyCount}</b></div>
+                            <div class="text-[10.5px] text-amber-800 mt-0.5">Perhatian: Menekan tombol di bawah akan menimpa data pada database aktif <b>[${esc(activeDatabaseName)}]</b>.</div>
                         `;
                     }
                     document.getElementById('import-json-preview-box')?.classList.remove('hidden');
@@ -6261,8 +6705,15 @@
                 return;
             }
 
+            // Backup tidak memuat kunci Supabase: pertahankan konfigurasi yang sedang aktif
+            const keepSbUrl = appState.settings?.supabaseUrl || '';
+            const keepSbKey = appState.settings?.supabaseKey || '';
             const mergedState = Object.assign(createDefaultState(activeDatabaseName), pendingImportedState);
             appState = mergedState;
+            if (!appState.settings) appState.settings = {};
+            if (!appState.settings.supabaseUrl && keepSbUrl) appState.settings.supabaseUrl = keepSbUrl;
+            if (!appState.settings.supabaseKey && keepSbKey) appState.settings.supabaseKey = keepSbKey;
+            migrateLegacyPasswords(); // backup lama bisa berisi password teks biasa
 
             ensureCategoriesIntegrity();
             ensureWalletListIntegrity();
@@ -6428,6 +6879,7 @@
         // 14. KEYBOARD SHORTCUTS & INITIAL BOOT
         // =========================================================================
         document.addEventListener('keydown', (e) => {
+            if (!isLoggedIn) return; // kunci pintas dinonaktifkan sebelum login
             if (e.key === 'F2') { e.preventDefault(); switchTab('kasir'); }
             if (e.key === 'F3') { e.preventDefault(); openItemPickerModal(); }
             if (e.key === 'F4') { e.preventDefault(); openOcrScannerModal('ppob'); }
