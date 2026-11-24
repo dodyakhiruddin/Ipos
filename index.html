@@ -858,6 +858,9 @@
                                         <button type="button" onclick="previewSelectedPo()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-emerald-800 shadow-sm flex items-center gap-1.5">
                                             <i class="fas fa-print"></i> Preview & Print
                                         </button>
+                                        <button type="button" onclick="shareSelectedPo()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800 shadow-sm flex items-center gap-1.5" title="Kirim / bagikan dokumen (WhatsApp, dll)">
+                                            <i class="fas fa-paper-plane"></i> Kirim
+                                        </button>
                                         <button type="button" onclick="deleteSelectedPo()" class="ipos-btn-danger px-3.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1.5">
                                             <i class="fas fa-trash-alt"></i> Hapus
                                         </button>
@@ -914,6 +917,9 @@
                                         </button>
                                         <button type="button" onclick="previewSelectedPurchase()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-emerald-800 shadow-sm flex items-center gap-1.5">
                                             <i class="fas fa-print"></i> Preview & Print
+                                        </button>
+                                        <button type="button" onclick="shareSelectedPurchase()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800 shadow-sm flex items-center gap-1.5" title="Kirim / bagikan dokumen (WhatsApp, dll)">
+                                            <i class="fas fa-paper-plane"></i> Kirim
                                         </button>
                                         <button type="button" onclick="deleteSelectedPurchase()" class="ipos-btn-danger px-3.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1.5">
                                             <i class="fas fa-trash-alt"></i> Hapus
@@ -1038,6 +1044,9 @@
                                         <button type="button" onclick="previewSelectedSo()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-emerald-800 shadow-sm flex items-center gap-1.5">
                                             <i class="fas fa-print"></i> Print
                                         </button>
+                                        <button type="button" onclick="shareSelectedSo()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800 shadow-sm flex items-center gap-1.5" title="Kirim / bagikan dokumen (WhatsApp, dll)">
+                                            <i class="fas fa-paper-plane"></i> Kirim
+                                        </button>
                                         <button type="button" onclick="deleteSelectedSo()" class="ipos-btn-danger px-3.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1.5">
                                             <i class="fas fa-trash-alt"></i> Hapus
                                         </button>
@@ -1088,6 +1097,9 @@
                                         </button>
                                         <button type="button" onclick="previewSelectedSale()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-emerald-800 shadow-sm flex items-center gap-1.5">
                                             <i class="fas fa-print"></i> Print
+                                        </button>
+                                        <button type="button" onclick="shareSelectedSale()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800 shadow-sm flex items-center gap-1.5" title="Kirim / bagikan dokumen (WhatsApp, dll)">
+                                            <i class="fas fa-paper-plane"></i> Kirim
                                         </button>
                                         <button type="button" onclick="deleteSelectedSale()" class="ipos-btn-danger px-3.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1.5">
                                             <i class="fas fa-trash-alt"></i> Hapus
@@ -2224,6 +2236,33 @@
     </div>
 
     <!-- ==================== MODAL: PREVIEW & CETAK DOKUMEN PO / FAKTUR PEMBELIAN ==================== -->
+    <!-- ==================== MODAL: KIRIM / BAGIKAN DOKUMEN ==================== -->
+    <div id="doc-share-modal" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center p-3" style="z-index:70">
+        <div class="ipos-panel rounded-lg w-full max-w-lg overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between bg-slate-100">
+                <span class="font-bold text-xs sm:text-sm text-slate-800"><i class="fas fa-paper-plane mr-1.5 text-sky-600"></i> Kirim Dokumen</span>
+                <button type="button" onclick="closeModal('doc-share-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <div class="p-4 space-y-2.5 text-xs max-h-[82vh] overflow-y-auto">
+                <div id="doc-share-summary" class="font-bold text-slate-800"></div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Nomor WhatsApp Tujuan</label>
+                    <input type="text" id="doc-share-phone" inputmode="tel" placeholder="0812xxxx (kosongkan untuk memilih kontak di WhatsApp)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Isi Pesan (bisa diedit sebelum dikirim)</label>
+                    <textarea id="doc-share-text" rows="12" class="w-full bg-slate-50 border border-slate-300 rounded p-2 font-mono text-[11px]"></textarea>
+                </div>
+                <div class="flex flex-wrap justify-end gap-2 pt-2 border-t border-slate-200">
+                    <button type="button" onclick="closeModal('doc-share-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Tutup</button>
+                    <button type="button" onclick="copyDocShareText()" class="ipos-btn px-3 py-1.5 rounded font-bold"><i class="fas fa-copy mr-1"></i> Salin Teks</button>
+                    <button type="button" id="doc-share-native-btn" onclick="nativeShareDoc()" class="ipos-btn px-3 py-1.5 rounded font-bold text-sky-800"><i class="fas fa-share-alt mr-1"></i> Bagikan...</button>
+                    <button type="button" onclick="sendDocViaWhatsApp()" class="ipos-btn-success px-4 py-1.5 rounded font-bold shadow"><i class="fab fa-whatsapp mr-1"></i> WhatsApp</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="doc-preview-modal" class="fixed inset-0 bg-slate-900/60 z-[65] hidden flex items-center justify-center p-3">
         <div class="ipos-panel rounded-lg w-full max-w-2xl overflow-hidden shadow-2xl">
             <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between bg-slate-100">
@@ -2241,6 +2280,7 @@
                 <span class="text-slate-500"><i class="fas fa-info-circle text-sky-600 mr-1"></i> Pastikan data sudah sesuai sebelum mencetak.</span>
                 <div class="flex gap-2">
                     <button type="button" onclick="closeModal('doc-preview-modal')" class="ipos-btn px-3.5 py-1.5 rounded font-semibold">Tutup</button>
+                    <button type="button" onclick="openDocShareFromPreview()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800"><i class="fas fa-paper-plane mr-1"></i> Kirim</button>
                     <button type="button" onclick="printPurchaseDocumentSheet()" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">
                         <i class="fas fa-print mr-1"></i> Cetak Dokumen (Print)
                     </button>
@@ -5190,20 +5230,30 @@
             openPoFormModal(selectedPoIndex);
         }
 
-        function previewSelectedPo() {
+        function getSelectedPoDoc(verb = 'dicetak') {
             if (selectedPoIndex < 0 || !appState.purchaseOrders[selectedPoIndex]) {
-                showToast('Pilih salah satu baris Pesanan (PO) terlebih dahulu untuk dicetak!', 'error');
-                return;
+                showToast(`Pilih salah satu baris Pesanan (PO) terlebih dahulu untuk ${verb}!`, 'error');
+                return null;
             }
             const p = appState.purchaseOrders[selectedPoIndex];
-            showPurchaseDocumentPreview('PO', {
+            return { kind: 'purchase', docType: 'PO', data: {
                 docNo: p.id,
                 date: p.date,
                 supplier: p.supplier,
                 status: p.status,
                 note: p.note || '-',
                 items: normalizeOrderItems(p)
-            });
+            } };
+        }
+
+        function previewSelectedPo() {
+            const d = getSelectedPoDoc('dicetak');
+            if (d) showPurchaseDocumentPreview(d.docType, d.data);
+        }
+
+        function shareSelectedPo() {
+            const d = getSelectedPoDoc('dikirim');
+            if (d) openDocShareModal(d);
         }
 
         function previewPoFromModal() {
@@ -5501,20 +5551,30 @@
             openPurchaseFormModal(selectedPurchaseIndex);
         }
 
-        function previewSelectedPurchase() {
+        function getSelectedPurchaseDoc(verb = 'dicetak') {
             if (selectedPurchaseIndex < 0 || !appState.purchaseRecords[selectedPurchaseIndex]) {
-                showToast('Pilih salah satu baris Pembelian terlebih dahulu untuk dicetak!', 'error');
-                return;
+                showToast(`Pilih salah satu baris Pembelian terlebih dahulu untuk ${verb}!`, 'error');
+                return null;
             }
             const p = appState.purchaseRecords[selectedPurchaseIndex];
-            showPurchaseDocumentPreview('FAKTUR', {
+            return { kind: 'purchase', docType: 'FAKTUR', data: {
                 docNo: p.id,
                 poRef: p.poRef || '',
                 date: p.date,
                 supplier: p.supplier,
                 paymentInfo: p.isTempo ? `UTANG / TEMPO (Jatuh Tempo: ${p.dueDate || '-'})` : getWalletNameById(p.sourceWallet),
                 items: normalizeOrderItems(p)
-            });
+            } };
+        }
+
+        function previewSelectedPurchase() {
+            const d = getSelectedPurchaseDoc('dicetak');
+            if (d) showPurchaseDocumentPreview(d.docType, d.data);
+        }
+
+        function shareSelectedPurchase() {
+            const d = getSelectedPurchaseDoc('dikirim');
+            if (d) openDocShareModal(d);
         }
 
         function previewPurchaseFromModal() {
@@ -5683,7 +5743,150 @@
         }
 
         // --- PREVIEW & PRINT DOKUMEN PO / FAKTUR PEMBELIAN ---
+        // =========================================================================
+        // KIRIM / BAGIKAN DOKUMEN (PO, Pembelian, SO, Penjualan)
+        // =========================================================================
+        let lastDocPreview = null;   // dokumen yang sedang tampil di jendela Preview
+        let docShareCurrent = null;  // dokumen yang sedang dikirim
+
+        const DOC_SHARE_TITLES = {
+            purchase: { PO: 'SURAT PESANAN PEMBELIAN (PO)', FAKTUR: 'FAKTUR PEMBELIAN', RETUR: 'NOTA RETUR PEMBELIAN' },
+            sales: { SO: 'SURAT PESANAN PENJUALAN (SO)', FAKTUR: 'FAKTUR PENJUALAN', RETUR: 'NOTA RETUR PENJUALAN' }
+        };
+
+        function getDocShareTitle(doc) {
+            return (DOC_SHARE_TITLES[doc.kind] && DOC_SHARE_TITLES[doc.kind][doc.docType]) || String(doc.docType || 'DOKUMEN');
+        }
+
+        // Susun pesan teks siap kirim (format tebal *...* dikenali WhatsApp)
+        function buildDocShareText(doc) {
+            const d = doc.data || {};
+            const isPurchase = doc.kind === 'purchase';
+            const priceKey = isPurchase ? 'cost' : 'price';
+            const lines = [];
+            lines.push(`*${appState.settings.storeName || 'DONET CELL'}*`);
+            lines.push(`*${getDocShareTitle(doc)}*`);
+            lines.push(`No: ${d.docNo || '-'}`);
+            if (d.poRef) lines.push(`Ref PO: ${d.poRef}`);
+            if (d.soRef) lines.push(`Ref SO: ${d.soRef}`);
+            lines.push(`Tanggal: ${String(d.date || '').slice(0, 10) || '-'}`);
+            lines.push(`${isPurchase ? 'Kepada Supplier' : 'Kepada Pelanggan'}: ${(isPurchase ? d.supplier : d.customer) || '-'}`);
+            if (d.status) lines.push(`Status: ${d.status}`);
+            if (d.paymentInfo) lines.push(`Pembayaran: ${d.paymentInfo}`);
+            lines.push('--------------------------------');
+            let totalQty = 0, grand = 0;
+            (d.items || []).forEach((it, i) => {
+                const qty = Number(it.qty) || 0;
+                const price = Number(it[priceKey]) || 0;
+                totalQty += qty;
+                grand += qty * price;
+                lines.push(`${i + 1}. ${it.name || it.code || '-'}`);
+                lines.push(`    ${qty} x ${formatRp(price)} = ${formatRp(qty * price)}`);
+            });
+            lines.push('--------------------------------');
+            lines.push(`Total Qty: ${totalQty}`);
+            lines.push(`*TOTAL: Rp ${formatRp(grand)}*`);
+            if (d.note && String(d.note).trim() && String(d.note).trim() !== '-') lines.push(`Catatan: ${String(d.note).trim()}`);
+            lines.push('');
+            const contact = [];
+            if (appState.settings.storeAddress) contact.push(appState.settings.storeAddress);
+            if (appState.settings.storePhone) contact.push(`Telp/WA: ${appState.settings.storePhone}`);
+            if (contact.length) lines.push(contact.join(' | '));
+            if (appState.settings.storeFooter) lines.push(appState.settings.storeFooter);
+            return lines.join('\n');
+        }
+
+        // 0812-xxx / +62812xxx / 812xxx -> 62812xxx. Kosong jika tidak valid.
+        function normalizeWaNumber(raw) {
+            let n = String(raw || '').replace(/\D/g, '');
+            if (!n) return '';
+            if (n.startsWith('62')) { /* sudah kode negara */ }
+            else if (n.startsWith('0')) n = '62' + n.slice(1);
+            else if (n.startsWith('8')) n = '62' + n;
+            return (n.length >= 10 && n.length <= 15) ? n : '';
+        }
+
+        function findDocPartyPhone(doc) {
+            const d = doc.data || {};
+            const isPurchase = doc.kind === 'purchase';
+            const name = isPurchase ? d.supplier : d.customer;
+            const list = (isPurchase ? appState.suppliers : appState.customers) || [];
+            const party = list.find(x => x.name === name);
+            return party ? normalizeWaNumber(party.phone) : '';
+        }
+
+        function openDocShareModal(doc) {
+            if (!doc || !doc.data) return;
+            docShareCurrent = doc;
+            const d = doc.data;
+            document.getElementById('doc-share-summary').textContent =
+                `${getDocShareTitle(doc)} - ${d.docNo || ''} (${(doc.kind === 'purchase' ? d.supplier : d.customer) || '-'})`;
+            document.getElementById('doc-share-phone').value = findDocPartyPhone(doc);
+            document.getElementById('doc-share-text').value = buildDocShareText(doc);
+            const nativeBtn = document.getElementById('doc-share-native-btn');
+            if (nativeBtn) nativeBtn.classList.toggle('hidden', typeof navigator.share !== 'function');
+            document.getElementById('doc-share-modal').classList.remove('hidden');
+        }
+
+        function openDocShareFromPreview() {
+            if (!lastDocPreview) {
+                showToast('Belum ada dokumen yang dipratinjau.', 'error');
+                return;
+            }
+            openDocShareModal(lastDocPreview);
+        }
+
+        function sendDocViaWhatsApp() {
+            const text = document.getElementById('doc-share-text').value;
+            const rawPhone = document.getElementById('doc-share-phone').value.trim();
+            const phone = normalizeWaNumber(rawPhone);
+            if (rawPhone && !phone) {
+                showToast('Nomor WhatsApp tidak valid. Contoh: 081234567890', 'error');
+                return;
+            }
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+            const w = window.open(url, '_blank', 'noopener');
+            if (!w) showToast('Pop-up diblokir browser! Izinkan pop-up atau gunakan tombol Salin Teks.', 'error');
+            else if (text.length > 3500) showToast('Pesan cukup panjang. Jika terpotong di WhatsApp, gunakan Salin Teks lalu tempel.', 'info');
+        }
+
+        async function nativeShareDoc() {
+            if (typeof navigator.share !== 'function') {
+                showToast('Browser ini belum mendukung menu Bagikan. Gunakan WhatsApp atau Salin Teks.', 'error');
+                return;
+            }
+            const doc = docShareCurrent;
+            try {
+                await navigator.share({
+                    title: doc ? `${getDocShareTitle(doc)} ${doc.data.docNo || ''}`.trim() : 'Dokumen',
+                    text: document.getElementById('doc-share-text').value
+                });
+            } catch (err) {
+                if (err && err.name !== 'AbortError') showToast('Gagal membuka menu Bagikan.', 'error');
+            }
+        }
+
+        async function copyDocShareText() {
+            const ta = document.getElementById('doc-share-text');
+            let ok = false;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(ta.value);
+                    ok = true;
+                }
+            } catch (e) { /* lanjut ke cara cadangan */ }
+            if (!ok) {
+                try {
+                    ta.focus(); ta.select();
+                    ok = document.execCommand('copy');
+                } catch (e) { ok = false; }
+            }
+            if (ok) showToast('Teks dokumen disalin. Tinggal tempel di aplikasi tujuan.', 'success');
+            else showToast('Gagal menyalin otomatis. Blok teks lalu salin manual.', 'error');
+        }
+
         function showPurchaseDocumentPreview(docType, data) {
+            lastDocPreview = { kind: 'purchase', docType, data };
             const isPo = docType === 'PO';
             document.getElementById('doc-preview-title').innerHTML = isPo
                 ? `<i class="fas fa-clipboard-list mr-1.5 text-amber-600"></i> Preview & Cetak Surat Pesanan Pembelian (PO)`
@@ -6542,16 +6745,26 @@
             openSoFormModal(selectedSoIndex);
         }
 
-        function previewSelectedSo() {
+        function getSelectedSoDoc(verb = 'dicetak') {
             if (selectedSoIndex < 0 || !appState.salesOrders[selectedSoIndex]) {
-                showToast('Pilih salah satu baris Pesanan (SO) terlebih dahulu untuk dicetak!', 'error');
-                return;
+                showToast(`Pilih salah satu baris Pesanan (SO) terlebih dahulu untuk ${verb}!`, 'error');
+                return null;
             }
             const p = appState.salesOrders[selectedSoIndex];
-            showSalesDocumentPreview('SO', {
+            return { kind: 'sales', docType: 'SO', data: {
                 docNo: p.id, date: p.date, customer: p.customer, status: p.status,
                 note: p.note || '-', items: normalizeSalesItems(p)
-            });
+            } };
+        }
+
+        function previewSelectedSo() {
+            const d = getSelectedSoDoc('dicetak');
+            if (d) showSalesDocumentPreview(d.docType, d.data);
+        }
+
+        function shareSelectedSo() {
+            const d = getSelectedSoDoc('dikirim');
+            if (d) openDocShareModal(d);
         }
 
         function previewSoFromModal() {
@@ -6851,19 +7064,29 @@
                 : getWalletNameById(method);
         }
 
-        function previewSelectedSale() {
+        function getSelectedSaleDoc(verb = 'dicetak') {
             const t = getSelectedSaleTrx();
             if (!t) {
-                showToast('Pilih salah satu baris Penjualan terlebih dahulu untuk dicetak!', 'error');
-                return;
+                showToast(`Pilih salah satu baris Penjualan terlebih dahulu untuk ${verb}!`, 'error');
+                return null;
             }
             const debt = t.paymentMethod === 'PIUTANG_TEMPO'
                 ? appState.debtsReceivables.find(d => d.id === findLinkedReceivableId(t)) : null;
-            showSalesDocumentPreview('FAKTUR', {
+            return { kind: 'sales', docType: 'FAKTUR', data: {
                 docNo: t.id, soRef: t.soRef || '', date: isoToLocalDate(t.date), customer: t.customer,
                 paymentInfo: salePaymentInfo(t.paymentMethod, debt && debt.dueDate),
                 items: normalizeSalesItems(t)
-            });
+            } };
+        }
+
+        function previewSelectedSale() {
+            const d = getSelectedSaleDoc('dicetak');
+            if (d) showSalesDocumentPreview(d.docType, d.data);
+        }
+
+        function shareSelectedSale() {
+            const d = getSelectedSaleDoc('dikirim');
+            if (d) openDocShareModal(d);
         }
 
         function previewSaleFromModal() {
@@ -7241,6 +7464,7 @@
         // --- PREVIEW & PRINT DOKUMEN SO / FAKTUR PENJUALAN / NOTA RETUR ---
         // Memakai modal pratinjau & tombol cetak yang sama dengan modul Pembelian.
         function showSalesDocumentPreview(docType, data) {
+            lastDocPreview = { kind: 'sales', docType, data };
             const cfg = {
                 SO:     { title: 'Preview & Cetak Surat Pesanan Penjualan (SO)', icon: 'fa-clipboard-list text-amber-600', label: 'SURAT PESANAN (SO)', badge: 'bg-amber-100 text-amber-900 border border-amber-400', rightLabel: 'Status', signRight: 'Disetujui Pelanggan,' },
                 FAKTUR: { title: 'Preview & Cetak Faktur Penjualan', icon: 'fa-file-invoice-dollar text-emerald-600', label: 'FAKTUR PENJUALAN', badge: 'bg-emerald-100 text-emerald-900 border border-emerald-400', rightLabel: 'Pembayaran', signRight: 'Diterima Pelanggan,' },
