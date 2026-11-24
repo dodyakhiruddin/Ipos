@@ -1174,8 +1174,9 @@
                                     <div class="sm:col-span-4">
                                         <select id="pos-customer" onchange="renderPosCart()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
                                     </div>
-                                    <div class="sm:col-span-3">
-                                        <select id="pos-payment-method" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                                    <div class="sm:col-span-3 flex gap-1">
+                                        <select id="pos-payment-method" class="flex-1 min-w-0 bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                                        <button type="button" onclick="openSalesTransferScan('kasir')" class="ipos-btn px-2 py-1.5 rounded font-bold text-sky-800 shrink-0" title="Scan Bukti Transfer Pelanggan"><i class="fas fa-camera"></i></button>
                                     </div>
                                 </div>
 
@@ -1212,6 +1213,7 @@
                                             <span>Kembalian:</span>
                                             <span class="font-mono font-bold text-emerald-400"><span id="pos-change-display">0</span></span>
                                         </div>
+                                        <div id="pos-transfer-proof-badge" class="hidden"></div>
                                     </div>
                                     <div class="sm:col-span-3 flex flex-col gap-1.5">
                                         <button type="button" onclick="processPosCheckout()" class="ipos-btn-success py-2 px-3 rounded font-bold text-xs shadow flex items-center justify-center gap-1.5">
@@ -2451,7 +2453,7 @@
     </div>
 
     <!-- ==================== MODAL: AUTO-SCAN / OCR NOTA, STRUK TRANSFER & DOKUMEN ==================== -->
-    <div id="ocr-scanner-modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-3">
+    <div id="ocr-scanner-modal" style="z-index:60" class="fixed inset-0 bg-slate-900/60 z-[60] hidden flex items-center justify-center p-3">
         <div class="ipos-panel rounded-lg w-full max-w-3xl overflow-hidden shadow-2xl">
             <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between bg-gradient-to-r from-sky-50 to-indigo-50">
                 <span class="font-bold text-xs sm:text-sm text-sky-900">
@@ -2465,10 +2467,11 @@
                 <div class="md:col-span-5 space-y-2.5">
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">1. Pilih Tujuan Input Otomatis:</label>
-                        <select id="ocr-target-mode" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold text-sky-900">
+                        <select id="ocr-target-mode" onchange="onOcrModeChange()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold text-sky-900">
                             <option value="ppob">Transaksi PPOB / Bukti Transfer BRILink</option>
                             <option value="pembelian">Nota Pembelian / Kulakan Stok Barang</option>
                             <option value="pos">Kasir Penjualan (Cari Item dari Teks)</option>
+                            <option value="penjualan">Bukti Transfer Pembayaran Pelanggan (Kasir / Faktur Penjualan)</option>
                         </select>
                     </div>
 
@@ -2518,7 +2521,7 @@
                         </div>
                         <div>
                             <label class="block font-bold text-slate-600 mb-1">Nominal Utama (Rp)</label>
-                            <input type="number" id="ocr-ext-amount" placeholder="0" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
+                            <input type="number" id="ocr-ext-amount" oninput="updateOcrSalesMatch()" placeholder="0" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
                         </div>
                         <div>
                             <label class="block font-bold text-slate-600 mb-1">Margin PPOB (Rp)</label>
@@ -2530,6 +2533,16 @@
                         </div>
                     </div>
                     <div id="ocr-amount-candidates" class="hidden flex flex-wrap items-center gap-1 text-[11px]"></div>
+                    <div id="ocr-sales-extra" class="hidden space-y-2">
+                        <div>
+                            <label class="block font-bold text-slate-600 mb-1">No. Referensi / Resi Transfer</label>
+                            <input type="text" id="ocr-ext-ref" placeholder="Terbaca otomatis dari bukti transfer" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono uppercase">
+                        </div>
+                        <div id="ocr-sales-match" class="rounded border px-2.5 py-1.5 text-[11px] font-semibold bg-slate-50 border-slate-300 text-slate-700"></div>
+                        <div class="bg-amber-50 border border-amber-200 rounded p-2 text-[11px] text-amber-900">
+                            <b>Penting:</b> Scan hanya membaca teks pada gambar, bukan memastikan uang sudah masuk. Cocokkan dengan mutasi / saldo rekening sebelum menyerahkan barang.
+                        </div>
+                    </div>
                     <div>
                         <label class="block font-bold text-slate-600 mb-1">Keterangan / Uraian Transaksi</label>
                         <input type="text" id="ocr-ext-desc" placeholder="Hasil ringkasan struk / nota..." class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
@@ -3017,7 +3030,11 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                         <label class="block font-bold mb-1">Metode Pembayaran / Masuk Ke</label>
-                        <select id="sale-form-payment" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                        <div class="flex gap-1">
+                            <select id="sale-form-payment" class="flex-1 min-w-0 bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                            <button type="button" onclick="openSalesTransferScan('faktur')" class="ipos-btn px-2.5 py-1.5 rounded font-bold text-sky-800 shrink-0 flex items-center gap-1" title="Scan Bukti Transfer Pelanggan"><i class="fas fa-camera"></i> Scan</button>
+                        </div>
+                        <div id="sale-transfer-proof-badge" class="hidden mt-1"></div>
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Jatuh Tempo (Isi jika Tempo / Kasbon)</label>
@@ -6096,13 +6113,20 @@
             renderPosCart();
         }
 
+        // Bukti transfer pelanggan yang sudah discan (menunggu disimpan bersama transaksi)
+        let posTransferProof = null;
+        let saleTransferProof = null;
+        let ocrSalesContext = 'kasir'; // 'kasir' = Kasir Cepat, 'faktur' = form Faktur Penjualan
+
         function clearPosCart() {
             posCart = [];
+            posTransferProof = null;
             document.getElementById('pos-cash-paid').value = '';
             const posDateEl = document.getElementById('pos-date');
             if (posDateEl) posDateEl.value = getTodayIsoDate();
             document.getElementById('pos-invoice-no').value = generateInvoiceId('JUA');
             renderPosCart();
+            refreshTransferProofBadges();
         }
 
         function getPosGrandTotal() {
@@ -6123,6 +6147,7 @@
             const change = Math.max(0, paid - total);
             const el = document.getElementById('pos-change-display');
             if (el) el.textContent = formatRp(change);
+            refreshTransferProofBadges();
         }
 
         function renderPosQuickGrid() {
@@ -6245,6 +6270,7 @@
                 items: soldItems
             };
 
+            if (posTransferProof && payWallet !== 'PIUTANG_TEMPO') trx.transferProof = Object.assign({}, posTransferProof);
             appState.transactions.unshift(trx);
             clearPosCart();
             await saveAppState();
@@ -6720,6 +6746,7 @@
             }).join('');
             document.getElementById('sale-draft-total-qty').textContent = formatNum(totalQty);
             document.getElementById('sale-draft-grand-total').textContent = formatRp(grandTotal);
+            refreshTransferProofBadges();
         }
 
         function addSaleDraftItem() {
@@ -6783,6 +6810,7 @@
             const t = appState.transactions[idx];
             const isEdit = idx >= 0 && t && t.module === 'POS';
             document.getElementById('edit-sale-index').value = isEdit ? idx : -1;
+            saleTransferProof = (isEdit && t.transferProof) ? Object.assign({}, t.transferProof) : null;
             document.getElementById('sale-linked-so-id').value = '';
             if (isEdit) {
                 document.getElementById('sale-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-emerald-600"></i> Edit Transaksi Penjualan: ${esc(t.id)}`;
@@ -6875,7 +6903,10 @@
                 return;
             }
 
-            // Cek stok sebelum ada perubahan apa pun (qty lama ikut dihitung karena akan dikembalikan)
+                if (!isTempo && saleTransferProof && saleTransferProof.amount < total &&
+                !confirm(`Nominal bukti transfer (Rp ${formatRp(saleTransferProof.amount)}) kurang dari total (Rp ${formatRp(total)}).\n\nTetap simpan penjualan?`)) return;
+
+        // Cek stok sebelum ada perubahan apa pun (qty lama ikut dihitung karena akan dikembalikan)
             const oldQty = {};
             if (old) normalizeSalesItems(old).forEach(oi => { oldQty[oi.code] = (oldQty[oi.code] || 0) + oi.qty; });
             const shortItems = saleDraftItems.filter(di => {
@@ -6965,7 +6996,8 @@
                 profit: total - totalModal,
                 paymentMethod: payWallet,
                 items: soldItems,
-                soRef: linkedSoId
+                soRef: linkedSoId,
+                transferProof: (!isTempo && saleTransferProof) ? Object.assign({}, saleTransferProof) : undefined
             };
             if (old) appState.transactions[idx] = Object.assign({}, old, rec);
             else appState.transactions.unshift(rec);
@@ -8025,6 +8057,7 @@
                     <div>No: <b>${esc(trx.id)}</b></div>
                     <div>Tgl: ${new Date(trx.date).toLocaleString('id-ID')}</div>
                     <div>Plg: ${esc(trx.customer)}</div>
+                    ${trx.transferProof ? `<div>Transfer: ${esc(trx.transferProof.provider || '-')}${trx.transferProof.ref ? ' / Ref ' + esc(trx.transferProof.ref) : ''}</div>` : ''}
                 </div>
                 <div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
                     ${(trx.items || []).map(i => `
@@ -8520,9 +8553,11 @@
         // 13. AUTO-SCAN OCR NOTA & STRUK TRANSFER
         // =========================================================================
         function openOcrScannerModal(mode = 'ppob') {
+            if (mode !== 'penjualan') ocrSalesContext = 'kasir';
             document.getElementById('ocr-target-mode').value = mode;
             const mg = Number(appState.settings?.ocrPpobMargin);
             document.getElementById('ocr-ext-margin').value = Number.isFinite(mg) && mg >= 0 && appState.settings?.ocrPpobMargin !== undefined ? mg : 3000;
+            onOcrModeChange();
             document.getElementById('ocr-scanner-modal').classList.remove('hidden');
         }
 
@@ -8634,7 +8669,164 @@
             if (prov && provEl && !provEl.value.trim()) provEl.value = prov;
 
             document.getElementById('ocr-ext-desc').value = txt.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 2).join(' - ');
+            const refEl = document.getElementById('ocr-ext-ref');
+            if (refEl) { const r = pickOcrReference(txt); if (r) refEl.value = r; }
+            updateOcrSalesMatch();
             document.getElementById('ocr-detected-badge')?.classList.remove('hidden');
+        }
+
+        // ---------- Scan Bukti Transfer pada menu Penjualan (Kasir Cepat & Faktur Penjualan) ----------
+        function openSalesTransferScan(ctx) {
+            ocrSalesContext = ctx === 'faktur' ? 'faktur' : 'kasir';
+            ['ocr-raw-text', 'ocr-ext-provider', 'ocr-ext-target', 'ocr-ext-amount', 'ocr-ext-desc', 'ocr-ext-ref', 'ocr-file-input']
+                .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            const img = document.getElementById('ocr-preview-img');
+            if (img) { img.removeAttribute('src'); img.classList.add('hidden'); }
+            document.getElementById('ocr-upload-placeholder')?.classList.remove('hidden');
+            document.getElementById('ocr-detected-badge')?.classList.add('hidden');
+            document.getElementById('ocr-amount-candidates')?.classList.add('hidden');
+            openOcrScannerModal('penjualan');
+        }
+
+        function onOcrModeChange() {
+            const sales = document.getElementById('ocr-target-mode')?.value === 'penjualan';
+            document.getElementById('ocr-sales-extra')?.classList.toggle('hidden', !sales);
+            ['ocr-ext-margin', 'ocr-ext-qty'].forEach(id => {
+                document.getElementById(id)?.parentElement?.classList.toggle('hidden', sales);
+            });
+            if (sales) updateOcrSalesMatch();
+        }
+
+        function getOcrSalesExpectedTotal() {
+            if (ocrSalesContext === 'faktur') {
+                return saleDraftItems.reduce((sum, di) => sum + (Number(di.qty) || 1) * (Number(di.price) || 0), 0);
+            }
+            return getPosGrandTotal();
+        }
+
+        // Info kecocokan nominal transfer dengan total tagihan: { level: 'ok' | 'warn' | 'none', text }
+        function describeProofMatch(amount, total) {
+            amount = Number(amount) || 0;
+            total = Number(total) || 0;
+            if (!(total > 0)) return { level: 'none', text: 'Total tagihan belum ada (belum ada barang)' };
+            if (!(amount > 0)) return { level: 'none', text: 'Nominal transfer belum terbaca' };
+            const diff = amount - total;
+            if (diff === 0) return { level: 'ok', text: `Nominal sesuai total (Rp ${formatRp(total)})` };
+            if (diff < 0) return { level: 'warn', text: `Kurang Rp ${formatRp(-diff)} dari total Rp ${formatRp(total)}` };
+            return { level: 'warn', text: `Lebih Rp ${formatRp(diff)} dari total Rp ${formatRp(total)}` };
+        }
+
+        function updateOcrSalesMatch() {
+            const box = document.getElementById('ocr-sales-match');
+            if (!box || document.getElementById('ocr-target-mode')?.value !== 'penjualan') return;
+            const info = describeProofMatch(document.getElementById('ocr-ext-amount')?.value, getOcrSalesExpectedTotal());
+            const tone = info.level === 'ok' ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                : info.level === 'warn' ? 'bg-amber-50 border-amber-300 text-amber-900'
+                : 'bg-slate-50 border-slate-300 text-slate-700';
+            box.className = `rounded border px-2.5 py-1.5 text-[11px] font-semibold ${tone}`;
+            box.textContent = info.text;
+        }
+
+        // Ambil nomor referensi / resi dari teks hasil OCR
+        function pickOcrReference(rawText) {
+            const lines = String(rawText || '').split('\n');
+            const KEY = /\b(?:no\.?\s*ref(?:erensi)?|nomor\s*ref(?:erensi)?|ref(?:erensi)?\.?\s*(?:no|id)?|no\.?\s*(?:trx|transaksi)|nomor\s*transaksi|id\s*(?:trx|transaksi)|kode\s*transaksi)\b/i;
+            for (let i = 0; i < lines.length; i++) {
+                const m = KEY.exec(lines[i]);
+                if (!m) continue;
+                const rest = lines[i].slice(m.index + m[0].length) + ' ' + (lines[i + 1] || '');
+                const tok = rest.replace(/[\s:.\-]+/g, ' ').trim().split(' ').find(t => /^[A-Za-z0-9]{8,}$/.test(t) && /\d{4,}/.test(t));
+                if (tok) return tok.toUpperCase();
+            }
+            return '';
+        }
+
+        function findWalletIdForProvider(provider) {
+            const list = (appState.walletList || []).filter(w => w.type !== 'TUNAI');
+            const p = String(provider || '').trim().toUpperCase();
+            if (p) {
+                const hit = list.find(w => String(w.name || '').toUpperCase().includes(p) || String(w.id || '').toUpperCase().includes(p));
+                if (hit) return hit.id;
+            }
+            return list.length === 1 ? list[0].id : null;
+        }
+
+        function readOcrSalesProof() {
+            return {
+                provider: (document.getElementById('ocr-ext-provider')?.value || '').trim().toUpperCase(),
+                ref: (document.getElementById('ocr-ext-ref')?.value || '').trim().toUpperCase(),
+                amount: Number(document.getElementById('ocr-ext-amount')?.value) || 0,
+                scannedAt: new Date().toISOString(),
+                scannedBy: currentUser.username
+            };
+        }
+
+        // Validasi sebelum bukti dipakai: nominal wajib ada & nomor referensi tidak boleh dipakai dua kali
+        function confirmSalesTransferProof() {
+            const proof = readOcrSalesProof();
+            if (!(proof.amount > 0)) {
+                showToast('Nominal transfer belum terbaca. Isi manual di kolom Nominal Utama.', 'error');
+                return false;
+            }
+            if (proof.ref) {
+                const editingId = ocrSalesContext === 'faktur' ? document.getElementById('sale-form-no')?.value : '';
+                const dup = (appState.transactions || []).find(t =>
+                    t.id !== editingId && t.transferProof && String(t.transferProof.ref || '').toUpperCase() === proof.ref);
+                if (dup && !confirm(`Nomor referensi ${proof.ref} sudah pernah dipakai pada transaksi ${dup.id}.\n\nBukti transfer yang sama mungkin dipakai dua kali. Tetap lanjutkan?`)) return false;
+            }
+            return true;
+        }
+
+        function applySalesTransferProof() {
+            const proof = readOcrSalesProof();
+            const walletId = findWalletIdForProvider(proof.provider);
+            if (ocrSalesContext === 'faktur') {
+                saleTransferProof = proof;
+                const sel = document.getElementById('sale-form-payment');
+                if (sel && walletId) sel.value = walletId;
+            } else {
+                switchTab('kasir', 'kasir');
+                posTransferProof = proof;
+                const sel = document.getElementById('pos-payment-method');
+                if (sel && walletId) sel.value = walletId;
+                const paid = document.getElementById('pos-cash-paid');
+                if (paid) paid.value = proof.amount;
+                calculatePosChange();
+            }
+            refreshTransferProofBadges();
+            if (!walletId) showToast('Bukti transfer tersimpan di transaksi ini. Pilih rekening tujuan transfer secara manual.', 'info');
+            else showToast('Bukti transfer diterapkan. Rekening tujuan dipilih otomatis.', 'success');
+        }
+
+        function clearTransferProof(ctx) {
+            if (ctx === 'faktur') saleTransferProof = null;
+            else posTransferProof = null;
+            refreshTransferProofBadges();
+        }
+
+        function renderProofBadge(elId, proof, total, ctx, dark) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            if (!proof) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+            const info = describeProofMatch(proof.amount, total);
+            const tones = dark
+                ? { ok: 'bg-emerald-900/60 border-emerald-500 text-emerald-200', warn: 'bg-amber-900/60 border-amber-500 text-amber-200', none: 'bg-slate-800 border-slate-500 text-slate-200' }
+                : { ok: 'bg-emerald-50 border-emerald-300 text-emerald-800', warn: 'bg-amber-50 border-amber-300 text-amber-900', none: 'bg-slate-50 border-slate-300 text-slate-700' };
+            el.className = ctx === 'faktur' ? 'mt-1' : '';
+            el.innerHTML = `
+                <div class="border rounded px-2 py-1 text-[11px] flex items-start justify-between gap-2 ${tones[info.level]}">
+                    <div>
+                        <div class="font-bold"><i class="fas fa-receipt mr-1"></i>Bukti transfer: ${esc(proof.provider || '-')} &bull; Rp ${formatRp(proof.amount)}${proof.ref ? ' &bull; Ref ' + esc(proof.ref) : ''}</div>
+                        <div>${esc(info.text)}</div>
+                    </div>
+                    <button type="button" onclick="clearTransferProof('${ctx}')" class="font-bold px-1" title="Hapus bukti transfer">&times;</button>
+                </div>`;
+        }
+
+        function refreshTransferProofBadges() {
+            renderProofBadge('pos-transfer-proof-badge', posTransferProof, getPosGrandTotal(), 'kasir', true);
+            renderProofBadge('sale-transfer-proof-badge', saleTransferProof,
+                saleDraftItems.reduce((sum, di) => sum + (Number(di.qty) || 1) * (Number(di.price) || 0), 0), 'faktur', false);
         }
 
         function applyOcrResultToSystem() {
@@ -8643,6 +8835,7 @@
             const target = document.getElementById('ocr-ext-target').value;
             const desc = document.getElementById('ocr-ext-desc').value;
 
+            if (mode === 'penjualan' && !confirmSalesTransferProof()) return;
             closeModal('ocr-scanner-modal');
             if (mode === 'pembelian') {
                 switchTab('pembelian');
@@ -8653,6 +8846,9 @@
             } else if (mode === 'pos') {
                 switchTab('kasir', 'kasir');
                 document.getElementById('pos-barcode-input').value = target || desc;
+            } else if (mode === 'penjualan') {
+                applySalesTransferProof();
+                return;
             } else {
                 switchTab('ppob');
                 document.getElementById('ppob-target-number').value = target;
