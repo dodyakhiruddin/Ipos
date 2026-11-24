@@ -9,9 +9,9 @@
     <!-- Library SheetJS (XLSX) untuk Import & Export Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Library Tesseract.js untuk Auto-Scan / OCR Gambar Nota, Struk Transfer, & QRIS -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.4/dist/tesseract.min.js"></script>
     <!-- Library Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         
@@ -975,8 +975,181 @@
                     </div>
                 </section>
 
-                <!-- ==================== MENU 4: PENJUALAN (KASIR POS) ==================== -->
+                <!-- ==================== MENU 4: PENJUALAN (PESANAN, PENJUALAN, RETUR + KASIR CEPAT) ==================== -->
                 <section id="view-kasir" class="hidden p-3 sm:p-4 max-w-7xl mx-auto">
+                    <div class="ipos-panel rounded-lg overflow-hidden">
+                        <div class="ipos-panel-header px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-shopping-cart text-emerald-600"></i>
+                                <h2 class="font-bold text-sm text-slate-800">Manajemen Pesanan (SO), Penjualan & Retur Penjualan</h2>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                                <button type="button" onclick="switchSalesSubTab('so')" id="ssub-so" class="ipos-tab active px-3 py-1 rounded-t font-bold">
+                                    <i class="fas fa-clipboard-list text-amber-600 mr-1"></i> Pesanan (SO)
+                                </button>
+                                <button type="button" onclick="switchSalesSubTab('jual')" id="ssub-jual" class="ipos-tab px-3 py-1 rounded-t font-bold">
+                                    <i class="fas fa-file-invoice-dollar text-emerald-600 mr-1"></i> Penjualan
+                                </button>
+                                <button type="button" onclick="switchSalesSubTab('retur')" id="ssub-retur" class="ipos-tab px-3 py-1 rounded-t font-bold">
+                                    <i class="fas fa-undo-alt text-rose-600 mr-1"></i> Retur Penjualan
+                                </button>
+                                <button type="button" onclick="switchSalesSubTab('kasir')" id="ssub-kasir" class="ipos-tab px-3 py-1 rounded-t font-bold ml-1" title="Kasir cepat dengan struk (F2)">
+                                    <i class="fas fa-cash-register text-sky-600 mr-1"></i> Kasir Cepat (F2)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-4 text-xs space-y-3">
+                            <!-- SUB-PANE 1: PESANAN PENJUALAN (SO) -->
+                            <div id="spane-so" class="space-y-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2 bg-amber-50/70 border border-amber-200 rounded p-2.5">
+                                    <div class="text-amber-950">
+                                        <b>Pesanan Penjualan (Sales Order / SO):</b> Mendukung banyak produk dalam satu pesanan. Pesanan belum mengurangi stok sampai diproses menjadi Penjualan. Klik baris untuk memilih lalu gunakan tombol <b>Tambah, Edit, Print, atau Hapus</b> di bawah.
+                                    </div>
+                                    <input type="text" id="so-search-input" onkeyup="renderSoTable()" placeholder="Cari No. SO / Pelanggan / Barang..." class="bg-white border border-slate-300 rounded px-2.5 py-1 w-64">
+                                </div>
+
+                                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-[52vh]">
+                                    <table class="w-full table-grid border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th class="w-10 text-center">Pilih</th>
+                                                <th class="w-28 text-left">Tanggal</th>
+                                                <th class="w-32 text-left">No. SO</th>
+                                                <th class="text-left">Pelanggan</th>
+                                                <th class="text-left">Rincian Produk Dipesan</th>
+                                                <th class="w-20 text-right">Total Qty</th>
+                                                <th class="w-32 text-right">Total Pesanan</th>
+                                                <th class="w-24 text-center">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="so-list-tbody"></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-300 bg-slate-50 p-2.5 rounded">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <button type="button" onclick="openSoFormModal(-1)" class="ipos-btn-primary px-3.5 py-1.5 rounded font-bold shadow flex items-center gap-1.5">
+                                            <i class="fas fa-plus"></i> Tambah
+                                        </button>
+                                        <button type="button" onclick="editSelectedSo()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800 shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button type="button" onclick="previewSelectedSo()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-emerald-800 shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-print"></i> Print
+                                        </button>
+                                        <button type="button" onclick="deleteSelectedSo()" class="ipos-btn-danger px-3.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-trash-alt"></i> Hapus
+                                        </button>
+                                    </div>
+                                    <div class="text-[11px] text-slate-600">
+                                        Baris Terpilih: <b id="selected-so-label" class="font-mono text-amber-800">Belum ada yang dipilih</b>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-PANE 2: PENJUALAN (FAKTUR MULTI-ITEM) -->
+                            <div id="spane-jual" class="hidden space-y-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-50/70 border border-emerald-200 rounded p-2.5">
+                                    <div class="text-emerald-950">
+                                        <b>Daftar Transaksi Penjualan & Pesanan (SO) Terintegrasi:</b> Cari No. Faktur, No. SO, Pelanggan, atau Barang. Pesanan (SO) yang masih menunggu bisa langsung diproses menjadi Penjualan!
+                                    </div>
+                                    <div class="relative">
+                                        <input type="text" id="jual-search-input" oninput="renderSalesTable()" placeholder="Cari No. Faktur / No. SO / Pelanggan..." class="bg-white border border-slate-300 rounded pl-2.5 pr-7 py-1 w-64 font-medium focus:outline-none focus:border-emerald-500">
+                                        <button type="button" onclick="document.getElementById('jual-search-input').value=''; renderSalesTable();" class="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-600 text-xs" title="Bersihkan Pencarian">&times;</button>
+                                    </div>
+                                </div>
+
+                                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-[52vh]">
+                                    <table class="w-full table-grid border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th class="w-10 text-center">Pilih</th>
+                                                <th class="w-28 text-left">Tanggal</th>
+                                                <th class="w-36 text-left">No. Faktur / SO</th>
+                                                <th class="text-left">Pelanggan</th>
+                                                <th class="text-left">Rincian Produk</th>
+                                                <th class="w-20 text-right">Total Qty</th>
+                                                <th class="w-32 text-right">Total Nominal</th>
+                                                <th class="w-40 text-left">Status / Pembayaran</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="jual-list-tbody"></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-300 bg-slate-50 p-2.5 rounded">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <button type="button" onclick="openSaleFormModal(-1)" class="ipos-btn-primary px-3.5 py-1.5 rounded font-bold shadow flex items-center gap-1.5">
+                                            <i class="fas fa-plus"></i> Tambah
+                                        </button>
+                                        <button type="button" onclick="editSelectedSale()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800 shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button type="button" onclick="previewSelectedSale()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-emerald-800 shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-print"></i> Print
+                                        </button>
+                                        <button type="button" onclick="deleteSelectedSale()" class="ipos-btn-danger px-3.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-trash-alt"></i> Hapus
+                                        </button>
+                                    </div>
+                                    <div class="text-[11px] text-slate-600">
+                                        Baris Terpilih: <b id="selected-jual-label" class="font-mono text-emerald-800">Belum ada yang dipilih</b>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-PANE 3: RETUR PENJUALAN -->
+                            <div id="spane-retur" class="hidden space-y-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2 bg-rose-50/70 border border-rose-200 rounded p-2.5">
+                                    <div class="text-rose-950">
+                                        <b>Daftar Retur Penjualan dari Pelanggan:</b> Barang yang dikembalikan pelanggan otomatis menambah stok dan mengembalikan dana (atau memotong piutang). Retur ikut mengurangi pendapatan & HPP di Laba Rugi.
+                                    </div>
+                                    <input type="text" id="sret-search-input" onkeyup="renderSalesReturnsTable()" placeholder="Cari No. Retur / Pelanggan / Barang..." class="bg-white border border-slate-300 rounded px-2.5 py-1 w-64">
+                                </div>
+
+                                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-[52vh]">
+                                    <table class="w-full table-grid border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th class="w-10 text-center">Pilih</th>
+                                                <th class="w-28 text-left">Tanggal</th>
+                                                <th class="w-32 text-left">No. Retur</th>
+                                                <th class="text-left">Pelanggan</th>
+                                                <th class="text-left">Barang Diretur</th>
+                                                <th class="w-16 text-right">Qty</th>
+                                                <th class="w-28 text-right">Harga Satuan</th>
+                                                <th class="w-32 text-right">Total Retur</th>
+                                                <th class="text-left">Alasan / Pengembalian</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sret-list-tbody"></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-300 bg-slate-50 p-2.5 rounded">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <button type="button" onclick="openSretFormModal(-1)" class="ipos-btn-primary px-3.5 py-1.5 rounded font-bold shadow flex items-center gap-1.5">
+                                            <i class="fas fa-plus"></i> Tambah
+                                        </button>
+                                        <button type="button" onclick="editSelectedSret()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800 shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button type="button" onclick="previewSelectedSret()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-emerald-800 shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-print"></i> Print
+                                        </button>
+                                        <button type="button" onclick="deleteSelectedSret()" class="ipos-btn-danger px-3.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-trash-alt"></i> Hapus
+                                        </button>
+                                    </div>
+                                    <div class="text-[11px] text-slate-600">
+                                        Baris Terpilih: <b id="selected-sret-label" class="font-mono text-rose-800">Belum ada yang dipilih</b>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-PANE 4: KASIR CEPAT (POS + STRUK) -->
+                            <div id="spane-kasir" class="hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
                         <!-- Left 8 cols: Cart & Header -->
                         <div class="lg:col-span-8 ipos-panel rounded-lg overflow-hidden flex flex-col">
@@ -1059,6 +1232,10 @@
                                 </select>
                             </div>
                             <div id="pos-quick-grid" class="p-2.5 grid grid-cols-2 gap-2 overflow-y-auto max-h-[65vh]"></div>
+                        </div>
+                    </div>
+                
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -2344,10 +2521,15 @@
                             <input type="number" id="ocr-ext-amount" placeholder="0" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
                         </div>
                         <div>
+                            <label class="block font-bold text-slate-600 mb-1">Margin PPOB (Rp)</label>
+                            <input type="number" id="ocr-ext-margin" value="3000" min="0" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                        </div>
+                        <div>
                             <label class="block font-bold text-slate-600 mb-1">Qty Barang (Khusus Nota)</label>
                             <input type="number" id="ocr-ext-qty" value="1" min="1" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                         </div>
                     </div>
+                    <div id="ocr-amount-candidates" class="hidden flex flex-wrap items-center gap-1 text-[11px]"></div>
                     <div>
                         <label class="block font-bold text-slate-600 mb-1">Keterangan / Uraian Transaksi</label>
                         <input type="text" id="ocr-ext-desc" placeholder="Hasil ringkasan struk / nota..." class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
@@ -2691,6 +2873,265 @@
                 </div>
                 <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
                     <button type="button" onclick="closeModal('return-form-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
+                    <button type="submit" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">Simpan Retur</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: TAMBAH / EDIT PESANAN PENJUALAN (SO MULTI-ITEM) ==================== -->
+    <div id="so-form-modal" class="fixed inset-0 bg-slate-900/55 z-50 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-3xl overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between bg-amber-50">
+                <span id="so-modal-title" class="font-bold text-xs sm:text-sm text-amber-950"><i class="fas fa-clipboard-list mr-1.5 text-amber-600"></i> Tambah Pesanan Penjualan (SO)</span>
+                <button onclick="closeModal('so-form-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <form onsubmit="saveSoRecord(event)" class="p-4 space-y-3 text-xs max-h-[85vh] overflow-y-auto">
+                <input type="hidden" id="edit-so-index" value="-1">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                        <label class="block font-bold mb-1">No. Pesanan (SO)</label>
+                        <input type="text" id="so-form-no" readonly class="w-full bg-slate-100 border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Tanggal SO</label>
+                        <input type="date" id="so-form-date" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Status SO</label>
+                        <select id="so-form-status" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                            <option value="DIPESAN">DIPESAN (Menunggu Kirim)</option>
+                            <option value="SELESAI">SELESAI (Sudah Diproses)</option>
+                            <option value="BATAL">DIBATALKAN</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-bold mb-1">Pilih Pelanggan</label>
+                        <select id="so-form-customer" onchange="syncSoItemPrice()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Catatan / Syarat Kirim SO</label>
+                        <input type="text" id="so-form-note" placeholder="Keterangan tambahan..." class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
+                    </div>
+                </div>
+
+                <div class="bg-amber-50/80 border border-amber-200 rounded p-2.5 space-y-2">
+                    <div class="font-bold text-amber-950"><i class="fas fa-cart-plus mr-1"></i> Tambah Produk ke Daftar Pesanan (SO):</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                        <div class="sm:col-span-6">
+                            <label class="block text-[11px] font-semibold mb-0.5">Pilih Barang</label>
+                            <select id="so-form-item" onchange="syncSoItemPrice()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-semibold"></select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold mb-0.5">Qty</label>
+                            <input type="number" id="so-form-qty" min="1" value="1" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold mb-0.5">Harga Jual (Rp)</label>
+                            <input type="number" id="so-form-price" min="0" value="0" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="button" onclick="addSoDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
+                                <i class="fas fa-plus"></i> Tambah
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-52">
+                    <table class="w-full table-grid border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="w-10 text-center">No</th>
+                                <th class="w-28 text-left">Kode</th>
+                                <th class="text-left">Nama Barang</th>
+                                <th class="w-20 text-center">Qty</th>
+                                <th class="w-28 text-right">Harga Jual</th>
+                                <th class="w-28 text-right">Subtotal</th>
+                                <th class="w-10 text-center">Hps</th>
+                            </tr>
+                        </thead>
+                        <tbody id="so-draft-items-tbody"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200">
+                    <div class="text-xs font-bold text-slate-800">
+                        Total Item: <span id="so-draft-total-qty" class="font-mono text-amber-800">0</span> PCS &bull;
+                        Grand Total SO: <span id="so-draft-grand-total" class="font-mono text-sm text-blue-900">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="previewSoFromModal()" class="ipos-btn px-3 py-1.5 rounded font-bold text-emerald-800">
+                            <i class="fas fa-eye mr-1"></i> Preview & Print
+                        </button>
+                        <button type="button" onclick="closeModal('so-form-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
+                        <button type="submit" class="ipos-btn-primary px-4 py-1.5 rounded font-bold">Simpan SO</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: TAMBAH / EDIT PENJUALAN (MULTI-ITEM) ==================== -->
+    <div id="sale-form-modal" class="fixed inset-0 bg-slate-900/55 z-50 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-3xl overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between bg-emerald-50">
+                <span id="sale-modal-title" class="font-bold text-xs sm:text-sm text-emerald-950"><i class="fas fa-file-invoice-dollar mr-1.5 text-emerald-600"></i> Tambah Transaksi Penjualan</span>
+                <button onclick="closeModal('sale-form-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <form onsubmit="saveSaleRecord(event)" class="p-4 space-y-3 text-xs max-h-[85vh] overflow-y-auto">
+                <input type="hidden" id="edit-sale-index" value="-1">
+                <input type="hidden" id="sale-linked-so-id" value="">
+
+                <div class="bg-amber-50 border border-amber-300 rounded p-2.5 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 text-amber-950 font-semibold">
+                        <i class="fas fa-clipboard-check text-amber-600"></i>
+                        <span>Tarik Data dari Pesanan (SO):</span>
+                    </div>
+                    <div class="flex flex-1 sm:flex-initial items-center gap-1.5 min-w-[260px]">
+                        <select id="sale-import-so-select" class="flex-1 bg-white border border-amber-300 rounded px-2 py-1 font-semibold text-slate-800">
+                            <option value="">-- Pilih No. SO / Pelanggan --</option>
+                        </select>
+                        <button type="button" onclick="applySelectedSoToSaleForm()" class="ipos-btn px-2.5 py-1 rounded font-bold text-amber-900 border-amber-400 bg-amber-100 hover:bg-amber-200 shrink-0">
+                            <i class="fas fa-file-import mr-1"></i> Muat SO
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                        <label class="block font-bold mb-1">No. Faktur Jual</label>
+                        <input type="text" id="sale-form-no" readonly class="w-full bg-slate-100 border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Tanggal Jual</label>
+                        <input type="date" id="sale-form-date" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Pilih Pelanggan</label>
+                        <select id="sale-form-customer" onchange="syncSaleItemPrice()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-bold mb-1">Metode Pembayaran / Masuk Ke</label>
+                        <select id="sale-form-payment" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Jatuh Tempo (Isi jika Tempo / Kasbon)</label>
+                        <input type="date" id="sale-due-date" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                    </div>
+                </div>
+
+                <div class="bg-emerald-50/80 border border-emerald-200 rounded p-2.5 space-y-2">
+                    <div class="font-bold text-emerald-950"><i class="fas fa-cart-plus mr-1"></i> Tambah Produk ke Faktur Penjualan:</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                        <div class="sm:col-span-6">
+                            <label class="block text-[11px] font-semibold mb-0.5">Pilih Item Barang</label>
+                            <select id="sale-form-item" onchange="syncSaleItemPrice()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-semibold"></select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold mb-0.5">Qty Keluar</label>
+                            <input type="number" id="sale-form-qty" min="1" value="1" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold mb-0.5">Harga Jual (Rp)</label>
+                            <input type="number" id="sale-form-price" min="0" value="0" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="button" onclick="addSaleDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
+                                <i class="fas fa-plus"></i> Tambah
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-52">
+                    <table class="w-full table-grid border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="w-10 text-center">No</th>
+                                <th class="w-28 text-left">Kode</th>
+                                <th class="text-left">Nama Barang</th>
+                                <th class="w-20 text-center">Qty</th>
+                                <th class="w-28 text-right">Harga Jual</th>
+                                <th class="w-28 text-right">Subtotal</th>
+                                <th class="w-10 text-center">Hps</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sale-draft-items-tbody"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200">
+                    <div class="text-xs font-bold text-slate-800">
+                        Total Qty: <span id="sale-draft-total-qty" class="font-mono text-emerald-800">0</span> PCS &bull;
+                        Grand Total Jual: <span id="sale-draft-grand-total" class="font-mono text-sm text-blue-900">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="previewSaleFromModal()" class="ipos-btn px-3 py-1.5 rounded font-bold text-emerald-800">
+                            <i class="fas fa-eye mr-1"></i> Preview & Print
+                        </button>
+                        <button type="button" onclick="closeModal('sale-form-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
+                        <button type="submit" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">Simpan Penjualan</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: TAMBAH / EDIT RETUR PENJUALAN ==================== -->
+    <div id="sret-form-modal" class="fixed inset-0 bg-slate-900/55 z-50 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between bg-rose-50">
+                <span id="sret-modal-title" class="font-bold text-xs sm:text-sm text-rose-950"><i class="fas fa-undo-alt mr-1.5 text-rose-600"></i> Tambah Retur Penjualan</span>
+                <button onclick="closeModal('sret-form-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <form onsubmit="saveSalesReturnRecord(event)" class="p-4 space-y-3 text-xs">
+                <input type="hidden" id="edit-sret-index" value="-1">
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-bold mb-1">No. Retur Jual</label>
+                        <input type="text" id="sret-form-no" readonly class="w-full bg-slate-100 border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Tanggal Retur</label>
+                        <input type="date" id="sret-form-date" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Pilih Pelanggan</label>
+                    <select id="sret-form-customer" onchange="syncSretItemPrice()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Barang yang Diretur</label>
+                    <select id="sret-form-item" onchange="syncSretItemPrice()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-bold mb-1">Qty Retur</label>
+                        <input type="number" id="sret-form-qty" min="1" value="1" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Harga Retur Satuan (Rp)</label>
+                        <input type="number" id="sret-form-price" min="0" value="0" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Pengembalian Dana Keluar Dari</label>
+                    <select id="sret-form-wallet" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Alasan Retur</label>
+                    <input type="text" id="sret-form-reason" required placeholder="Contoh: Voucher tidak aktif / Barang cacat" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
+                </div>
+                <div class="flex flex-wrap justify-end gap-2 pt-2 border-t border-slate-200">
+                    <button type="button" onclick="previewSretFromModal()" class="ipos-btn px-3 py-1.5 rounded font-bold text-emerald-800">
+                        <i class="fas fa-eye mr-1"></i> Preview & Print
+                    </button>
+                    <button type="button" onclick="closeModal('sret-form-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
                     <button type="submit" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">Simpan Retur</button>
                 </div>
             </form>
@@ -3360,6 +3801,8 @@
                 purchaseOrders: [],
                 purchaseRecords: [],
                 purchaseReturns: [],
+                salesOrders: [],
+                salesReturns: [],
                 transactions: [
                     {
                         id: 'TRX-20261123-001',
@@ -3478,6 +3921,8 @@
                 if (!Array.isArray(appState.purchaseOrders)) appState.purchaseOrders = [];
                 if (!Array.isArray(appState.purchaseRecords)) appState.purchaseRecords = [];
                 if (!Array.isArray(appState.purchaseReturns)) appState.purchaseReturns = [];
+                if (!Array.isArray(appState.salesOrders)) appState.salesOrders = [];
+                if (!Array.isArray(appState.salesReturns)) appState.salesReturns = [];
                 if (!Array.isArray(appState.voucherProductions)) appState.voucherProductions = [];
                 if (!Array.isArray(appState.stockLedger)) appState.stockLedger = [];
             } else {
@@ -3593,7 +4038,8 @@
             let maxSeq = reservedInvoiceSeq[ymd] || 0;
             const pools = [
                 appState.transactions, appState.purchaseOrders, appState.purchaseRecords,
-                appState.purchaseReturns, appState.serviceTickets, appState.debtsReceivables
+                appState.purchaseReturns, appState.serviceTickets, appState.debtsReceivables,
+                appState.salesOrders, appState.salesReturns
             ];
             pools.forEach(list => {
                 (Array.isArray(list) ? list : []).forEach(r => {
@@ -3641,6 +4087,7 @@
                 setPpobMode(subOpt);
             }
             refreshAllUI();
+            if (tabId === 'kasir' && subOpt) switchSalesSubTab(subOpt);
         }
 
         function closeMdiTab(e, tabId) {
@@ -3718,6 +4165,10 @@
             renderPoTable();
             renderPurchasesTable();
             renderPurchaseReturnsTable();
+            populateSalesDropdowns();
+            renderSoTable();
+            renderSalesTable();
+            renderSalesReturnsTable();
             populatePosCustomerDropdown();
             renderPpobRecentList();
             renderServiceHpTable();
@@ -3864,6 +4315,8 @@
             syncSelect('sc-dest-wallet', '', '<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>');
             syncSelect('dp-wallet-select');
             syncSelect('ret-form-wallet', '', '<option value="POTONG_UTANG">Potong Utang Supplier (Tanpa Kas Masuk)</option>');
+            syncSelect('sale-form-payment', '', '<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>');
+            syncSelect('sret-form-wallet', '', '<option value="POTONG_PIUTANG">Potong Piutang Pelanggan (Tanpa Kas Keluar)</option>');
         }
 
         function openWalletModal(walletId = '') {
@@ -5800,6 +6253,1055 @@
         }
 
         // =========================================================================
+        // 6B. PENJUALAN (PESANAN SO MULTI-ITEM, PENJUALAN MULTI-ITEM & RETUR PENJUALAN)
+        // =========================================================================
+        let selectedSoIndex = -1;
+        let selectedSaleIndex = -1;   // indeks di appState.transactions (hanya modul POS)
+        let selectedSretIndex = -1;
+        let soDraftItems = [];
+        let saleDraftItems = [];
+
+        // Tanggal ISO (UTC) -> YYYY-MM-DD menurut waktu lokal perangkat
+        function isoToLocalDate(iso) {
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return String(iso || '').slice(0, 10);
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+
+        // Tanggal dari kolom <input type="date"> -> ISO; jam lama dipertahankan jika tanggal tidak diubah
+        function dateInputToIso(v, oldIso) {
+            if (!v) return oldIso || new Date().toISOString();
+            if (oldIso && isoToLocalDate(oldIso) === v) return oldIso;
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const d = new Date(`${v}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`);
+            return isNaN(d.getTime()) ? now.toISOString() : d.toISOString();
+        }
+
+        function ensureSelectOption(id, value) {
+            const el = document.getElementById(id);
+            if (el && value && !Array.from(el.options).some(o => o.value === value)) {
+                el.insertAdjacentHTML('beforeend', `<option value="${esc(value)}">${esc(value)}</option>`);
+            }
+        }
+
+        function getItemPriceForCustomer(item, custName) {
+            const c = (appState.customers || []).find(x => x.name === custName);
+            const grp = c ? c.group : 'UMUM';
+            if (grp === 'RESELLER' || grp === 'VIP') return Number(item.wholesalePrice) || Number(item.price) || 0;
+            return Number(item.price) || 0;
+        }
+
+        function normalizeSalesItems(rec) {
+            const arr = Array.isArray(rec && rec.items) ? rec.items : [];
+            return arr.map(it => {
+                const qty = Number(it.qty) || 0;
+                const price = Number(it.price) || 0;
+                const out = { code: it.code, name: it.name || it.code, qty, price, subtotal: qty * price };
+                if (it.cost !== undefined && it.cost !== null && it.cost !== '') out.cost = Number(it.cost) || 0;
+                return out;
+            });
+        }
+
+        function switchSalesSubTab(sub) {
+            if (!['so', 'jual', 'retur', 'kasir'].includes(sub)) sub = 'so';
+            ['so', 'jual', 'retur', 'kasir'].forEach(s => {
+                document.getElementById(`spane-${s}`)?.classList.add('hidden');
+                document.getElementById(`ssub-${s}`)?.classList.remove('active');
+            });
+            document.getElementById(`spane-${sub}`)?.classList.remove('hidden');
+            document.getElementById(`ssub-${sub}`)?.classList.add('active');
+            populateSalesDropdowns();
+            renderSoTable();
+            renderSalesTable();
+            renderSalesReturnsTable();
+            if (sub === 'kasir') {
+                renderPosCart();
+                renderPosQuickGrid();
+            }
+        }
+
+        function populateSalesDropdowns() {
+            const custHtml = (appState.customers || []).map(c =>
+                `<option value="${esc(c.name)}">${esc(c.name)} [${esc(c.group)}]</option>`).join('');
+            ['so-form-customer', 'sale-form-customer', 'sret-form-customer'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const prev = el.value;
+                    el.innerHTML = custHtml;
+                    if (prev && Array.from(el.options).some(o => o.value === prev)) el.value = prev;
+                }
+            });
+
+            const itemHtml = appState.items.map(it =>
+                `<option value="${esc(it.code)}">${esc(it.code)} - ${esc(it.name)} (Stok: ${it.stock})</option>`).join('');
+            ['so-form-item', 'sale-form-item', 'sret-form-item'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const prev = el.value;
+                    el.innerHTML = itemHtml;
+                    if (prev && Array.from(el.options).some(o => o.value === prev)) el.value = prev;
+                }
+            });
+
+            const soSel = document.getElementById('sale-import-so-select');
+            if (soSel) {
+                const prev = soSel.value;
+                const openSos = (appState.salesOrders || []).filter(p => p.status === 'DIPESAN');
+                soSel.innerHTML = `<option value="">-- Pilih No. SO / Pelanggan (${openSos.length} SO menunggu) --</option>` +
+                    openSos.map(p => {
+                        const summary = normalizeSalesItems(p).map(i => `${i.name} (${i.qty})`).join(', ');
+                        return `<option value="${esc(p.id)}">${esc(p.id)} - ${esc(p.customer)} | ${esc(summary.slice(0, 45))}</option>`;
+                    }).join('');
+                if (prev && Array.from(soSel.options).some(o => o.value === prev)) soSel.value = prev;
+            }
+        }
+
+        // --- A. PESANAN PENJUALAN (SO MULTI-ITEM) ---
+        function renderSoTable() {
+            const tbody = document.getElementById('so-list-tbody');
+            if (!tbody) return;
+            const q = (document.getElementById('so-search-input')?.value || '').toLowerCase();
+            const list = (appState.salesOrders || []).filter(p => {
+                const itemNames = normalizeSalesItems(p).map(i => `${i.code} ${i.name}`).join(' ').toLowerCase();
+                return (p.id || '').toLowerCase().includes(q) ||
+                       (p.customer || '').toLowerCase().includes(q) ||
+                       itemNames.includes(q);
+            });
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Belum ada data Pesanan Penjualan (SO). Klik tombol <b>Tambah</b> di bawah untuk membuat SO baru.</td></tr>`;
+                selectedSoIndex = -1;
+                document.getElementById('selected-so-label').textContent = 'Belum ada yang dipilih';
+                return;
+            }
+
+            tbody.innerHTML = list.map(p => {
+                const realIdx = appState.salesOrders.indexOf(p);
+                const isSelected = realIdx === selectedSoIndex;
+                const items = normalizeSalesItems(p);
+                const totalQty = items.reduce((s, it) => s + it.qty, 0);
+                const totalEst = items.reduce((s, it) => s + it.subtotal, 0);
+                const itemSummary = items.map(it => `<span class="inline-block bg-slate-100 border border-slate-300 rounded px-1.5 py-0.2 mr-1 mb-0.5 text-[11px]">${esc(it.name)} (<b>${it.qty}</b>)</span>`).join('');
+                const statusBadge = p.status === 'SELESAI'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    : p.status === 'BATAL'
+                        ? 'bg-red-100 text-red-800 border-red-300'
+                        : 'bg-amber-100 text-amber-800 border-amber-300';
+                return `
+                    <tr onclick="selectSoRow(${realIdx})" ondblclick="openSoFormModal(${realIdx})" class="cursor-pointer ${isSelected ? '!bg-amber-100/90 font-semibold' : ''}">
+                        <td class="text-center"><input type="radio" name="so-row-radio" ${isSelected ? 'checked' : ''} onchange="selectSoRow(${realIdx})"></td>
+                        <td class="font-mono">${(p.date || '').slice(0, 10)}</td>
+                        <td class="font-mono font-bold text-amber-900">${esc(p.id)}</td>
+                        <td>${esc(p.customer)}</td>
+                        <td>${itemSummary || '-'}</td>
+                        <td class="text-right font-mono font-bold">${totalQty}</td>
+                        <td class="text-right font-mono font-bold text-blue-900">${formatRp(totalEst)}</td>
+                        <td class="text-center"><span class="px-2 py-0.5 rounded border text-[10.5px] font-bold ${statusBadge}">${esc(p.status)}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function selectSoRow(idx) {
+            selectedSoIndex = idx;
+            const p = appState.salesOrders[idx];
+            document.getElementById('selected-so-label').textContent = p ? `${p.id} (${p.customer})` : 'Belum ada yang dipilih';
+            renderSoTable();
+        }
+
+        function renderSoDraftItemsTable() {
+            const tbody = document.getElementById('so-draft-items-tbody');
+            if (!tbody) return;
+            if (soDraftItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-slate-400">Belum ada produk ditambahkan ke daftar SO. Pilih barang di atas lalu klik <b>Tambah</b>.</td></tr>`;
+                document.getElementById('so-draft-total-qty').textContent = '0';
+                document.getElementById('so-draft-grand-total').textContent = '0';
+                return;
+            }
+            let totalQty = 0, grandTotal = 0;
+            tbody.innerHTML = soDraftItems.map((it, idx) => {
+                const sub = (Number(it.qty) || 0) * (Number(it.price) || 0);
+                totalQty += Number(it.qty) || 0;
+                grandTotal += sub;
+                return `
+                    <tr>
+                        <td class="text-center">${idx + 1}</td>
+                        <td class="font-mono font-bold">${esc(it.code)}</td>
+                        <td class="font-semibold">${esc(it.name)}</td>
+                        <td class="text-center">
+                            <input type="number" min="1" value="${it.qty}" onchange="updateSoDraftItem(${idx}, 'qty', this.value)" class="w-16 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
+                        </td>
+                        <td class="text-right">
+                            <input type="number" min="0" value="${it.price}" onchange="updateSoDraftItem(${idx}, 'price', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
+                        </td>
+                        <td class="text-right font-mono font-bold text-blue-900">${formatRp(sub)}</td>
+                        <td class="text-center"><button type="button" onclick="removeSoDraftItem(${idx})" class="text-red-600 hover:text-red-800 font-bold px-1">&times;</button></td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('so-draft-total-qty').textContent = formatNum(totalQty);
+            document.getElementById('so-draft-grand-total').textContent = formatRp(grandTotal);
+        }
+
+        function addSoDraftItem() {
+            const code = document.getElementById('so-form-item').value;
+            const qty = Math.max(1, Number(document.getElementById('so-form-qty').value) || 1);
+            const price = Math.max(0, Number(document.getElementById('so-form-price').value) || 0);
+            const master = appState.items.find(i => i.code === code);
+            if (!master) return;
+            const existing = soDraftItems.find(x => x.code === code);
+            if (existing) {
+                existing.qty += qty;
+                existing.price = price;
+                existing.subtotal = existing.qty * existing.price;
+            } else {
+                soDraftItems.push({ code: master.code, name: master.name, qty, price, subtotal: qty * price });
+            }
+            renderSoDraftItemsTable();
+        }
+
+        function updateSoDraftItem(idx, field, val) {
+            if (!soDraftItems[idx]) return;
+            if (field === 'qty') soDraftItems[idx].qty = Math.max(1, Number(val) || 1);
+            if (field === 'price') soDraftItems[idx].price = Math.max(0, Number(val) || 0);
+            soDraftItems[idx].subtotal = soDraftItems[idx].qty * soDraftItems[idx].price;
+            renderSoDraftItemsTable();
+        }
+
+        function removeSoDraftItem(idx) {
+            soDraftItems.splice(idx, 1);
+            renderSoDraftItemsTable();
+        }
+
+        function syncSoItemPrice() {
+            const code = document.getElementById('so-form-item')?.value;
+            const it = appState.items.find(x => x.code === code);
+            if (it) document.getElementById('so-form-price').value = getItemPriceForCustomer(it, document.getElementById('so-form-customer')?.value);
+        }
+
+        function openSoFormModal(idx = -1) {
+            populateSalesDropdowns();
+            document.getElementById('edit-so-index').value = idx;
+            if (idx >= 0 && appState.salesOrders[idx]) {
+                const p = appState.salesOrders[idx];
+                document.getElementById('so-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-amber-600"></i> Edit Pesanan Penjualan: ${esc(p.id)}`;
+                document.getElementById('so-form-no').value = p.id;
+                document.getElementById('so-form-date').value = (p.date || '').slice(0, 10) || getTodayIsoDate();
+                document.getElementById('so-form-status').value = p.status || 'DIPESAN';
+                ensureSelectOption('so-form-customer', p.customer);
+                document.getElementById('so-form-customer').value = p.customer;
+                document.getElementById('so-form-note').value = p.note || '';
+                soDraftItems = JSON.parse(JSON.stringify(normalizeSalesItems(p)));
+            } else {
+                document.getElementById('so-modal-title').innerHTML = `<i class="fas fa-clipboard-list mr-1.5 text-amber-600"></i> Tambah Pesanan Penjualan (SO)`;
+                document.getElementById('so-form-no').value = generateInvoiceId('SO');
+                document.getElementById('so-form-date').value = getTodayIsoDate();
+                document.getElementById('so-form-status').value = 'DIPESAN';
+                document.getElementById('so-form-note').value = '';
+                document.getElementById('so-form-qty').value = 1;
+                soDraftItems = [];
+                syncSoItemPrice();
+            }
+            renderSoDraftItemsTable();
+            document.getElementById('so-form-modal').classList.remove('hidden');
+        }
+
+        function editSelectedSo() {
+            if (selectedSoIndex < 0 || !appState.salesOrders[selectedSoIndex]) {
+                showToast('Pilih salah satu baris Pesanan (SO) terlebih dahulu!', 'error');
+                return;
+            }
+            openSoFormModal(selectedSoIndex);
+        }
+
+        function previewSelectedSo() {
+            if (selectedSoIndex < 0 || !appState.salesOrders[selectedSoIndex]) {
+                showToast('Pilih salah satu baris Pesanan (SO) terlebih dahulu untuk dicetak!', 'error');
+                return;
+            }
+            const p = appState.salesOrders[selectedSoIndex];
+            showSalesDocumentPreview('SO', {
+                docNo: p.id, date: p.date, customer: p.customer, status: p.status,
+                note: p.note || '-', items: normalizeSalesItems(p)
+            });
+        }
+
+        function previewSoFromModal() {
+            if (soDraftItems.length === 0) {
+                showToast('Tambahkan minimal 1 produk terlebih dahulu untuk preview SO!', 'error');
+                return;
+            }
+            showSalesDocumentPreview('SO', {
+                docNo: document.getElementById('so-form-no').value,
+                date: document.getElementById('so-form-date').value,
+                customer: document.getElementById('so-form-customer').value,
+                status: document.getElementById('so-form-status').value,
+                note: document.getElementById('so-form-note').value || '-',
+                items: soDraftItems
+            });
+        }
+
+        async function saveSoRecord(e) {
+            e.preventDefault();
+            if (soDraftItems.length === 0) {
+                showToast('Daftar produk SO masih kosong! Klik Tambah pada produk terlebih dahulu.', 'error');
+                return;
+            }
+            const idx = Number(document.getElementById('edit-so-index').value);
+            const items = soDraftItems.map(it => {
+                const qty = Number(it.qty) || 1;
+                const price = Number(it.price) || 0;
+                return { code: it.code, name: it.name, qty, price, subtotal: qty * price };
+            });
+            const rec = {
+                id: document.getElementById('so-form-no').value,
+                date: document.getElementById('so-form-date').value,
+                status: document.getElementById('so-form-status').value,
+                customer: document.getElementById('so-form-customer').value,
+                items,
+                qty: items.reduce((s, it) => s + it.qty, 0),
+                total: items.reduce((s, it) => s + it.subtotal, 0),
+                note: document.getElementById('so-form-note').value.trim()
+            };
+            if (idx >= 0 && appState.salesOrders[idx]) appState.salesOrders[idx] = rec;
+            else { appState.salesOrders.unshift(rec); selectedSoIndex = -1; }
+
+            closeModal('so-form-modal');
+            await saveAppState();
+            showToast(`Pesanan Penjualan ${rec.id} (${rec.items.length} item) berhasil disimpan!`, 'success');
+        }
+
+        async function deleteSelectedSo() {
+            if (selectedSoIndex < 0 || !appState.salesOrders[selectedSoIndex]) {
+                showToast('Pilih salah satu baris Pesanan (SO) yang ingin dihapus!', 'error');
+                return;
+            }
+            const target = appState.salesOrders[selectedSoIndex];
+            if (!confirm(`Hapus Pesanan Penjualan ${target.id}?`)) return;
+            const removed = appState.salesOrders.splice(selectedSoIndex, 1)[0];
+            selectedSoIndex = -1;
+            document.getElementById('selected-so-label').textContent = 'Belum ada yang dipilih';
+            await saveAppState();
+            showToast(`Pesanan ${removed.id} berhasil dihapus!`, 'info');
+        }
+
+        // --- B. TRANSAKSI PENJUALAN (MULTI-ITEM + INTEGRASI SO) ---
+        function renderSalesTable() {
+            const tbody = document.getElementById('jual-list-tbody');
+            if (!tbody) return;
+            const q = (document.getElementById('jual-search-input')?.value || '').trim().toLowerCase();
+
+            const pendingSos = (appState.salesOrders || [])
+                .filter(so => so.status === 'DIPESAN')
+                .map(so => ({ isSoPending: true, id: so.id, date: so.date, customer: so.customer, items: normalizeSalesItems(so), soRef: '' }));
+
+            const sales = [];
+            (appState.transactions || []).forEach((t, idx) => {
+                if (t.module !== 'POS') return;
+                sales.push({
+                    isSoPending: false, trxIndex: idx, id: t.id, soRef: t.soRef || '',
+                    date: isoToLocalDate(t.date), customer: t.customer, items: normalizeSalesItems(t),
+                    total: Number(t.total) || 0, paymentMethod: t.paymentMethod
+                });
+            });
+
+            const combined = [...pendingSos, ...sales].filter(rec => {
+                if (!q) return true;
+                const itemsText = rec.items.map(i => `${i.code} ${i.name}`).join(' ').toLowerCase();
+                return (rec.id || '').toLowerCase().includes(q) ||
+                       (rec.soRef || '').toLowerCase().includes(q) ||
+                       (rec.customer || '').toLowerCase().includes(q) ||
+                       itemsText.includes(q);
+            });
+
+            if (combined.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Tidak ditemukan data Penjualan maupun Pesanan (SO) yang cocok dengan pencarian.</td></tr>`;
+                selectedSaleIndex = -1;
+                document.getElementById('selected-jual-label').textContent = 'Belum ada yang dipilih';
+                return;
+            }
+
+            tbody.innerHTML = combined.map(rec => {
+                const totalQty = rec.items.reduce((s, it) => s + it.qty, 0);
+                const itemBadges = rec.items.map(it => `<span class="inline-block bg-slate-100 border border-slate-300 rounded px-1.5 py-0.2 mr-1 mb-0.5 text-[11px]">${esc(it.name)} (<b>${it.qty}</b>)</span>`).join('');
+
+                if (rec.isSoPending) {
+                    const totalNominal = rec.items.reduce((s, it) => s + it.subtotal, 0);
+                    return `
+                        <tr ondblclick="openSaleFromPendingSo('${escJs(rec.id)}')" class="bg-amber-50/70 hover:bg-amber-100/80 cursor-pointer">
+                            <td class="text-center"><span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 font-bold text-[10px]">SO</span></td>
+                            <td class="font-mono">${(rec.date || '').slice(0, 10)}</td>
+                            <td class="font-mono font-bold text-amber-800">${esc(rec.id)}</td>
+                            <td class="font-semibold">${esc(rec.customer)}</td>
+                            <td>${itemBadges}</td>
+                            <td class="text-right font-mono font-bold">${totalQty}</td>
+                            <td class="text-right font-mono font-bold text-amber-900">${formatRp(totalNominal)}</td>
+                            <td>
+                                <button type="button" onclick="openSaleFromPendingSo('${escJs(rec.id)}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold shadow-sm">
+                                    <i class="fas fa-check-circle mr-1"></i> Proses SO Jadi Jual
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                const realIdx = rec.trxIndex;
+                const isSelected = realIdx === selectedSaleIndex;
+                return `
+                    <tr onclick="selectSaleRow(${realIdx})" ondblclick="openSaleFormModal(${realIdx})" class="cursor-pointer ${isSelected ? '!bg-emerald-100/90 font-semibold' : ''}">
+                        <td class="text-center"><input type="radio" name="jual-row-radio" ${isSelected ? 'checked' : ''} onchange="selectSaleRow(${realIdx})"></td>
+                        <td class="font-mono">${esc(rec.date)}</td>
+                        <td class="font-mono font-bold text-emerald-900">
+                            ${esc(rec.id)}
+                            ${rec.soRef ? `<div class="text-[10px] text-amber-700 font-normal">Ref SO: ${esc(rec.soRef)}</div>` : ''}
+                        </td>
+                        <td>${esc(rec.customer)}</td>
+                        <td>${itemBadges}</td>
+                        <td class="text-right font-mono font-bold">${totalQty}</td>
+                        <td class="text-right font-mono font-bold text-blue-900">${formatRp(rec.total)}</td>
+                        <td>${rec.paymentMethod === 'PIUTANG_TEMPO' ? '<span class="text-rose-700 font-bold">PIUTANG / TEMPO</span>' : esc(getWalletNameById(rec.paymentMethod))}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function selectSaleRow(idx) {
+            selectedSaleIndex = idx;
+            const t = appState.transactions[idx];
+            document.getElementById('selected-jual-label').textContent = t ? `${t.id} (${t.customer})` : 'Belum ada yang dipilih';
+            renderSalesTable();
+        }
+
+        function getSelectedSaleTrx() {
+            const t = appState.transactions[selectedSaleIndex];
+            return (t && t.module === 'POS') ? t : null;
+        }
+
+        function openSaleFromPendingSo(soId) {
+            openSaleFormModal(-1);
+            const sel = document.getElementById('sale-import-so-select');
+            if (sel) {
+                sel.value = soId;
+                applySelectedSoToSaleForm();
+            }
+        }
+
+        function renderSaleDraftItemsTable() {
+            const tbody = document.getElementById('sale-draft-items-tbody');
+            if (!tbody) return;
+            if (saleDraftItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-slate-400">Belum ada barang ditambahkan. Pilih barang di atas atau muat dari Pesanan (SO).</td></tr>`;
+                document.getElementById('sale-draft-total-qty').textContent = '0';
+                document.getElementById('sale-draft-grand-total').textContent = '0';
+                return;
+            }
+            let totalQty = 0, grandTotal = 0;
+            tbody.innerHTML = saleDraftItems.map((it, idx) => {
+                const sub = (Number(it.qty) || 0) * (Number(it.price) || 0);
+                totalQty += Number(it.qty) || 0;
+                grandTotal += sub;
+                return `
+                    <tr>
+                        <td class="text-center">${idx + 1}</td>
+                        <td class="font-mono font-bold">${esc(it.code)}</td>
+                        <td class="font-semibold">${esc(it.name)}</td>
+                        <td class="text-center">
+                            <input type="number" min="1" value="${it.qty}" onchange="updateSaleDraftItem(${idx}, 'qty', this.value)" class="w-16 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
+                        </td>
+                        <td class="text-right">
+                            <input type="number" min="0" value="${it.price}" onchange="updateSaleDraftItem(${idx}, 'price', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
+                        </td>
+                        <td class="text-right font-mono font-bold text-blue-900">${formatRp(sub)}</td>
+                        <td class="text-center"><button type="button" onclick="removeSaleDraftItem(${idx})" class="text-red-600 hover:text-red-800 font-bold px-1">&times;</button></td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('sale-draft-total-qty').textContent = formatNum(totalQty);
+            document.getElementById('sale-draft-grand-total').textContent = formatRp(grandTotal);
+        }
+
+        function addSaleDraftItem() {
+            const code = document.getElementById('sale-form-item').value;
+            const qty = Math.max(1, Number(document.getElementById('sale-form-qty').value) || 1);
+            const price = Math.max(0, Number(document.getElementById('sale-form-price').value) || 0);
+            const master = appState.items.find(i => i.code === code);
+            if (!master) return;
+            const existing = saleDraftItems.find(x => x.code === code);
+            if (existing) {
+                existing.qty += qty;
+                existing.price = price;
+                existing.subtotal = existing.qty * existing.price;
+            } else {
+                saleDraftItems.push({ code: master.code, name: master.name, qty, price, subtotal: qty * price, cost: Number(master.cost) || 0 });
+            }
+            renderSaleDraftItemsTable();
+        }
+
+        function updateSaleDraftItem(idx, field, val) {
+            if (!saleDraftItems[idx]) return;
+            if (field === 'qty') saleDraftItems[idx].qty = Math.max(1, Number(val) || 1);
+            if (field === 'price') saleDraftItems[idx].price = Math.max(0, Number(val) || 0);
+            saleDraftItems[idx].subtotal = saleDraftItems[idx].qty * saleDraftItems[idx].price;
+            renderSaleDraftItemsTable();
+        }
+
+        function removeSaleDraftItem(idx) {
+            saleDraftItems.splice(idx, 1);
+            renderSaleDraftItemsTable();
+        }
+
+        function syncSaleItemPrice() {
+            const code = document.getElementById('sale-form-item')?.value;
+            const it = appState.items.find(x => x.code === code);
+            if (it) document.getElementById('sale-form-price').value = getItemPriceForCustomer(it, document.getElementById('sale-form-customer')?.value);
+        }
+
+        function applySelectedSoToSaleForm() {
+            const soId = document.getElementById('sale-import-so-select')?.value;
+            if (!soId) {
+                showToast('Pilih No. SO terlebih dahulu dari dropdown!', 'error');
+                return;
+            }
+            const so = (appState.salesOrders || []).find(p => p.id === soId);
+            if (!so) return;
+            document.getElementById('sale-linked-so-id').value = so.id;
+            ensureSelectOption('sale-form-customer', so.customer);
+            document.getElementById('sale-form-customer').value = so.customer;
+            saleDraftItems = JSON.parse(JSON.stringify(normalizeSalesItems(so))).map(it => {
+                const m = appState.items.find(i => i.code === it.code);
+                it.cost = m ? (Number(m.cost) || 0) : 0;
+                return it;
+            });
+            renderSaleDraftItemsTable();
+            showToast(`Data Pesanan ${so.id} (${saleDraftItems.length} produk) berhasil dimuat ke Faktur Penjualan!`, 'success');
+        }
+
+        function openSaleFormModal(idx = -1) {
+            populateSalesDropdowns();
+            const t = appState.transactions[idx];
+            const isEdit = idx >= 0 && t && t.module === 'POS';
+            document.getElementById('edit-sale-index').value = isEdit ? idx : -1;
+            document.getElementById('sale-linked-so-id').value = '';
+            if (isEdit) {
+                document.getElementById('sale-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-emerald-600"></i> Edit Transaksi Penjualan: ${esc(t.id)}`;
+                document.getElementById('sale-form-no').value = t.id;
+                document.getElementById('sale-form-date').value = isoToLocalDate(t.date) || getTodayIsoDate();
+                ensureSelectOption('sale-form-customer', t.customer);
+                document.getElementById('sale-form-customer').value = t.customer;
+                document.getElementById('sale-form-payment').value = t.paymentMethod || 'KAS_TOKO';
+                const debt = t.paymentMethod === 'PIUTANG_TEMPO'
+                    ? appState.debtsReceivables.find(d => d.id === findLinkedReceivableId(t)) : null;
+                document.getElementById('sale-due-date').value = debt ? (debt.dueDate || '') : '';
+                document.getElementById('sale-linked-so-id').value = t.soRef || '';
+                saleDraftItems = JSON.parse(JSON.stringify(normalizeSalesItems(t)));
+            } else {
+                document.getElementById('sale-modal-title').innerHTML = `<i class="fas fa-file-invoice-dollar mr-1.5 text-emerald-600"></i> Tambah Transaksi Penjualan`;
+                document.getElementById('sale-form-no').value = generateInvoiceId('JUA');
+                document.getElementById('sale-form-date').value = getTodayIsoDate();
+                document.getElementById('sale-due-date').value = '';
+                document.getElementById('sale-form-qty').value = 1;
+                saleDraftItems = [];
+                syncSaleItemPrice();
+            }
+            renderSaleDraftItemsTable();
+            document.getElementById('sale-form-modal').classList.remove('hidden');
+        }
+
+        function editSelectedSale() {
+            if (!getSelectedSaleTrx()) {
+                showToast('Pilih salah satu baris Penjualan terlebih dahulu!', 'error');
+                return;
+            }
+            openSaleFormModal(selectedSaleIndex);
+        }
+
+        function salePaymentInfo(method, dueDate) {
+            return method === 'PIUTANG_TEMPO'
+                ? `PIUTANG / TEMPO (Jatuh Tempo: ${dueDate || '-'})`
+                : getWalletNameById(method);
+        }
+
+        function previewSelectedSale() {
+            const t = getSelectedSaleTrx();
+            if (!t) {
+                showToast('Pilih salah satu baris Penjualan terlebih dahulu untuk dicetak!', 'error');
+                return;
+            }
+            const debt = t.paymentMethod === 'PIUTANG_TEMPO'
+                ? appState.debtsReceivables.find(d => d.id === findLinkedReceivableId(t)) : null;
+            showSalesDocumentPreview('FAKTUR', {
+                docNo: t.id, soRef: t.soRef || '', date: isoToLocalDate(t.date), customer: t.customer,
+                paymentInfo: salePaymentInfo(t.paymentMethod, debt && debt.dueDate),
+                items: normalizeSalesItems(t)
+            });
+        }
+
+        function previewSaleFromModal() {
+            if (saleDraftItems.length === 0) {
+                showToast('Tambahkan minimal 1 produk terlebih dahulu untuk preview faktur!', 'error');
+                return;
+            }
+            showSalesDocumentPreview('FAKTUR', {
+                docNo: document.getElementById('sale-form-no').value,
+                soRef: document.getElementById('sale-linked-so-id').value,
+                date: document.getElementById('sale-form-date').value,
+                customer: document.getElementById('sale-form-customer').value,
+                paymentInfo: salePaymentInfo(document.getElementById('sale-form-payment').value, document.getElementById('sale-due-date').value),
+                items: saleDraftItems
+            });
+        }
+
+        async function saveSaleRecord(e) {
+            e.preventDefault();
+            if (saleDraftItems.length === 0) {
+                showToast('Daftar barang penjualan masih kosong! Tambahkan produk terlebih dahulu.', 'error');
+                return;
+            }
+            const idx = Number(document.getElementById('edit-sale-index').value);
+            const old = (idx >= 0 && appState.transactions[idx] && appState.transactions[idx].module === 'POS') ? appState.transactions[idx] : null;
+            const docNo = document.getElementById('sale-form-no').value;
+            const customer = document.getElementById('sale-form-customer').value || 'UMUM';
+            const payWallet = document.getElementById('sale-form-payment').value;
+            const dueDate = document.getElementById('sale-due-date').value;
+            const linkedSoId = document.getElementById('sale-linked-so-id').value;
+            const isTempo = payWallet === 'PIUTANG_TEMPO';
+            const dateIso = dateInputToIso(document.getElementById('sale-form-date').value, old && old.date);
+            const total = saleDraftItems.reduce((s, di) => s + (Number(di.qty) || 1) * (Number(di.price) || 0), 0);
+
+            if (isTempo && /^UMUM\b/i.test(customer)) {
+                showToast('Pilih pelanggan terlebih dahulu untuk transaksi tempo/kasbon!', 'error');
+                return;
+            }
+
+            // Cek stok sebelum ada perubahan apa pun (qty lama ikut dihitung karena akan dikembalikan)
+            const oldQty = {};
+            if (old) normalizeSalesItems(old).forEach(oi => { oldQty[oi.code] = (oldQty[oi.code] || 0) + oi.qty; });
+            const shortItems = saleDraftItems.filter(di => {
+                const it = appState.items.find(x => x.code === di.code);
+                return it && (Number(di.qty) || 1) > (Number(it.stock) || 0) + (oldQty[di.code] || 0);
+            });
+            if (shortItems.length && !confirm(`Stok tidak cukup untuk: ${shortItems.map(c => c.name).join(', ')}.\n\nTetap lanjutkan? (stok akan menjadi 0)`)) return;
+
+            // Mode edit: kembalikan dulu stok & saldo penjualan lama
+            let oldDebtId = null;
+            if (old) {
+                const nowIso = new Date().toISOString();
+                normalizeSalesItems(old).forEach(oi => {
+                    const it = appState.items.find(i => i.code === oi.code);
+                    if (it && oi.qty > 0) {
+                        it.stock = (Number(it.stock) || 0) + oi.qty;
+                        appState.stockLedger.unshift({
+                            date: nowIso, ref: docNo, code: it.code, name: it.name,
+                            type: 'KOREKSI EDIT JUAL', inQty: oi.qty, outQty: 0, balance: it.stock
+                        });
+                    }
+                });
+                if (old.paymentMethod === 'PIUTANG_TEMPO') oldDebtId = findLinkedReceivableId(old);
+                else if (walletExists(old.paymentMethod)) appState.wallets[old.paymentMethod] -= Number(old.total) || 0;
+            }
+
+            let totalModal = 0;
+            const soldItems = saleDraftItems.map(di => {
+                const it = appState.items.find(i => i.code === di.code);
+                const qty = Number(di.qty) || 1;
+                const price = Number(di.price) || 0;
+                const unitCost = (di.cost !== undefined && di.cost !== null) ? Number(di.cost) || 0 : (Number(it && it.cost) || 0);
+                totalModal += unitCost * qty;
+                if (it) {
+                    it.stock = Math.max(0, (Number(it.stock) || 0) - qty);
+                    appState.stockLedger.unshift({
+                        date: dateIso, ref: docNo, code: it.code, name: it.name,
+                        type: old ? 'EDIT JUAL' : 'PENJUALAN', inQty: 0, outQty: qty, balance: it.stock
+                    });
+                }
+                return { code: di.code, name: di.name, qty, price, cost: unitCost };
+            });
+
+            const debtId = docNo.replace('JUA', 'PIU');
+            const debtDesc = `Penjualan ${docNo} (${soldItems.map(x => `${x.name} x${x.qty}`).join(', ')})`;
+            if (isTempo) {
+                const existing = oldDebtId ? appState.debtsReceivables.find(d => d.id === oldDebtId && d.type === 'PIUTANG') : null;
+                if (existing) {
+                    existing.id = debtId;
+                    existing.party = customer;
+                    existing.dueDate = dueDate || existing.dueDate;
+                    existing.description = debtDesc;
+                    existing.totalAmount = total;
+                    if ((Number(existing.paidAmount) || 0) >= total) {
+                        existing.paidAmount = total;
+                        existing.status = 'LUNAS';
+                    } else {
+                        existing.status = 'BELUM_LUNAS';
+                    }
+                } else {
+                    appState.debtsReceivables.unshift({
+                        id: debtId, type: 'PIUTANG', date: dateIso,
+                        dueDate: dueDate || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+                        party: customer, description: debtDesc,
+                        totalAmount: total, paidAmount: 0, status: 'BELUM_LUNAS', payments: []
+                    });
+                }
+            } else {
+                if (oldDebtId) removeLinkedDebt(oldDebtId); // sebelumnya tempo, kini dibayar langsung
+                if (walletExists(payWallet)) appState.wallets[payWallet] += total;
+            }
+
+            // Jika ditarik dari Pesanan (SO), otomatis tandai SO sebagai SELESAI
+            if (linkedSoId) {
+                const so = (appState.salesOrders || []).find(p => p.id === linkedSoId);
+                if (so) so.status = 'SELESAI';
+            }
+
+            const rec = {
+                id: docNo,
+                date: dateIso,
+                module: 'POS',
+                description: `Penjualan Kasir (${soldItems.map(i => `${i.name} x${i.qty}`).join(', ')})`,
+                customer,
+                modal: totalModal,
+                total,
+                profit: total - totalModal,
+                paymentMethod: payWallet,
+                items: soldItems,
+                soRef: linkedSoId
+            };
+            if (old) appState.transactions[idx] = Object.assign({}, old, rec);
+            else appState.transactions.unshift(rec);
+            selectedSaleIndex = -1;
+
+            closeModal('sale-form-modal');
+            await saveAppState();
+            showToast(`Faktur Penjualan ${docNo} (${soldItems.length} produk) berhasil disimpan!`, 'success');
+        }
+
+        async function deleteSelectedSale() {
+            const trx = getSelectedSaleTrx();
+            if (!trx) {
+                showToast('Pilih salah satu baris Penjualan yang ingin dihapus!', 'error');
+                return;
+            }
+            if (!confirm(`Hapus transaksi penjualan ${trx.id}?\n\nStok, saldo, dan piutang akan dikembalikan.`)) return;
+            appState.transactions.splice(selectedSaleIndex, 1);
+            const notes = reverseTransactionEffects(trx);
+            let soNote = '';
+            if (trx.soRef) {
+                const so = (appState.salesOrders || []).find(p => p.id === trx.soRef);
+                if (so && so.status === 'SELESAI') { so.status = 'DIPESAN'; soNote = ` Pesanan ${so.id} kembali berstatus DIPESAN.`; }
+            }
+            selectedSaleIndex = -1;
+            document.getElementById('selected-jual-label').textContent = 'Belum ada yang dipilih';
+            await saveAppState();
+            showToast(`Penjualan ${trx.id} dihapus & stok/saldo/piutang dikembalikan!${soNote}${notes.length ? ' Catatan: ' + notes.join('; ') + '.' : ''}`, 'info');
+        }
+
+        // --- C. RETUR PENJUALAN ---
+        function renderSalesReturnsTable() {
+            const tbody = document.getElementById('sret-list-tbody');
+            if (!tbody) return;
+            const q = (document.getElementById('sret-search-input')?.value || '').toLowerCase();
+            const list = (appState.salesReturns || []).filter(r =>
+                (r.id || '').toLowerCase().includes(q) ||
+                (r.customer || '').toLowerCase().includes(q) ||
+                (r.itemName || '').toLowerCase().includes(q)
+            );
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">Belum ada data Retur Penjualan. Klik tombol <b>Tambah</b> di bawah untuk mencatat retur dari pelanggan.</td></tr>`;
+                selectedSretIndex = -1;
+                document.getElementById('selected-sret-label').textContent = 'Belum ada yang dipilih';
+                return;
+            }
+
+            tbody.innerHTML = list.map(r => {
+                const realIdx = appState.salesReturns.indexOf(r);
+                const isSelected = realIdx === selectedSretIndex;
+                return `
+                    <tr onclick="selectSretRow(${realIdx})" ondblclick="openSretFormModal(${realIdx})" class="cursor-pointer ${isSelected ? '!bg-rose-100/90 font-semibold' : ''}">
+                        <td class="text-center"><input type="radio" name="sret-row-radio" ${isSelected ? 'checked' : ''} onchange="selectSretRow(${realIdx})"></td>
+                        <td class="font-mono">${(r.date || '').slice(0, 10)}</td>
+                        <td class="font-mono font-bold text-rose-900">${esc(r.id)}</td>
+                        <td>${esc(r.customer)}</td>
+                        <td>${esc(r.itemCode)} - ${esc(r.itemName)}</td>
+                        <td class="text-right font-mono font-bold text-emerald-700">+${r.qty}</td>
+                        <td class="text-right font-mono">${formatRp(r.price)}</td>
+                        <td class="text-right font-mono font-bold text-red-700">${formatRp(r.total)}</td>
+                        <td>${esc(r.reason)} (${r.wallet === 'POTONG_PIUTANG' ? 'Potong Piutang' : esc(getWalletNameById(r.wallet))})</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function selectSretRow(idx) {
+            selectedSretIndex = idx;
+            const r = appState.salesReturns[idx];
+            document.getElementById('selected-sret-label').textContent = r ? `${r.id} - ${r.itemName} (${r.qty} PCS)` : 'Belum ada yang dipilih';
+            renderSalesReturnsTable();
+        }
+
+        function syncSretItemPrice() {
+            const code = document.getElementById('sret-form-item')?.value;
+            const it = appState.items.find(x => x.code === code);
+            if (it) document.getElementById('sret-form-price').value = getItemPriceForCustomer(it, document.getElementById('sret-form-customer')?.value);
+        }
+
+        function openSretFormModal(idx = -1) {
+            populateSalesDropdowns();
+            document.getElementById('edit-sret-index').value = idx;
+            if (idx >= 0 && appState.salesReturns[idx]) {
+                const r = appState.salesReturns[idx];
+                document.getElementById('sret-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-rose-600"></i> Edit Retur Penjualan: ${esc(r.id)}`;
+                document.getElementById('sret-form-no').value = r.id;
+                document.getElementById('sret-form-date').value = (r.date || '').slice(0, 10) || getTodayIsoDate();
+                ensureSelectOption('sret-form-customer', r.customer);
+                document.getElementById('sret-form-customer').value = r.customer;
+                document.getElementById('sret-form-item').value = r.itemCode;
+                document.getElementById('sret-form-qty').value = r.qty;
+                document.getElementById('sret-form-price').value = r.price;
+                document.getElementById('sret-form-wallet').value = r.wallet || 'KAS_TOKO';
+                document.getElementById('sret-form-reason').value = r.reason || '';
+            } else {
+                document.getElementById('sret-modal-title').innerHTML = `<i class="fas fa-undo-alt mr-1.5 text-rose-600"></i> Tambah Retur Penjualan`;
+                document.getElementById('sret-form-no').value = generateInvoiceId('RJL');
+                document.getElementById('sret-form-date').value = getTodayIsoDate();
+                document.getElementById('sret-form-qty').value = 1;
+                document.getElementById('sret-form-reason').value = '';
+                syncSretItemPrice();
+            }
+            document.getElementById('sret-form-modal').classList.remove('hidden');
+        }
+
+        function editSelectedSret() {
+            if (selectedSretIndex < 0 || !appState.salesReturns[selectedSretIndex]) {
+                showToast('Pilih salah satu baris Retur Penjualan terlebih dahulu!', 'error');
+                return;
+            }
+            openSretFormModal(selectedSretIndex);
+        }
+
+        function sretDocData(r) {
+            return {
+                docNo: r.id, date: r.date, customer: r.customer,
+                paymentInfo: r.wallet === 'POTONG_PIUTANG' ? 'Potong Piutang Pelanggan' : `Dikembalikan dari ${getWalletNameById(r.wallet)}`,
+                note: r.reason || '-',
+                items: [{ code: r.itemCode, name: r.itemName, qty: Number(r.qty) || 0, price: Number(r.price) || 0 }]
+            };
+        }
+
+        function previewSelectedSret() {
+            if (selectedSretIndex < 0 || !appState.salesReturns[selectedSretIndex]) {
+                showToast('Pilih salah satu baris Retur Penjualan terlebih dahulu untuk dicetak!', 'error');
+                return;
+            }
+            showSalesDocumentPreview('RETUR', sretDocData(appState.salesReturns[selectedSretIndex]));
+        }
+
+        function previewSretFromModal() {
+            const code = document.getElementById('sret-form-item').value;
+            const it = appState.items.find(i => i.code === code);
+            if (!it) {
+                showToast('Pilih barang yang diretur terlebih dahulu!', 'error');
+                return;
+            }
+            showSalesDocumentPreview('RETUR', sretDocData({
+                id: document.getElementById('sret-form-no').value,
+                date: document.getElementById('sret-form-date').value,
+                customer: document.getElementById('sret-form-customer').value,
+                itemCode: it.code, itemName: it.name,
+                qty: Number(document.getElementById('sret-form-qty').value) || 1,
+                price: Number(document.getElementById('sret-form-price').value) || 0,
+                wallet: document.getElementById('sret-form-wallet').value,
+                reason: document.getElementById('sret-form-reason').value.trim()
+            }));
+        }
+
+        async function saveSalesReturnRecord(e) {
+            e.preventDefault();
+            const idx = Number(document.getElementById('edit-sret-index').value);
+            const old = (idx >= 0 && appState.salesReturns[idx]) ? appState.salesReturns[idx] : null;
+            const docNo = document.getElementById('sret-form-no').value;
+            const retDate = document.getElementById('sret-form-date').value;
+            const customer = document.getElementById('sret-form-customer').value || 'UMUM';
+            const code = document.getElementById('sret-form-item').value;
+            const qty = Math.max(1, Number(document.getElementById('sret-form-qty').value) || 1);
+            const price = Math.max(0, Number(document.getElementById('sret-form-price').value) || 0);
+            const wallet = document.getElementById('sret-form-wallet').value;
+            const reason = document.getElementById('sret-form-reason').value.trim();
+
+            const it = appState.items.find(i => i.code === code);
+            if (!it) {
+                showToast('Barang yang diretur tidak ditemukan!', 'error');
+                return;
+            }
+            const total = qty * price;
+            const refundFromWallet = wallet !== 'POTONG_PIUTANG' && walletExists(wallet);
+
+            // Cek saldo sebelum ada perubahan (dana retur lama yang akan dikembalikan ikut dihitung)
+            if (refundFromWallet) {
+                const avail = (Number(appState.wallets[wallet]) || 0) + (old && old.wallet === wallet ? Number(old.total) || 0 : 0);
+                if (avail < total && !confirm(`Saldo ${getWalletNameById(wallet)} hanya Rp ${formatRp(avail)}, kurang dari Rp ${formatRp(total)}.\n\nLanjutkan dan biarkan saldo menjadi minus?`)) return;
+            }
+
+            const nowIso = new Date().toISOString();
+            if (old) {
+                const mOld = appState.items.find(i => i.code === old.itemCode);
+                if (mOld) {
+                    mOld.stock = Math.max(0, (Number(mOld.stock) || 0) - (Number(old.qty) || 0));
+                    appState.stockLedger.unshift({
+                        date: nowIso, ref: docNo, code: mOld.code, name: mOld.name,
+                        type: 'KOREKSI EDIT RETUR JUAL', inQty: 0, outQty: Number(old.qty) || 0, balance: mOld.stock
+                    });
+                }
+                if (old.wallet !== 'POTONG_PIUTANG' && walletExists(old.wallet)) {
+                    appState.wallets[old.wallet] += Number(old.total) || 0;
+                }
+            }
+
+            it.stock = (Number(it.stock) || 0) + qty;
+            if (refundFromWallet) appState.wallets[wallet] -= total;
+            appState.stockLedger.unshift({
+                date: nowIso, ref: docNo, code: it.code, name: it.name,
+                type: old ? 'EDIT RETUR JUAL' : 'RETUR JUAL', inQty: qty, outQty: 0, balance: it.stock
+            });
+
+            const keepCost = old && old.itemCode === it.code && old.cost !== undefined;
+            const rec = {
+                id: docNo, date: retDate, customer,
+                itemCode: it.code, itemName: it.name,
+                qty, price, total,
+                cost: keepCost ? Number(old.cost) || 0 : (Number(it.cost) || 0), // HPP per unit, untuk koreksi Laba Rugi
+                wallet, reason
+            };
+            if (old) appState.salesReturns[idx] = rec;
+            else { appState.salesReturns.unshift(rec); selectedSretIndex = -1; }
+
+            closeModal('sret-form-modal');
+            await saveAppState();
+            showToast(`Retur Penjualan ${docNo} berhasil disimpan!`, 'success');
+        }
+
+        async function deleteSelectedSret() {
+            if (selectedSretIndex < 0 || !appState.salesReturns[selectedSretIndex]) {
+                showToast('Pilih salah satu baris Retur Penjualan yang ingin dihapus!', 'error');
+                return;
+            }
+            const target = appState.salesReturns[selectedSretIndex];
+            if (!confirm(`Hapus retur penjualan ${target.id}?\n\nStok dan saldo akan dikembalikan seperti sebelum retur.`)) return;
+            const old = appState.salesReturns.splice(selectedSretIndex, 1)[0];
+            const mOld = appState.items.find(i => i.code === old.itemCode);
+            if (mOld) {
+                mOld.stock = Math.max(0, (Number(mOld.stock) || 0) - (Number(old.qty) || 0));
+                appState.stockLedger.unshift({
+                    date: new Date().toISOString(), ref: old.id, code: mOld.code, name: mOld.name,
+                    type: 'BATAL RETUR JUAL', inQty: 0, outQty: Number(old.qty) || 0, balance: mOld.stock
+                });
+            }
+            if (old.wallet !== 'POTONG_PIUTANG' && walletExists(old.wallet)) {
+                appState.wallets[old.wallet] += Number(old.total) || 0;
+            }
+            selectedSretIndex = -1;
+            document.getElementById('selected-sret-label').textContent = 'Belum ada yang dipilih';
+            await saveAppState();
+            showToast(`Retur Penjualan ${old.id} dihapus & stok/saldo dipulihkan!`, 'info');
+        }
+
+        // --- PREVIEW & PRINT DOKUMEN SO / FAKTUR PENJUALAN / NOTA RETUR ---
+        // Memakai modal pratinjau & tombol cetak yang sama dengan modul Pembelian.
+        function showSalesDocumentPreview(docType, data) {
+            const cfg = {
+                SO:     { title: 'Preview & Cetak Surat Pesanan Penjualan (SO)', icon: 'fa-clipboard-list text-amber-600', label: 'SURAT PESANAN (SO)', badge: 'bg-amber-100 text-amber-900 border border-amber-400', rightLabel: 'Status', signRight: 'Disetujui Pelanggan,' },
+                FAKTUR: { title: 'Preview & Cetak Faktur Penjualan', icon: 'fa-file-invoice-dollar text-emerald-600', label: 'FAKTUR PENJUALAN', badge: 'bg-emerald-100 text-emerald-900 border border-emerald-400', rightLabel: 'Pembayaran', signRight: 'Diterima Pelanggan,' },
+                RETUR:  { title: 'Preview & Cetak Nota Retur Penjualan', icon: 'fa-undo-alt text-rose-600', label: 'NOTA RETUR PENJUALAN', badge: 'bg-rose-100 text-rose-900 border border-rose-400', rightLabel: 'Pengembalian', signRight: 'Pelanggan,' }
+            }[docType] || {};
+            document.getElementById('doc-preview-title').innerHTML = `<i class="fas ${cfg.icon} mr-1.5"></i> ${cfg.title}`;
+
+            const items = data.items || [];
+            let totalQty = 0, grandTotal = 0;
+            const rowsHtml = items.map((it, idx) => {
+                const sub = (Number(it.qty) || 0) * (Number(it.price) || 0);
+                totalQty += Number(it.qty) || 0;
+                grandTotal += sub;
+                return `
+                    <tr class="border-b border-slate-300">
+                        <td class="py-1.5 px-2 text-center border-r border-slate-300">${idx + 1}</td>
+                        <td class="py-1.5 px-2 font-mono border-r border-slate-300">${esc(it.code)}</td>
+                        <td class="py-1.5 px-2 border-r border-slate-300">${esc(it.name)}</td>
+                        <td class="py-1.5 px-2 text-center font-mono border-r border-slate-300">${it.qty}</td>
+                        <td class="py-1.5 px-2 text-right font-mono border-r border-slate-300">${formatRp(it.price)}</td>
+                        <td class="py-1.5 px-2 text-right font-mono font-bold">${formatRp(sub)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const rightInfo = docType === 'SO' ? esc(data.status) : esc(data.paymentInfo);
+            document.getElementById('doc-print-sheet').innerHTML = `
+                <div class="border-b-2 border-slate-800 pb-3 mb-3 flex justify-between items-start">
+                    <div>
+                        <div class="text-base font-extrabold text-slate-900 uppercase">${esc(appState.settings.storeName)}</div>
+                        <div class="text-[11px] text-slate-600">${esc(appState.settings.storeAddress)}</div>
+                        <div class="text-[11px] text-slate-600">Telp/WA: ${esc(appState.settings.storePhone)}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-extrabold uppercase px-2.5 py-1 rounded ${cfg.badge}">${cfg.label}</div>
+                        <div class="font-mono font-bold text-xs mt-1">No: ${esc(data.docNo)}</div>
+                        ${data.soRef ? `<div class="font-mono text-[10.5px] text-slate-600">Ref SO: ${esc(data.soRef)}</div>` : ''}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3 bg-slate-50 p-2.5 rounded border border-slate-300 text-[11px]">
+                    <div>
+                        <div class="text-slate-500">Kepada Pelanggan:</div>
+                        <div class="font-bold text-xs text-slate-900">${esc(data.customer)}</div>
+                    </div>
+                    <div class="text-right">
+                        <div>Tanggal: <b class="font-mono">${esc((data.date || '').slice(0, 10))}</b></div>
+                        <div>${cfg.rightLabel}: <b>${rightInfo}</b></div>
+                    </div>
+                </div>
+
+                <table class="w-full border border-slate-400 border-collapse mb-3 text-[11px]">
+                    <thead>
+                        <tr class="bg-slate-200 border-b border-slate-400 font-bold">
+                            <th class="py-1.5 px-2 text-center border-r border-slate-400 w-8">No</th>
+                            <th class="py-1.5 px-2 text-left border-r border-slate-400 w-24">Kode</th>
+                            <th class="py-1.5 px-2 text-left border-r border-slate-400">Nama Produk</th>
+                            <th class="py-1.5 px-2 text-center border-r border-slate-400 w-14">Qty</th>
+                            <th class="py-1.5 px-2 text-right border-r border-slate-400 w-24">Harga Satuan</th>
+                            <th class="py-1.5 px-2 text-right w-28">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                    <tfoot>
+                        <tr class="bg-slate-100 font-extrabold border-t-2 border-slate-400">
+                            <td colspan="3" class="py-2 px-2 text-right border-r border-slate-400">TOTAL KESELURUHAN :</td>
+                            <td class="py-2 px-2 text-center font-mono border-r border-slate-400">${formatNum(totalQty)}</td>
+                            <td class="py-2 px-2 border-r border-slate-400"></td>
+                            <td class="py-2 px-2 text-right font-mono text-sm">Rp ${formatRp(grandTotal)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                ${data.note && data.note !== '-' ? `<div class="text-[11px] mb-4"><b>${docType === 'RETUR' ? 'Alasan Retur' : 'Catatan'}:</b> ${esc(data.note)}</div>` : ''}
+
+                <div class="grid grid-cols-2 gap-8 pt-4 text-center text-[11px]">
+                    <div>
+                        <div>Dibuat Oleh,</div>
+                        <div class="h-12"></div>
+                        <div class="font-bold underline">(${esc(currentUser.username)})</div>
+                    </div>
+                    <div>
+                        <div>${cfg.signRight}</div>
+                        <div class="h-12"></div>
+                        <div class="font-bold underline">(_______________________)</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('doc-preview-modal').classList.remove('hidden');
+        }
+
+        // =========================================================================
         // 7. TRANSAKSI PPOB & AGEN BRILINK
         // =========================================================================
         const PPOB_CONFIG = {
@@ -6470,10 +7972,12 @@
         // 11. LAPORAN, AKUNTANSI & STRUK THERMAL
         // =========================================================================
         function renderProfitLossSummary() {
-            const revPos = appState.transactions.filter(t => t.module === 'POS').reduce((s, t) => s + t.total, 0);
+            const salesRetTotal = (appState.salesReturns || []).reduce((s, r) => s + (Number(r.total) || 0), 0);
+            const salesRetCogs = (appState.salesReturns || []).reduce((s, r) => s + (Number(r.cost) || 0) * (Number(r.qty) || 0), 0);
+            const revPos = appState.transactions.filter(t => t.module === 'POS').reduce((s, t) => s + t.total, 0) - salesRetTotal;
             const revPpob = appState.transactions.filter(t => t.module === 'PPOB').reduce((s, t) => s + t.total, 0);
             const revBri = appState.transactions.filter(t => t.module === 'BRILINK' || t.module === 'SERVICE').reduce((s, t) => s + t.total, 0);
-            const cogs = appState.transactions.reduce((s, t) => s + (Number(t.modal) || 0), 0);
+            const cogs = appState.transactions.reduce((s, t) => s + (Number(t.modal) || 0), 0) - salesRetCogs;
             const net = (revPos + revPpob + revBri) - cogs;
 
             const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -6933,6 +8437,8 @@
             if (!Array.isArray(appState.purchaseOrders)) appState.purchaseOrders = [];
             if (!Array.isArray(appState.purchaseRecords)) appState.purchaseRecords = [];
             if (!Array.isArray(appState.purchaseReturns)) appState.purchaseReturns = [];
+            if (!Array.isArray(appState.salesOrders)) appState.salesOrders = [];
+            if (!Array.isArray(appState.salesReturns)) appState.salesReturns = [];
             if (!Array.isArray(appState.voucherProductions)) appState.voucherProductions = [];
             if (!Array.isArray(appState.stockLedger)) appState.stockLedger = [];
 
@@ -6959,6 +8465,8 @@
             appState.purchaseOrders = [];
             appState.purchaseRecords = [];
             appState.purchaseReturns = [];
+            appState.salesOrders = [];
+            appState.salesReturns = [];
             appState.voucherProductions = [];
             appState.fundTransfers = [];
             appState.serviceTickets = [];
@@ -6998,6 +8506,9 @@
             selectedPoIndex = -1;
             selectedPurchaseIndex = -1;
             selectedReturnIndex = -1;
+            selectedSoIndex = -1;
+            selectedSaleIndex = -1;
+            selectedSretIndex = -1;
 
             cancelTutupBukuConfirm();
             await saveAppState();
@@ -7010,6 +8521,8 @@
         // =========================================================================
         function openOcrScannerModal(mode = 'ppob') {
             document.getElementById('ocr-target-mode').value = mode;
+            const mg = Number(appState.settings?.ocrPpobMargin);
+            document.getElementById('ocr-ext-margin').value = Number.isFinite(mg) && mg >= 0 && appState.settings?.ocrPpobMargin !== undefined ? mg : 3000;
             document.getElementById('ocr-scanner-modal').classList.remove('hidden');
         }
 
@@ -7023,6 +8536,10 @@
                 img.classList.remove('hidden');
                 document.getElementById('ocr-upload-placeholder').classList.add('hidden');
 
+                if (typeof Tesseract === 'undefined') {
+                    showToast('Library OCR belum termuat (perlu internet saat pertama kali). Isi data secara manual.', 'error');
+                    return;
+                }
                 const progBox = document.getElementById('ocr-progress-box');
                 progBox.classList.remove('hidden');
                 try {
@@ -7046,16 +8563,77 @@
             reader.readAsDataURL(file);
         }
 
+        function pickOcrAmount(rawText) {
+            // Buang tanggal & jam agar tidak terbaca sebagai nominal
+            const clean = String(rawText || '')
+                .replace(/\b\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}\b/g, ' ')
+                .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, ' ')
+                .replace(/(?:\+?62|\b0)8[\d -]{8,14}\d/g, ' ');
+            const POS = /(total|nominal|jumlah|amount|tagihan|bayar|transfer|harga|tarik|setor|pembelian|rp)/i;
+            const NEG = /(admin|biaya|fee|saldo|sisa|kembali|ref|no\.?\s*(?:rek|ref|trx)|id\s*(?:trx|transaksi)|pajak|ppn)/i;
+            const found = [];
+            clean.split('\n').forEach(line => {
+                const re = /(rp\.?\s*)?(\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,]\d{1,2})?(?![\d])/gi;
+                let m;
+                while ((m = re.exec(line)) !== null) {
+                    const hasRp = !!m[1];
+                    const digits = m[2].replace(/[.,]/g, '');
+                    const grouped = /[.,]/.test(m[2]);
+                    if (!digits || digits.length > 10) continue;
+                    // Nomor HP / rekening / referensi: deretan angka panjang tanpa pemisah ribuan
+                    if (!grouped && !hasRp && (digits.length >= 9 || /^(0|62)/.test(digits))) continue;
+                    const val = Number(digits);
+                    if (val < 500) continue; // terlalu kecil untuk nominal transaksi
+                    let score = 0;
+                    if (hasRp) score += 3;
+                    if (grouped) score += 1;
+                    if (POS.test(line)) score += 2;
+                    if (NEG.test(line)) score -= 3;
+                    found.push({ val, score });
+                }
+            });
+            if (!found.length) return { best: 0, candidates: [] };
+            found.sort((x, y) => (y.score - x.score) || (y.val - x.val));
+            const uniq = [...new Set(found.map(f => f.val))].slice(0, 5);
+            return { best: found[0].val, candidates: uniq };
+        }
+
         function parseRawOcrTextManual() {
             const txt = document.getElementById('ocr-raw-text')?.value || '';
-            const numMatch = txt.replace(/\./g, '').match(/\b\d{4,9}\b/g);
-            if (numMatch && numMatch.length > 0) {
-                const maxVal = Math.max(...numMatch.map(Number));
-                document.getElementById('ocr-ext-amount').value = maxVal;
+
+            // Nominal
+            const { best, candidates } = pickOcrAmount(txt);
+            if (best) document.getElementById('ocr-ext-amount').value = best;
+            const box = document.getElementById('ocr-amount-candidates');
+            if (box) {
+                if (candidates.length > 1) {
+                    box.innerHTML = '<span class="text-slate-500 font-semibold">Nominal lain terbaca:</span>' + candidates.map(v =>
+                        `<button type="button" onclick="document.getElementById('ocr-ext-amount').value=${v}" class="ipos-btn px-1.5 py-0.5 rounded font-mono">${formatNum(v)}</button>`
+                    ).join('');
+                    box.classList.remove('hidden');
+                } else {
+                    box.classList.add('hidden');
+                }
             }
-            const phoneMatch = txt.match(/08\d{8,11}/);
-            if (phoneMatch) document.getElementById('ocr-ext-target').value = phoneMatch[0];
-            document.getElementById('ocr-ext-desc').value = txt.split('\n').filter(Boolean).slice(0, 2).join(' - ');
+
+            // Nomor HP (+62 / 62 / 08 → 08xx) atau nomor rekening
+            const phoneMatch = txt.replace(/[\s-]/g, '').match(/(?:\+?62|0)8\d{8,12}/);
+            if (phoneMatch) {
+                document.getElementById('ocr-ext-target').value = phoneMatch[0].replace(/^\+?62/, '0');
+            } else {
+                const acc = txt.replace(/[ \t]/g, '').match(/\b\d{10,16}\b/);
+                if (acc) document.getElementById('ocr-ext-target').value = acc[0];
+            }
+
+            // Bank / operator / e-wallet
+            const providers = ['BRI', 'BNI', 'BCA', 'MANDIRI', 'BSI', 'CIMB', 'PERMATA', 'DANAMON', 'DANA', 'OVO', 'GOPAY', 'SHOPEEPAY', 'LINKAJA',
+                'TELKOMSEL', 'INDOSAT', 'XL', 'AXIS', 'TRI', 'SMARTFREN', 'BY.U', 'PLN', 'BPJS', 'PDAM'];
+            const upper = txt.toUpperCase();
+            const prov = providers.find(p => new RegExp('(^|[^A-Z])' + p.replace('.', '\\.') + '([^A-Z]|$)').test(upper));
+            const provEl = document.getElementById('ocr-ext-provider');
+            if (prov && provEl && !provEl.value.trim()) provEl.value = prov;
+
+            document.getElementById('ocr-ext-desc').value = txt.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 2).join(' - ');
             document.getElementById('ocr-detected-badge')?.classList.remove('hidden');
         }
 
@@ -7073,14 +8651,16 @@
                 document.getElementById('buy-item-qty').value = Number(document.getElementById('ocr-ext-qty').value) || 1;
                 document.getElementById('buy-item-cost').value = amount;
             } else if (mode === 'pos') {
-                switchTab('kasir');
+                switchTab('kasir', 'kasir');
                 document.getElementById('pos-barcode-input').value = target || desc;
             } else {
                 switchTab('ppob');
                 document.getElementById('ppob-target-number').value = target;
                 document.getElementById('ppob-product-desc').value = desc;
                 document.getElementById('ppob-modal-amount').value = amount;
-                document.getElementById('ppob-sell-amount').value = amount + 3000;
+                const margin = Math.max(0, Number(document.getElementById('ocr-ext-margin')?.value) || 0);
+                appState.settings.ocrPpobMargin = margin; // jadi default scan berikutnya
+                document.getElementById('ppob-sell-amount').value = amount + margin;
                 recalcPpobProfit();
             }
             showToast('Hasil scan OCR diterapkan ke form!', 'success');
@@ -7091,7 +8671,7 @@
         // =========================================================================
         document.addEventListener('keydown', (e) => {
             if (!isLoggedIn) return; // kunci pintas dinonaktifkan sebelum login
-            if (e.key === 'F2') { e.preventDefault(); switchTab('kasir'); }
+            if (e.key === 'F2') { e.preventDefault(); switchTab('kasir', 'kasir'); }
             if (e.key === 'F3') { e.preventDefault(); openItemPickerModal(); }
             if (e.key === 'F4') { e.preventDefault(); openOcrScannerModal('ppob'); }
             if (e.key === 'F10') { e.preventDefault(); processPosCheckout(); }
@@ -7107,6 +8687,11 @@
                     : '<i class="fas fa-plane text-amber-600"></i> Offline (Lokal PC)';
             }
         }, 1000);
+
+        // Cache library CDN agar aplikasi tetap tampil normal saat offline (butuh sw.js di folder yang sama, via http/https)
+        if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+            navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker gagal didaftarkan:', e));
+        }
 
         window.addEventListener('DOMContentLoaded', async () => {
             await loadDatabaseForActiveTenant();
