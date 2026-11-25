@@ -5375,7 +5375,9 @@
             const vp = (appState.voucherProductions || []).filter(v => v && name && v.targetName === name).length;
             if (vp) hits.push(`Perakitan Voucher (${vp})`);
             if (!hits.length) {
-                const led = (appState.stockLedger || []).filter(r => r && r.code === code && r.type !== 'STOK AWAL').length;
+                const liveRefs = new Set([].concat(appState.transactions || [], appState.purchaseRecords || [], appState.purchaseReturns || [],
+                    appState.salesReturns || [], appState.serviceTickets || [], appState.purchaseOrders || [], appState.salesOrders || []).map(x => x && x.id));
+                const led = (appState.stockLedger || []).filter(r => r && r.code === code && r.type !== 'STOK AWAL' && liveRefs.has(r.ref)).length;
                 if (led) hits.push(`Riwayat Kartu Stok (${led})`);
             }
             return hits;
@@ -5432,7 +5434,10 @@
                 showToast(`Barang ${item.name} (${item.code}) tidak bisa dihapus karena sudah ada transaksi (sistem FIFO): ${usage.join(', ')}.`, 'error');
                 return;
             }
+            const sisa = Number(item.stock) || 0;
+            if (!confirm(`Hapus barang ${item.name} (${item.code})?` + (sisa ? `\n\nSisa stok ${sisa} ${item.unit || 'PCS'} ikut terhapus.` : '') + '\n\nBarang ini tidak memiliki transaksi.')) return;
             appState.items.splice(idx, 1);
+            appState.stockLedger = (appState.stockLedger || []).filter(r => !(r && r.code === item.code)); // sisa STOK AWAL / catatan pembatalan
             await saveAppState();
             showToast('Barang dihapus dari Master Data.', 'info');
         }
