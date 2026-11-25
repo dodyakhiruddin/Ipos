@@ -4228,7 +4228,7 @@
             } catch (e) {}
         }
 
-        const DATA_COLLECTIONS = ['items','suppliers','customers','voucherProductions','serviceTickets','debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','salesOrders','salesReturns','transactions','stockLedger'];
+        const DATA_COLLECTIONS = ['walletDeletions','items','suppliers','customers','voucherProductions','serviceTickets','debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','salesOrders','salesReturns','transactions','stockLedger'];
         function buildStateFromSaved(saved) {
             const d = createDefaultState(activeDatabaseName);
             DATA_COLLECTIONS.forEach(k => { if (!Array.isArray(saved[k])) d[k] = []; }); // koleksi hilang = kosong, BUKAN barang demo
@@ -4271,6 +4271,9 @@
                     <span>${esc(new Date(x.at).toLocaleString('id-ID'))} &bull; ${esc(x.reason)} &bull; ${(x.payload.items || []).length} barang</span>
                     <button type="button" onclick="restoreSnapshot(${i})" class="ipos-btn px-2 py-0.5 rounded font-semibold">Pulihkan</button></div>`).join('')
                     : '<div class="text-slate-500">Belum ada snapshot.</div>');
+            const wd = Array.isArray(appState.walletDeletions) ? appState.walletDeletions.slice(0, 10) : [];
+            if (wd.length) box.innerHTML += '<div class="font-bold text-rose-900 border-t border-slate-300 pt-1.5 mt-1"><i class="fas fa-clipboard-check mr-1"></i> Riwayat Penghapusan Sumber Dana</div>' +
+                wd.map(x => `<div class="border-t border-slate-200 pt-1">${esc(new Date(x.date).toLocaleString('id-ID'))} &bull; <b>${esc(x.walletName)}</b> (saldo Rp ${formatRp(x.balance)}) &bull; disetujui ${esc(x.approvedBy)}<br><span class="text-slate-600">Alasan: ${esc(x.reason)}</span></div>`).join('');
         }
         async function restoreSnapshot(i) {
             if (!requireAdmin('Memulihkan snapshot')) return;
@@ -4960,12 +4963,52 @@
             showToast('Sumber dana berhasil disimpan!', 'success');
         }
 
+        // Sumber dana dianggap "sudah dipakai" bila ada transaksi apa pun yang menyentuhnya, atau masih ada saldo (modal awal).
+        // Mengembalikan daftar keterangan (kosong = boleh dihapus bebas).
+        function getWalletUsage(id) {
+            const w = (appState.walletList || []).find(x => x.id === id);
+            const name = w ? w.name : '';
+            const L = a => Array.isArray(a) ? a : [];
+            const hits = [];
+            const cnt = (label, n) => { if (n) hits.push(`${label} (${n})`); };
+            cnt('Penjualan/PPOB', L(appState.transactions).filter(t => t && (t.paymentMethod === id || t.sourceWallet === id || t.wallet === id)).length);
+            cnt('Pembelian', L(appState.purchaseRecords).filter(r => r && r.sourceWallet === id).length);
+            cnt('Pesanan Pembelian', L(appState.purchaseOrders).filter(r => r && r.sourceWallet === id).length);
+            cnt('Retur Pembelian', L(appState.purchaseReturns).filter(r => r && r.wallet === id).length);
+            cnt('Retur Penjualan', L(appState.salesReturns).filter(r => r && r.wallet === id).length);
+            cnt('Service HP', L(appState.serviceTickets).filter(t => t && (t.paymentMethod === id || t.wallet === id || t.sourceWallet === id)).length);
+            cnt('Bayar Utang/Piutang', L(appState.debtsReceivables).reduce((n, d) => n + L(d && d.payments).filter(p => p && p.wallet === id).length, 0));
+            cnt('Mutasi Dana', L(appState.fundTransfers).filter(f => f && (f.from === name || f.to === name || f.from === id || f.to === id)).length);
+            const bal = Number(appState.wallets && appState.wallets[id]) || 0;
+            if (bal !== 0) hits.push(`Saldo/Modal Awal Rp ${formatRp(bal)}`);
+            return hits;
+        }
+
         async function deleteWalletAccount(id) {
-            if (appState.walletList.length <= 1) return;
-            appState.walletList = appState.walletList.filter(w => w.id !== id);
+            if (appState.walletList.length <= 1) { showToast('Minimal harus ada satu sumber dana.', 'error'); return; }
+            const w = appState.walletList.find(x => x.id === id);
+            if (!w) return;
+            const usage = getWalletUsage(id);
+            let audit = null;
+            if (usage.length) {
+                if (!isCurrentUserAdmin()) {
+                    showToast(`Sumber dana ${w.name} tidak bisa dihapus karena sudah ada transaksi/modal awal: ${usage.join(', ')}. Penghapusan hanya atas persetujuan ADMIN dengan alasan tertulis.`, 'error');
+                    return;
+                }
+                const reason = (prompt(`PERSETUJUAN ADMIN\n\nSumber dana "${w.name}" sudah memiliki: ${usage.join(', ')}.\nSaldo & pengaruhnya pada laporan kas ikut hilang.\n\nTulis alasan/keterangan penghapusan (wajib, min. 5 huruf):`) || '').trim();
+                if (reason.length < 5) { showToast('Dibatalkan: alasan penghapusan wajib diisi.', 'error'); return; }
+                audit = { id: 'WDEL-' + Date.now(), date: new Date().toISOString(), walletId: w.id, walletName: w.name, type: w.type,
+                    balance: Number(appState.wallets[id]) || 0, usage, reason, approvedBy: currentUser.username };
+                await takeSnapshot('sebelum-hapus-sumber-dana');
+            } else if (!confirm(`Hapus sumber dana ${w.name}?`)) return;
+            if (audit) {
+                if (!Array.isArray(appState.walletDeletions)) appState.walletDeletions = [];
+                appState.walletDeletions.unshift(audit);
+            }
+            appState.walletList = appState.walletList.filter(x => x.id !== id);
             delete appState.wallets[id];
             await saveAppState();
-            showToast('Sumber dana dihapus.', 'info');
+            showToast(audit ? 'Sumber dana dihapus atas persetujuan ADMIN (alasan tercatat).' : 'Sumber dana dihapus.', 'info');
         }
 
         // =========================================================================
