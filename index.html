@@ -5171,11 +5171,29 @@
             return used ? `sudah diproses menjadi Pembelian ${used.id}` : '';
         }
 
-        // Transaksi Pembelian & Penjualan barang tidak boleh dihapus (FIFO); koreksi lewat Retur
-        const FIFO_HINT_PURCHASE = 'Transaksi Pembelian tidak bisa dihapus (sistem FIFO). Untuk koreksi gunakan Retur Pembelian.';
-        const FIFO_HINT_SALE = 'Transaksi Penjualan barang tidak bisa dihapus (sistem FIFO). Untuk koreksi gunakan Retur Penjualan.';
-        function isStockSaleTransaction(t) {
-            return !!t && (t.module === 'POS' || (Array.isArray(t.items) && t.items.length > 0));
+        // Pembelian BOLEH dihapus, kecuali salah satu barangnya sudah ada transaksi keluar sesudah pembelian itu
+        // (penjualan, retur pembelian, service, perakitan voucher, dll). Penjualan boleh dihapus seperti biasa.
+        // Mengembalikan alasan ('' = boleh dihapus).
+        function getPurchaseLockReason(rec) {
+            if (!rec) return '';
+            const ledger = appState.stockLedger || [];
+            const liveRefs = new Set([]
+                .concat(appState.transactions || [], appState.purchaseReturns || [], appState.salesReturns || [])
+                .map(x => x && x.id));
+            for (const it of normalizeOrderItems(rec)) {
+                if (!it || !it.code) continue;
+                // Kartu stok disimpan terbaru di depan: entri yang lebih baru dari pembelian ini ada sebelum indeksnya
+                const ownIdx = ledger.findIndex(r => r && r.ref === rec.id && r.code === it.code);
+                const newer = ownIdx >= 0 ? ledger.slice(0, ownIdx) : ledger;
+                const out = newer.find(r => r && r.code === it.code && (Number(r.outQty) || 0) > 0
+                    && r.ref !== rec.id && liveRefs.has(r.ref));
+                if (out) return `barang ${it.name || it.code} sudah ada transaksinya (${out.type} ${out.ref})`;
+                const ownDate = ownIdx >= 0 ? new Date(ledger[ownIdx].date).getTime() : 0;
+                const vp = (appState.voucherProductions || []).find(v => v && v.targetName === it.name
+                    && (!ownDate || new Date(v.date).getTime() >= ownDate));
+                if (vp) return `barang ${it.name || it.code} sudah ada transaksinya (Perakitan Voucher)`;
+            }
+            return '';
         }
 
         // Alasan SO tidak boleh dihapus ('' = boleh): sudah ditarik menjadi transaksi Penjualan
@@ -6111,8 +6129,11 @@
                 showToast('Pilih salah satu baris Pembelian yang ingin dihapus!', 'error');
                 return;
             }
-            showToast(`${appState.purchaseRecords[selectedPurchaseIndex].id}: ${FIFO_HINT_PURCHASE}`, 'error');
-            return;
+            const lockBuy = getPurchaseLockReason(appState.purchaseRecords[selectedPurchaseIndex]);
+            if (lockBuy) {
+                showToast(`Pembelian ${appState.purchaseRecords[selectedPurchaseIndex].id} tidak bisa dihapus karena ${lockBuy} (sistem FIFO).`, 'error');
+                return;
+            }
             const old = appState.purchaseRecords.splice(selectedPurchaseIndex, 1)[0];
             const oldItems = normalizeOrderItems(old);
             let oldTotal = 0;
@@ -7847,10 +7868,6 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 showToast('Pilih salah satu baris Penjualan yang ingin dihapus!', 'error');
                 return;
             }
-            if (isStockSaleTransaction(trx)) {
-                showToast(`${trx.id}: ${FIFO_HINT_SALE}`, 'error');
-                return;
-            }
             if (!confirm(`Hapus transaksi penjualan ${trx.id}?\n\nStok, saldo, dan piutang akan dikembalikan.`)) return;
             appState.transactions.splice(selectedSaleIndex, 1);
             const notes = reverseTransactionEffects(trx);
@@ -9546,11 +9563,6 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         function openDeleteTransactionModal(id) {
-            const lockTrx = (appState.transactions || []).find(t => t.id === id);
-            if (isStockSaleTransaction(lockTrx)) {
-                showToast(`${id}: ${FIFO_HINT_SALE}`, 'error');
-                return;
-            }
             document.getElementById('delete-trx-id').value = id;
             document.getElementById('delete-trx-label').textContent = id;
             document.getElementById('delete-trx-modal').classList.remove('hidden');
@@ -9561,10 +9573,6 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             const idx = appState.transactions.findIndex(t => t.id === id);
             closeModal('delete-trx-modal');
             if (idx < 0) return;
-            if (isStockSaleTransaction(appState.transactions[idx])) {
-                showToast(`${id}: ${FIFO_HINT_SALE}`, 'error');
-                return;
-            }
             const trx = appState.transactions.splice(idx, 1)[0]; // hanya satu transaksi, bukan semua ber-ID sama
             const notes = reverseTransactionEffects(trx);
             await saveAppState();
