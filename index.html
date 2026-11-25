@@ -1345,7 +1345,7 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     <div>
                                         <label class="block font-bold mb-1">Provider / Bank Layanan</label>
-                                        <select id="ppob-provider" onchange="autoFillPpobPreset()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-bold"></select>
+                                        <input type="text" id="ppob-provider" list="ppob-provider-list" required autocomplete="off" placeholder="Pilih atau ketik sendiri, mis. Token Listrik / Bank Mandiri" onfocus="this.dataset.prev=this.value;this.value=''" onblur="if(!this.value.trim())this.value=this.dataset.prev||''" oninput="autoFillPpobPreset()" onchange="autoFillPpobPreset()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-bold"><datalist id="ppob-provider-list"></datalist><div class="text-[10.5px] text-slate-500 mt-0.5">Ketuk kolom untuk memilih daftar, atau ketik nama layanan/bank sendiri.</div>
                                     </div>
                                     <div>
                                         <label class="block font-bold mb-1">No. HP / Rekening / ID Pelanggan</label>
@@ -7659,9 +7659,9 @@
 
             const cfg = PPOB_CONFIG[mode] || PPOB_CONFIG.pulsa;
             const provSel = document.getElementById('ppob-provider');
-            if (provSel) {
-                provSel.innerHTML = cfg.providers.map(p => `<option value="${p}">${p}</option>`).join('');
-            }
+            const provList = document.getElementById('ppob-provider-list');
+            if (provList) provList.innerHTML = cfg.providers.map(p => `<option value="${esc(p)}"></option>`).join('');
+            if (provSel) provSel.value = cfg.providers[0] || '';
 
             const presetBox = document.getElementById('ppob-quick-presets');
             if (presetBox) {
@@ -7716,7 +7716,7 @@
         async function submitPpobTransaction(e) {
             e.preventDefault();
             const mode = document.getElementById('ppob-mode').value;
-            const provider = document.getElementById('ppob-provider').value;
+            const provider = document.getElementById('ppob-provider').value.trim();
             const target = document.getElementById('ppob-target-number').value.trim();
             const prodDesc = document.getElementById('ppob-product-desc').value.trim();
             const cust = document.getElementById('ppob-customer-name').value.trim() || 'Pelanggan Umum';
