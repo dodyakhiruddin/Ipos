@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menu Utama - DONET CELL [GROSIRDONET]</title>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -183,6 +183,60 @@
                 font-family: 'Courier New', Courier, monospace;
             }
         }
+
+        /* ===================== TEMA BIRU - ORANYE ===================== */
+        :root { --navy:#0b2557; --navy2:#143a7b; --blue:#1565c0; --orange:#f97316; --orange2:#ea580c; }
+        body { background-color:#e6eef8; }
+        .ipos-topbar { background:linear-gradient(180deg,#ffffff 0%,#e3eefb 100%); border-bottom:2px solid var(--orange); }
+        .ipos-sidebar { background:linear-gradient(180deg,var(--navy2) 0%,var(--navy) 100%); }
+        .ipos-sidebar-item.active { background:linear-gradient(90deg,var(--orange) 0%,var(--orange2) 100%); border-left-color:#ffd8b0; }
+        .ipos-sidebar .bg-sky-500 { background-color:var(--orange); }
+        .ipos-tab.active { border-top:2px solid var(--orange); color:var(--blue); }
+        .ipos-workspace { background:radial-gradient(circle at 55% 45%,#f4f8fd 0%,#dce8f6 60%,#cddff2 100%); }
+        .ipos-panel-header { border-bottom:2px solid #fdba74; }
+        .ipos-btn:hover { border-color:var(--orange); }
+        .ipos-btn-primary { background:linear-gradient(180deg,#2b7be0 0%,var(--blue) 100%); border-color:#0d47a1; }
+        .ipos-btn-primary:hover { background:linear-gradient(180deg,#3d8cf0 0%,#1b73d1 100%); }
+        .ipos-btn-success { background:linear-gradient(180deg,#fb8a3c 0%,var(--orange2) 100%); border-color:#c2410c; }
+        .ipos-btn-success:hover { background:linear-gradient(180deg,#fd9a55 0%,#f06a14 100%); }
+        .table-grid th { background:linear-gradient(180deg,#eef5fd 0%,#d6e5f7 100%); border-bottom:2px solid #fdba74; }
+        .table-grid tr:hover { background-color:#fff1e3; }
+
+        /* ===================== TAMPILAN HP ===================== */
+        @media (max-width: 639px) {
+            body { height:100dvh !important; }
+            .ipos-topbar { padding:6px 8px; }
+            .ipos-topbar > div:first-child { min-width:0; flex:1; }
+            #topbar-window-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+            .ipos-topbar .fa-cash-register + span, #cloud-status-text { display:none; }
+            .ipos-topbar .ipos-btn, #cloud-status-badge { min-height:34px; }
+
+            /* Menu samping berubah jadi bilah menu bawah yang bisa digeser */
+            body > .flex.flex-1.overflow-hidden { flex-direction:column-reverse; }
+            .ipos-sidebar { width:100% !important; flex-direction:row !important; border-top:2px solid var(--orange);
+                box-shadow:0 -4px 14px rgba(11,37,87,.28); padding-bottom:env(safe-area-inset-bottom,0px); }
+            .ipos-sidebar > div:first-child { width:100%; overflow-x:auto !important; overflow-y:hidden !important;
+                -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+            .ipos-sidebar > div:first-child::-webkit-scrollbar { display:none; }
+            .ipos-sidebar > div:first-child > div:first-child, .ipos-sidebar > div:last-child { display:none; }
+            .ipos-sidebar .space-y-0\.5 { display:flex; gap:2px; padding:5px 6px; }
+            .ipos-sidebar-item { flex-direction:column !important; width:auto !important; min-width:64px; max-width:78px;
+                padding:6px 4px !important; gap:3px !important; margin:0 !important; text-align:center !important;
+                border-left:0 !important; border-top:3px solid transparent; border-radius:10px; }
+            .ipos-sidebar-item i { font-size:17px; width:auto !important; }
+            .ipos-sidebar-item span { display:block !important; font-size:10px; line-height:1.15; white-space:normal; }
+            .ipos-sidebar-item.active { background:linear-gradient(180deg,var(--orange) 0%,var(--orange2) 100%);
+                border-top-color:#ffd8b0 !important; }
+            #mdi-tab-bar { display:none !important; }
+
+            /* Kenyamanan sentuh & modal */
+            input:not([type=checkbox]):not([type=radio]), select, textarea { font-size:16px !important; }
+            .ipos-btn, .ipos-btn-primary, .ipos-btn-success, .ipos-btn-danger { min-height:36px; }
+            .ipos-tab { white-space:nowrap; }
+            div:has(> .ipos-tab) { overflow-x:auto; flex-wrap:nowrap !important; scrollbar-width:none; }
+            [id$="-modal"] > div { max-height:94dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+            #dash-banner-img { max-height:160px !important; }
+        }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col text-slate-800">
@@ -348,6 +402,7 @@
                 <span class="hidden sm:inline" id="topbar-db-badge">GROSIRDONET</span>
             </button>
 
+            <button onclick="openLoginModal()" class="sm:hidden ipos-btn px-2 py-1 rounded flex items-center" title="Ganti User / Login Ulang"><i class="fas fa-user-circle text-orange-500"></i></button>
             <button onclick="openSettingsModal('general')" class="ipos-btn px-2 py-1 rounded flex items-center gap-1 text-slate-700" title="Pengaturan Sistem, User & Cloud">
                 <i class="fas fa-cog text-slate-600"></i>
                 <span class="hidden lg:inline">Pengaturan</span>
