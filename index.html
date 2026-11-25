@@ -848,9 +848,15 @@
 
                             <!-- SUB 4: KARTU STOK -->
                             <div id="mpane-kartustok" class="hidden space-y-2.5">
-                                <div class="flex flex-wrap gap-2">
-                                    <select id="kartustok-filter-category" onchange="onKartuStokCategoryChange()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
-                                    <select id="kartustok-filter-item" onchange="renderStockLedgerTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                                <div class="flex flex-wrap gap-3 items-end">
+                                    <label class="block">
+                                        <span class="block text-[11px] font-bold text-slate-600 mb-0.5">Kategori</span>
+                                        <select id="kartustok-filter-category" onchange="onKartuStokCategoryChange()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold min-w-[11rem]"></select>
+                                    </label>
+                                    <label class="block">
+                                        <span class="block text-[11px] font-bold text-slate-600 mb-0.5">Item <span class="font-normal text-slate-500">(sesuai kategori)</span></span>
+                                        <select id="kartustok-filter-item" onchange="renderStockLedgerTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold min-w-[15rem]"></select>
+                                    </label>
                                 </div>
                                 <div class="overflow-x-auto border border-slate-300 rounded max-h-[58vh]">
                                     <table class="w-full table-grid border-collapse">
@@ -858,8 +864,9 @@
                                             <tr>
                                                 <th class="w-36 text-left">Waktu</th>
                                                 <th class="w-32 text-left">No. Ref</th>
+                                                <th class="w-32 text-left">Kategori</th>
                                                 <th class="w-28 text-left">Kode</th>
-                                                <th class="text-left">Nama Barang</th>
+                                                <th class="text-left">Item</th>
                                                 <th class="w-32 text-center">Jenis Mutasi</th>
                                                 <th class="w-20 text-right">Masuk</th>
                                                 <th class="w-20 text-right">Keluar</th>
@@ -5164,6 +5171,13 @@
             return used ? `sudah diproses menjadi Pembelian ${used.id}` : '';
         }
 
+        // Transaksi Pembelian & Penjualan barang tidak boleh dihapus (FIFO); koreksi lewat Retur
+        const FIFO_HINT_PURCHASE = 'Transaksi Pembelian tidak bisa dihapus (sistem FIFO). Untuk koreksi gunakan Retur Pembelian.';
+        const FIFO_HINT_SALE = 'Transaksi Penjualan barang tidak bisa dihapus (sistem FIFO). Untuk koreksi gunakan Retur Penjualan.';
+        function isStockSaleTransaction(t) {
+            return !!t && (t.module === 'POS' || (Array.isArray(t.items) && t.items.length > 0));
+        }
+
         // Alasan SO tidak boleh dihapus ('' = boleh): sudah ditarik menjadi transaksi Penjualan
         function getSoLockReason(so) {
             if (!so) return '';
@@ -5307,41 +5321,57 @@
             showToast('Pelanggan dihapus.', 'info');
         }
 
-        function onKartuStokCategoryChange() {
+        // Isi pilihan Item sesuai Kategori yang dipilih (Kategori -> Item)
+        function refreshKartuStokItemOptions(resetItem) {
             const cat = document.getElementById('kartustok-filter-category')?.value || 'ALL';
             const itemSel = document.getElementById('kartustok-filter-item');
-            if (itemSel) {
-                const filtered = cat === 'ALL' ? appState.items : appState.items.filter(i => i.category === cat);
-                itemSel.innerHTML = `<option value="ALL">Semua Barang</option>` + filtered.map(i => `<option value="${esc(i.code)}">${esc(i.code)} - ${esc(i.name)}</option>`).join('');
-            }
+            if (!itemSel) return;
+            const prev = resetItem ? 'ALL' : (itemSel.value || 'ALL');
+            const filtered = (appState.items || []).filter(i => cat === 'ALL' || i.category === cat);
+            itemSel.innerHTML = `<option value="ALL">Semua Item${cat === 'ALL' ? '' : ' di kategori ini'}</option>` +
+                filtered.map(i => `<option value="${esc(i.code)}">${esc(i.code)} - ${esc(i.name)}</option>`).join('');
+            itemSel.value = filtered.some(i => i.code === prev) ? prev : 'ALL';
+        }
+
+        function onKartuStokCategoryChange() {
+            refreshKartuStokItemOptions(true); // ganti kategori -> pilihan item kembali ke "Semua Item"
             renderStockLedgerTable();
         }
 
         function renderStockLedgerTable() {
             const tbody = document.getElementById('kartustok-tbody');
             if (!tbody) return;
+            refreshKartuStokItemOptions(false);
             const catFilter = document.getElementById('kartustok-filter-category')?.value || 'ALL';
             const itemFilter = document.getElementById('kartustok-filter-item')?.value || 'ALL';
 
             const rows = (appState.stockLedger || []).filter(r => {
-                const it = appState.items.find(x => x.code === r.code);
-                if (catFilter !== 'ALL' && it && it.category !== catFilter) return false;
+                const it = (appState.items || []).find(x => x.code === r.code);
+                if (catFilter !== 'ALL' && (!it || it.category !== catFilter)) return false;
                 if (itemFilter !== 'ALL' && r.code !== itemFilter) return false;
                 return true;
             });
 
-            tbody.innerHTML = rows.map(r => `
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">Belum ada mutasi stok untuk pilihan ini.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = rows.map(r => {
+                const it = (appState.items || []).find(x => x.code === r.code);
+                return `
                 <tr>
                     <td class="font-mono text-[11px]">${new Date(r.date).toLocaleString('id-ID')}</td>
                     <td class="font-mono font-bold">${esc(r.ref)}</td>
+                    <td>${esc((it && it.category) || '-')}</td>
                     <td class="font-mono">${esc(r.code)}</td>
                     <td>${esc(r.name)}</td>
                     <td class="text-center"><span class="px-2 py-0.5 rounded bg-slate-100 font-bold text-[10.5px]">${esc(r.type)}</span></td>
                     <td class="text-right font-mono text-emerald-700 font-bold">${r.inQty || 0}</td>
                     <td class="text-right font-mono text-red-700 font-bold">${r.outQty || 0}</td>
                     <td class="text-right font-mono font-extrabold">${r.balance}</td>
-                </tr>
-            `).join('');
+                </tr>`;
+            }).join('');
         }
 
         // =========================================================================
@@ -6081,6 +6111,8 @@
                 showToast('Pilih salah satu baris Pembelian yang ingin dihapus!', 'error');
                 return;
             }
+            showToast(`${appState.purchaseRecords[selectedPurchaseIndex].id}: ${FIFO_HINT_PURCHASE}`, 'error');
+            return;
             const old = appState.purchaseRecords.splice(selectedPurchaseIndex, 1)[0];
             const oldItems = normalizeOrderItems(old);
             let oldTotal = 0;
@@ -7815,6 +7847,10 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 showToast('Pilih salah satu baris Penjualan yang ingin dihapus!', 'error');
                 return;
             }
+            if (isStockSaleTransaction(trx)) {
+                showToast(`${trx.id}: ${FIFO_HINT_SALE}`, 'error');
+                return;
+            }
             if (!confirm(`Hapus transaksi penjualan ${trx.id}?\n\nStok, saldo, dan piutang akan dikembalikan.`)) return;
             appState.transactions.splice(selectedSaleIndex, 1);
             const notes = reverseTransactionEffects(trx);
@@ -9510,6 +9546,11 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         function openDeleteTransactionModal(id) {
+            const lockTrx = (appState.transactions || []).find(t => t.id === id);
+            if (isStockSaleTransaction(lockTrx)) {
+                showToast(`${id}: ${FIFO_HINT_SALE}`, 'error');
+                return;
+            }
             document.getElementById('delete-trx-id').value = id;
             document.getElementById('delete-trx-label').textContent = id;
             document.getElementById('delete-trx-modal').classList.remove('hidden');
@@ -9520,6 +9561,10 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             const idx = appState.transactions.findIndex(t => t.id === id);
             closeModal('delete-trx-modal');
             if (idx < 0) return;
+            if (isStockSaleTransaction(appState.transactions[idx])) {
+                showToast(`${id}: ${FIFO_HINT_SALE}`, 'error');
+                return;
+            }
             const trx = appState.transactions.splice(idx, 1)[0]; // hanya satu transaksi, bukan semua ber-ID sama
             const notes = reverseTransactionEffects(trx);
             await saveAppState();
