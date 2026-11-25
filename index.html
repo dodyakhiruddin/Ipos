@@ -212,9 +212,9 @@
             body > .flex.flex-1.overflow-hidden { flex-direction:column; }
             .ipos-sidebar { width:100% !important; flex-direction:row !important; align-items:stretch;
                 border-bottom:2px solid var(--orange); box-shadow:0 2px 8px rgba(11,37,87,.25); }
-            .ipos-sidebar > div:first-child { flex:1; min-width:0; overflow-x:auto !important; overflow-y:hidden !important; scrollbar-width:thin; }
+            .ipos-sidebar > div:first-child { flex:1; min-width:0; overflow:visible !important; }
             .ipos-sidebar > div:first-child > div:first-child { display:none; }
-            .ipos-sidebar .space-y-0\.5 { display:flex; gap:2px; padding:4px 8px 0; }
+            .ipos-sidebar .space-y-0\.5 { display:flex; flex-wrap:wrap; gap:2px; padding:4px 8px 0; }
             .ipos-sidebar-item { width:auto !important; white-space:nowrap; padding:8px 12px !important; margin:0 !important;
                 gap:7px !important; border-left:0 !important; border-bottom:3px solid transparent; border-radius:6px 6px 0 0; }
             .ipos-sidebar-item.active { border-bottom-color:#ffd8b0; }
@@ -560,9 +560,8 @@
                         <!-- Kartu Informasi Identitas Perusahaan (Gaya Desktop iPos 5) -->
                         <div class="ipos-panel rounded-lg p-4 mb-4 bg-gradient-to-r from-white via-sky-50/40 to-white flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div class="flex items-center gap-3.5">
-                                <div id="dash-logo-box" class="w-12 h-12 rounded-lg bg-[#0063b1] text-white flex items-center justify-center text-2xl shadow shrink-0 overflow-hidden">
-                                    <i id="dash-logo-icon" class="fas fa-store"></i>
-                                    <img id="dash-logo-img" alt="Logo toko" class="hidden w-full h-full object-contain bg-white">
+                                <div class="w-12 h-12 rounded-lg bg-[#0063b1] text-white flex items-center justify-center text-2xl shadow shrink-0">
+                                    <i class="fas fa-store"></i>
                                 </div>
                                 <div>
                                     <div id="dash-company-name" class="text-base sm:text-lg font-extrabold text-[#1e3a5f]">DONET CELL [GROSIRDONET]</div>
@@ -765,6 +764,7 @@
                             </div>
                             <div class="flex flex-wrap gap-1.5 text-xs">
                                 <button type="button" onclick="switchMasterSubTab('items')" id="msub-items" class="ipos-tab active px-3 py-1 rounded-t font-bold">Daftar Barang & Harga</button>
+                                <button type="button" onclick="switchMasterSubTab('pricelist')" id="msub-pricelist" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-tags mr-1"></i>Daftar Harga</button>
                                 <button type="button" onclick="switchMasterSubTab('suppliers')" id="msub-suppliers" class="ipos-tab px-3 py-1 rounded-t font-bold">Supplier</button>
                                 <button type="button" onclick="switchMasterSubTab('customers')" id="msub-customers" class="ipos-tab px-3 py-1 rounded-t font-bold">Pelanggan</button>
                                 <button type="button" onclick="switchMasterSubTab('kartustok')" id="msub-kartustok" class="ipos-tab px-3 py-1 rounded-t font-bold">Kartu Stok</button>
@@ -794,6 +794,38 @@
                                             </tr>
                                         </thead>
                                         <tbody id="master-items-tbody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- SUB: DAFTAR HARGA (Eceran / Grosir) -->
+                            <div id="mpane-pricelist" class="hidden space-y-2.5">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <div class="inline-flex rounded overflow-hidden border border-slate-300">
+                                            <button type="button" id="plist-btn-eceran" onclick="setPriceListMode('eceran')" class="px-3 py-1.5 font-bold">Harga Eceran</button>
+                                            <button type="button" id="plist-btn-grosir" onclick="setPriceListMode('grosir')" class="px-3 py-1.5 font-bold border-l border-slate-300">Harga Grosir</button>
+                                        </div>
+                                        <select id="plist-cat" onchange="renderPriceListTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                                        <input type="text" id="plist-search" onkeyup="renderPriceListTable()" placeholder="Cari kode / nama barang..." class="bg-white border border-slate-300 rounded px-3 py-1.5 w-56">
+                                    </div>
+                                    <button type="button" onclick="openPrintChoice('pricelist')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold shadow"><i class="fas fa-print mr-1"></i> Cetak Daftar Harga</button>
+                                </div>
+                                <div class="text-[11px] text-slate-500"><i class="fas fa-info-circle text-sky-600 mr-1"></i> Klik kolom harga untuk mengubah langsung; tersimpan otomatis. Harga grosir yang kosong mengikuti harga eceran.</div>
+                                <div class="overflow-x-auto border border-slate-300 rounded max-h-[58vh]">
+                                    <table class="w-full table-grid border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th class="w-28 text-left">Kode</th>
+                                                <th class="text-left">Nama Barang</th>
+                                                <th class="w-32 text-left">Kategori</th>
+                                                <th class="w-16 text-center">Sat</th>
+                                                <th class="w-28 text-right">HPP</th>
+                                                <th class="w-36 text-right" id="plist-th-price">Harga Eceran</th>
+                                                <th class="w-24 text-right">Margin</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="plist-tbody"></tbody>
                                     </table>
                                 </div>
                             </div>
@@ -1649,7 +1681,7 @@
                         <i class="fas fa-chart-bar text-sky-700"></i>
                         <h2 class="font-bold text-sm text-slate-800">Laporan</h2>
                     </div>
-                    <div id="rpt-tabs" class="flex gap-1 text-xs overflow-x-auto whitespace-nowrap -mb-px md:grid md:grid-cols-4 md:overflow-visible">
+                    <div id="rpt-tabs" class="flex gap-1 text-xs overflow-x-auto whitespace-nowrap -mb-px">
                         <button type="button" onclick="switchReportSubTab('master')" id="rsub-master" class="ipos-tab active px-3 py-1 rounded-t font-bold"><i class="fas fa-database mr-1.5"></i>Laporan Master Data</button>
                         <button type="button" onclick="switchReportSubTab('pembelian')" id="rsub-pembelian" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-file-invoice mr-1.5"></i>Laporan Pembelian</button>
                         <button type="button" onclick="switchReportSubTab('penjualan')" id="rsub-penjualan" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-cash-register mr-1.5"></i>Laporan Penjualan</button>
@@ -1980,18 +2012,6 @@
                     <div>
                         <label class="block font-bold mb-1">Catatan Kaki Struk Thermal (Footer)</label>
                         <input type="text" id="set-store-footer" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1">Logo Toko</label>
-                        <div class="flex items-center gap-2">
-                            <div class="w-12 h-12 rounded border border-slate-300 bg-white flex items-center justify-center overflow-hidden shrink-0">
-                                <img id="set-logo-preview" alt="Logo toko" class="hidden w-full h-full object-contain">
-                                <i id="set-logo-placeholder" class="fas fa-store text-slate-400 text-xl"></i>
-                            </div>
-                            <input type="file" id="set-logo-file" accept="image/*" onchange="handleLogoFileSelect(event)" class="flex-1 min-w-0 text-[11px] bg-white border border-slate-300 rounded px-2 py-1">
-                            <button type="button" onclick="resetLogoImage()" class="ipos-btn px-2.5 py-1 rounded font-semibold shrink-0">Hapus Logo</button>
-                        </div>
-                        <div id="set-logo-note" class="text-[10.5px] text-slate-500 mt-1">Logo otomatis dikecilkan (maks. 256 px, latar transparan tetap dipertahankan) dan tersimpan bersama data toko.</div>
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Foto Banner Dashboard</label>
@@ -2383,7 +2403,7 @@
                 <div class="flex gap-2">
                     <button type="button" onclick="closeModal('doc-preview-modal')" class="ipos-btn px-3.5 py-1.5 rounded font-semibold">Tutup</button>
                     <button type="button" onclick="openDocShareFromPreview()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800"><i class="fas fa-paper-plane mr-1"></i> Kirim</button>
-                    <button type="button" onclick="printPurchaseDocumentSheet()" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">
+                    <button type="button" onclick="openPrintChoice('doc')" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">
                         <i class="fas fa-print mr-1"></i> Cetak Dokumen (Print)
                     </button>
                 </div>
@@ -2873,9 +2893,60 @@
                     <button type="button" onclick="sendReceiptWhatsApp()" class="ipos-btn-success px-2 py-2 rounded font-bold"><i class="fab fa-whatsapp mr-1"></i> Kirim Teks (WA)</button>
                     <button type="button" onclick="shareReceiptJpg()" class="ipos-btn px-2 py-2 rounded font-bold text-blue-800"><i class="fas fa-image mr-1"></i> Kirim JPG</button>
                     <button type="button" onclick="saveReceiptJpg()" class="ipos-btn px-2 py-2 rounded font-semibold"><i class="fas fa-download mr-1"></i> Simpan JPG</button>
-                    <button type="button" onclick="window.print()" class="ipos-btn-primary px-2 py-2 rounded font-bold"><i class="fas fa-print mr-1"></i> Cetak Nota</button>
+                    <button type="button" onclick="openPrintChoice('receipt')" class="ipos-btn-primary px-2 py-2 rounded font-bold"><i class="fas fa-print mr-1"></i> Cetak Nota</button>
                 </div>
                 <button type="button" onclick="closeModal('receipt-modal')" class="ipos-btn w-full py-1.5 rounded font-semibold">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: PILIH PRINTER ==================== -->
+    <div id="print-choice-modal" class="fixed inset-0 bg-slate-900/55 z-[70] hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-sm overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2 flex items-center justify-between">
+                <span class="font-bold text-xs"><i class="fas fa-print mr-1 text-sky-600"></i> Pilih Printer</span>
+                <button onclick="closeModal('print-choice-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <div class="p-4 text-xs space-y-3 bg-white">
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="border border-slate-300 rounded px-2.5 py-2 cursor-pointer flex items-start gap-2">
+                        <input type="radio" name="pc-type" value="bluetooth" onchange="updatePrintChoiceUI()" class="mt-0.5">
+                        <span><b><i class="fab fa-bluetooth-b text-sky-600"></i> Printer Bluetooth</b><br><span class="text-[10.5px] text-slate-500">Thermal 58mm / 80mm</span></span>
+                    </label>
+                    <label class="border border-slate-300 rounded px-2.5 py-2 cursor-pointer flex items-start gap-2">
+                        <input type="radio" name="pc-type" value="regular" onchange="updatePrintChoiceUI()" class="mt-0.5">
+                        <span><b><i class="fas fa-print text-sky-600"></i> Printer Biasa</b><br><span class="text-[10.5px] text-slate-500">USB / WiFi, kertas A4 / F4 / Folio</span></span>
+                    </label>
+                </div>
+                <div id="pc-bt-opts" class="space-y-2">
+                    <div>
+                        <label class="block font-bold mb-1">Lebar Kertas Thermal</label>
+                        <select id="pc-thermal-width" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                            <option value="58">58 mm (32 karakter)</option>
+                            <option value="80">80 mm (48 karakter)</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        <span id="pc-bt-status" class="text-[11px] text-slate-600">Belum ada printer tersambung.</span>
+                        <button type="button" onclick="pairBluetoothPrinter()" class="ipos-btn px-2.5 py-1 rounded font-semibold shrink-0"><i class="fab fa-bluetooth-b mr-1"></i> Sambungkan</button>
+                    </div>
+                    <div class="text-[10.5px] text-slate-500">Butuh Chrome/Edge (Android atau komputer) dan alamat HTTPS. Tidak didukung di iPhone/Safari.</div>
+                </div>
+                <div id="pc-reg-opts" class="space-y-2 hidden">
+                    <div>
+                        <label class="block font-bold mb-1">Ukuran Kertas</label>
+                        <select id="pc-paper" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                            <option value="A4">A4 (210 x 297 mm)</option>
+                            <option value="F4">F4 (215 x 330 mm)</option>
+                            <option value="FOLIO">Folio (215,9 x 330,2 mm)</option>
+                        </select>
+                    </div>
+                    <div class="text-[10.5px] text-slate-500">Dialog cetak browser akan terbuka; pilih printer Anda di sana. Pastikan ukuran kertas di dialog sesuai.</div>
+                </div>
+            </div>
+            <div class="p-3 bg-white border-t border-slate-200 grid grid-cols-2 gap-2 text-xs">
+                <button type="button" onclick="closeModal('print-choice-modal')" class="ipos-btn py-1.5 rounded font-semibold">Batal</button>
+                <button type="button" onclick="confirmPrintChoice()" class="ipos-btn-primary py-1.5 rounded font-bold"><i class="fas fa-print mr-1"></i> Cetak</button>
             </div>
         </div>
     </div>
@@ -4348,7 +4419,6 @@
             setText('dash-company-address', appState.settings.storeAddress || '-');
             setText('dash-company-phone', appState.settings.storePhone || '-');
             setText('dash-company-website', appState.settings.storeWebsite || '-');
-            renderStoreLogo();
             const bannerImg = document.getElementById('dash-banner-img');
             if (bannerImg) {
                 if (!bannerImg.dataset.def) bannerImg.dataset.def = bannerImg.src;
@@ -4381,6 +4451,7 @@
             renderDynamicWalletsUI();
             populateCategoryDropdowns();
             renderMasterItemsTable();
+            if (!document.getElementById('mpane-pricelist')?.classList.contains('hidden')) renderPriceListTable();
             renderMasterSuppliersTable();
             renderMasterCustomersTable();
             renderStockLedgerTable();
@@ -4676,12 +4747,109 @@
         // 4. MASTER DATA (BARANG, SUPPLIER, PELANGGAN)
         // =========================================================================
         function switchMasterSubTab(sub) {
-            ['items', 'suppliers', 'customers', 'kartustok'].forEach(s => {
+            ['items', 'pricelist', 'suppliers', 'customers', 'kartustok'].forEach(s => {
                 document.getElementById(`mpane-${s}`)?.classList.add('hidden');
                 document.getElementById(`msub-${s}`)?.classList.remove('active');
             });
             document.getElementById(`mpane-${sub}`)?.classList.remove('hidden');
             document.getElementById(`msub-${sub}`)?.classList.add('active');
+            if (sub === 'pricelist') renderPriceListTable();
+        }
+
+        // ===================== DAFTAR HARGA (ECERAN / GROSIR) =====================
+        let priceListMode = 'eceran';
+
+        function itemPriceFor(it, mode) {
+            return mode === 'grosir' ? (Number(it.wholesalePrice) || Number(it.price) || 0) : (Number(it.price) || 0);
+        }
+
+        function setPriceListMode(mode) {
+            priceListMode = mode === 'grosir' ? 'grosir' : 'eceran';
+            renderPriceListTable();
+        }
+
+        function getPriceListItems() {
+            const q = (document.getElementById('plist-search')?.value || '').toLowerCase();
+            const cat = document.getElementById('plist-cat')?.value || '';
+            return appState.items.filter(it =>
+                (!cat || it.category === cat) &&
+                ((it.code || '').toLowerCase().includes(q) || (it.name || '').toLowerCase().includes(q))
+            );
+        }
+
+        function renderPriceListTable() {
+            const tbody = document.getElementById('plist-tbody');
+            if (!tbody) return;
+            const sel = document.getElementById('plist-cat');
+            if (sel) {
+                const cur = sel.value;
+                const cats = [...new Set(appState.items.map(i => i.category).filter(Boolean))].sort();
+                sel.innerHTML = '<option value="">Semua Kategori</option>' + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+                sel.value = cats.includes(cur) ? cur : '';
+            }
+            const on = 'bg-orange-500 text-white', off = 'bg-white text-slate-700';
+            const be = document.getElementById('plist-btn-eceran'), bg = document.getElementById('plist-btn-grosir');
+            if (be) be.className = `px-3 py-1.5 font-bold ${priceListMode === 'eceran' ? on : off}`;
+            if (bg) bg.className = `px-3 py-1.5 font-bold border-l border-slate-300 ${priceListMode === 'grosir' ? on : off}`;
+            const th = document.getElementById('plist-th-price');
+            if (th) th.textContent = priceListMode === 'grosir' ? 'Harga Grosir' : 'Harga Eceran';
+            tbody.innerHTML = getPriceListItems().map(it => {
+                const idx = appState.items.indexOf(it);
+                const price = itemPriceFor(it, priceListMode);
+                const cost = Number(it.cost) || 0;
+                const margin = price - cost;
+                return `
+                    <tr>
+                        <td class="font-mono font-bold text-sky-900">${esc(it.code)}</td>
+                        <td class="font-semibold">${esc(it.name)}</td>
+                        <td>${esc(it.category)}</td>
+                        <td class="text-center">${esc(it.unit)}</td>
+                        <td class="text-right font-mono">${formatRp(cost)}</td>
+                        <td class="text-right"><input type="number" min="0" step="1" value="${price}" onchange="updateItemPriceFromList(${idx}, this)" class="w-28 text-right font-mono font-bold border border-slate-300 rounded px-1.5 py-0.5 ${priceListMode === 'grosir' ? 'text-emerald-700' : 'text-blue-800'}"></td>
+                        <td class="text-right font-mono ${margin < 0 ? 'text-red-600 font-bold' : 'text-slate-600'}">${formatRp(margin)}</td>
+                    </tr>`;
+            }).join('') || '<tr><td colspan="7" class="text-center text-slate-500 py-4">Tidak ada barang.</td></tr>';
+        }
+
+        async function updateItemPriceFromList(idx, input) {
+            const it = appState.items[idx];
+            if (!it) return;
+            const val = Math.round(Number(input.value));
+            if (!isFinite(val) || val < 0) { showToast('Harga tidak valid.', 'error'); renderPriceListTable(); return; }
+            if (priceListMode === 'grosir') it.wholesalePrice = val; else it.price = val;
+            await saveAppState();
+            renderPriceListTable();
+            showToast(`Harga ${priceListMode} "${it.name}" diperbarui.`, 'success');
+        }
+
+        function buildPriceListHtml() {
+            const st = appState.settings;
+            const title = priceListMode === 'grosir' ? 'DAFTAR HARGA GROSIR' : 'DAFTAR HARGA ECERAN';
+            const rows = getPriceListItems().map((it, n) => `
+                <tr>
+                    <td style="border:1px solid #94a3b8;padding:3px 6px;text-align:center">${n + 1}</td>
+                    <td style="border:1px solid #94a3b8;padding:3px 6px;font-family:monospace">${esc(it.code)}</td>
+                    <td style="border:1px solid #94a3b8;padding:3px 6px">${esc(it.name)}</td>
+                    <td style="border:1px solid #94a3b8;padding:3px 6px;text-align:center">${esc(it.unit)}</td>
+                    <td style="border:1px solid #94a3b8;padding:3px 6px;text-align:right;font-weight:bold">Rp ${formatRp(itemPriceFor(it, priceListMode))}</td>
+                </tr>`).join('');
+            return `
+                <div style="text-align:center;margin-bottom:10px">
+                    <div style="font-size:16px;font-weight:bold">${esc(st.storeName || '')}</div>
+                    <div style="font-size:11px">${esc(st.storeAddress || '')}${st.storePhone ? ' &bull; Telp/WA: ' + esc(st.storePhone) : ''}</div>
+                    <div style="font-size:14px;font-weight:bold;margin-top:6px;border-top:2px solid #0f172a;border-bottom:2px solid #0f172a;padding:2px 0">${title}</div>
+                    <div style="font-size:10px;margin-top:2px">Per tanggal ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:11px">
+                    <thead><tr style="background:#e2e8f0">
+                        <th style="border:1px solid #94a3b8;padding:3px 6px;width:30px">No</th>
+                        <th style="border:1px solid #94a3b8;padding:3px 6px;width:90px">Kode</th>
+                        <th style="border:1px solid #94a3b8;padding:3px 6px;text-align:left">Nama Barang</th>
+                        <th style="border:1px solid #94a3b8;padding:3px 6px;width:50px">Sat</th>
+                        <th style="border:1px solid #94a3b8;padding:3px 6px;width:110px;text-align:right">Harga</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
         }
 
         function renderMasterItemsTable() {
@@ -6209,34 +6377,254 @@
             document.getElementById('doc-preview-modal').classList.remove('hidden');
         }
 
-        function printPurchaseDocumentSheet() {
-            const content = document.getElementById('doc-print-sheet').innerHTML;
-            const win = window.open('', '_blank', 'width=800,height=700');
+        // ===================== PILIHAN PRINTER (Bluetooth / Biasa A4-F4-Folio) =====================
+        const PAPER_SIZES = {
+            A4:    { label: 'A4',    w: 210,   h: 297 },
+            F4:    { label: 'F4',    w: 215,   h: 330 },
+            FOLIO: { label: 'Folio', w: 215.9, h: 330.2 }
+        };
+        let printContext = 'doc'; // 'receipt' | 'doc'
+        let btPrinter = { device: null, char: null };
+
+        function getPrinterPrefs() {
+            const p = appState.settings.printer || {};
+            return {
+                type: p.type === 'regular' ? 'regular' : 'bluetooth',
+                thermalWidth: p.thermalWidth === '80' ? '80' : '58',
+                paper: PAPER_SIZES[p.paper] ? p.paper : 'A4'
+            };
+        }
+
+        function openPrintChoice(kind) {
+            printContext = kind;
+            const pr = getPrinterPrefs();
+            document.querySelectorAll('input[name="pc-type"]').forEach(r => { r.checked = (r.value === pr.type); });
+            document.getElementById('pc-thermal-width').value = pr.thermalWidth;
+            document.getElementById('pc-paper').value = pr.paper;
+            updatePrintChoiceUI();
+            document.getElementById('print-choice-modal').classList.remove('hidden');
+        }
+
+        function updatePrintChoiceUI() {
+            const type = document.querySelector('input[name="pc-type"]:checked')?.value || 'bluetooth';
+            document.getElementById('pc-bt-opts').classList.toggle('hidden', type !== 'bluetooth');
+            document.getElementById('pc-reg-opts').classList.toggle('hidden', type !== 'regular');
+            const st = document.getElementById('pc-bt-status');
+            if (st) st.textContent = btPrinter.device ? `Tersambung: ${btPrinter.device.name || 'Printer'}` : 'Belum ada printer tersambung.';
+        }
+
+        async function confirmPrintChoice() {
+            const type = document.querySelector('input[name="pc-type"]:checked')?.value || 'bluetooth';
+            appState.settings.printer = {
+                type,
+                thermalWidth: document.getElementById('pc-thermal-width').value,
+                paper: document.getElementById('pc-paper').value
+            };
+            saveAppState(); // simpan pilihan terakhir
+            if (type === 'regular') {
+                printViaBrowser(appState.settings.printer.paper);
+                closeModal('print-choice-modal');
+            } else {
+                const ok = await printViaBluetooth(parseInt(appState.settings.printer.thermalWidth, 10));
+                if (ok) closeModal('print-choice-modal');
+            }
+        }
+
+        // ---------- Printer biasa: kertas A4 / F4 / Folio ----------
+        function printViaBrowser(paperKey) {
+            const paper = PAPER_SIZES[paperKey] || PAPER_SIZES.A4;
+            const isReceipt = printContext === 'receipt';
+            const src = document.getElementById(isReceipt ? 'receipt-print-area' : 'doc-print-sheet');
+            if (!src && printContext !== 'pricelist') return;
+            const content = printContext === 'pricelist' ? buildPriceListHtml() : src.innerHTML;
+            const win = window.open('', '_blank', 'width=900,height=800');
             if (!win) {
-                showToast('Pop-up diblokir browser! Izinkan pop-up untuk mencetak dokumen.', 'error');
+                showToast('Pop-up diblokir browser! Izinkan pop-up untuk mencetak.', 'error');
                 return;
             }
-            win.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Cetak Dokumen Pembelian - DONET CELL</title>
-                    <script src="https://cdn.tailwindcss.com/3.4.17"><\/script>
-                    <style>
-                        @media print {
-                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                        }
-                    </style>
-                </head>
-                <body class="p-6 bg-white text-slate-900">
-                    ${content}
-                    <script>
-                        setTimeout(() => { window.print(); }, 450);
-                    <\/script>
-                </body>
-                </html>
-            `);
+            const body = isReceipt
+                ? `<div style="width:80mm;font-family:'Courier New',Courier,monospace;font-size:11px;color:#000">${content}</div>`
+                : content;
+            win.document.write(`<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Cetak ${paper.label} - ${esc(appState.settings.storeName || 'DONET CELL')}</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"><\/script>
+<style>
+@page { size: ${paper.w}mm ${paper.h}mm; margin: 12mm; }
+html, body { margin: 0; background: #fff; }
+body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f172a; }
+</style></head>
+<body>${body}
+<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 500); });<\/script>
+</body></html>`);
             win.document.close();
+        }
+
+        // ---------- Printer Bluetooth (ESC/POS via Web Bluetooth) ----------
+        const BT_PRINTER_SERVICES = [
+            '000018f0-0000-1000-8000-00805f9b34fb',
+            'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+            '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+            '0000ff00-0000-1000-8000-00805f9b34fb',
+            '0000fff0-0000-1000-8000-00805f9b34fb',
+            '0000ffe0-0000-1000-8000-00805f9b34fb',
+            '0000ae30-0000-1000-8000-00805f9b34fb',
+            '00001101-0000-1000-8000-00805f9b34fb'
+        ];
+
+        async function pairBluetoothPrinter() {
+            if (!navigator.bluetooth) {
+                showToast('Browser ini tidak mendukung Bluetooth. Gunakan Chrome/Edge (Android/komputer) dengan HTTPS.', 'error');
+                return false;
+            }
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: BT_PRINTER_SERVICES
+                });
+                btPrinter = { device, char: null };
+                device.addEventListener('gattserverdisconnected', () => { btPrinter.char = null; });
+                await ensureBtCharacteristic();
+                updatePrintChoiceUI();
+                showToast(`Printer tersambung: ${device.name || 'Printer'}`, 'success');
+                return true;
+            } catch (err) {
+                if (err && err.name === 'NotFoundError') return false; // dibatalkan pengguna
+                btPrinter = { device: null, char: null };
+                updatePrintChoiceUI();
+                showToast('Gagal menyambung printer: ' + (err.message || err), 'error');
+                return false;
+            }
+        }
+
+        async function ensureBtCharacteristic() {
+            if (!btPrinter.device) throw new Error('Printer belum dipilih');
+            if (btPrinter.char && btPrinter.device.gatt.connected) return btPrinter.char;
+            const server = await btPrinter.device.gatt.connect();
+            const services = await server.getPrimaryServices();
+            for (const svc of services) {
+                const chars = await svc.getCharacteristics();
+                const w = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
+                if (w) { btPrinter.char = w; return w; }
+            }
+            throw new Error('Karakteristik tulis printer tidak ditemukan (printer mungkin bukan ESC/POS BLE)');
+        }
+
+        async function btWrite(bytes) {
+            const ch = await ensureBtCharacteristic();
+            const CHUNK = 100;
+            for (let i = 0; i < bytes.length; i += CHUNK) {
+                const part = bytes.slice(i, i + CHUNK);
+                if (ch.properties.writeWithoutResponse && ch.writeValueWithoutResponse) await ch.writeValueWithoutResponse(part);
+                else await ch.writeValue(part);
+                await new Promise(r => setTimeout(r, 25));
+            }
+        }
+
+        function btClean(str) {
+            return String(str ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '?');
+        }
+        function btWrap(text, cols) {
+            const out = [];
+            text = btClean(text).replace(/\t/g, '  ');
+            text.split('\n').forEach(line => {
+                line = line.trimEnd();
+                if (!line) { out.push(''); return; }
+                while (line.length > cols) {
+                    let cut = line.lastIndexOf(' ', cols);
+                    if (cut < cols * 0.4) cut = cols;
+                    out.push(line.slice(0, cut).trimEnd());
+                    line = line.slice(cut).trimStart();
+                }
+                out.push(line);
+            });
+            return out;
+        }
+        function btTwoCol(left, right, cols) {
+            left = btClean(left); right = btClean(right);
+            const room = cols - right.length - 1;
+            if (room < 1) return [...btWrap(left, cols), right.padStart(cols)];
+            const parts = btWrap(left, room);
+            const last = parts.pop() || '';
+            parts.push(last.padEnd(cols - right.length) + right);
+            return parts;
+        }
+
+        // Susun struk menjadi daftar baris { t: teks, a: 'l'|'c', b: bold }
+        function buildThermalLines(cols) {
+            const st = appState.settings, L = [];
+            const dash = { t: '-'.repeat(cols) };
+            const push = (txt, o = {}) => btWrap(txt, cols).forEach(t => L.push({ t, ...o }));
+            if (printContext === 'receipt' && lastReceiptTrx) {
+                const trx = lastReceiptTrx;
+                push(st.storeName || '', { a: 'c', b: true });
+                if (st.storeAddress) push(st.storeAddress, { a: 'c' });
+                if (st.storePhone) push('Telp: ' + st.storePhone, { a: 'c' });
+                L.push(dash);
+                push('No : ' + trx.id); push('Tgl: ' + new Date(trx.date).toLocaleString('id-ID')); push('Plg: ' + trx.customer);
+                if (trx.ppob?.ref) push('Ref/SN/Token: ' + trx.ppob.ref);
+                if (trx.transferProof) push('Transfer: ' + (trx.transferProof.provider || '-') + (trx.transferProof.ref ? ' / Ref ' + trx.transferProof.ref : ''));
+                L.push(dash);
+                (trx.items || []).forEach(i => {
+                    push(`${i.name}`);
+                    btTwoCol(`  ${i.qty} x ${formatRp(i.price)}`, formatRp(i.price * i.qty), cols).forEach(t => L.push({ t }));
+                });
+                L.push(dash);
+                btTwoCol('TOTAL', 'Rp ' + formatRp(trx.total), cols).forEach(t => L.push({ t, b: true }));
+                L.push(dash);
+                if (st.storeFooter) push(st.storeFooter, { a: 'c' });
+            } else if (printContext === 'pricelist') {
+                push(st.storeName || '', { a: 'c', b: true });
+                push(priceListMode === 'grosir' ? 'DAFTAR HARGA GROSIR' : 'DAFTAR HARGA ECERAN', { a: 'c', b: true });
+                push(new Date().toLocaleDateString('id-ID'), { a: 'c' });
+                L.push(dash);
+                getPriceListItems().forEach(it => {
+                    btTwoCol(it.name, formatRp(itemPriceFor(it, priceListMode)), cols).forEach(t => L.push({ t }));
+                });
+                L.push(dash);
+            } else {
+                const el = document.getElementById(printContext === 'receipt' ? 'receipt-print-area' : 'doc-print-sheet');
+                btWrap(el ? el.innerText : '', cols).forEach(t => L.push({ t }));
+            }
+            return L;
+        }
+
+        function buildEscPos(lines, is80) {
+            const bytes = [0x1B, 0x40]; // init
+            let align = -1, bold = false;
+            lines.forEach(l => {
+                const a = l.a === 'c' ? 1 : 0;
+                if (a !== align) { bytes.push(0x1B, 0x61, a); align = a; }
+                const b = !!l.b;
+                if (b !== bold) { bytes.push(0x1B, 0x45, b ? 1 : 0); bold = b; }
+                for (const ch of l.t) bytes.push(ch.charCodeAt(0) & 0x7F);
+                bytes.push(0x0A);
+            });
+            bytes.push(0x1B, 0x45, 0, 0x1B, 0x61, 0);
+            bytes.push(0x0A, 0x0A, 0x0A, 0x0A);
+            if (is80) bytes.push(0x1D, 0x56, 0x42, 0x00); // potong kertas (printer 80mm)
+            return new Uint8Array(bytes);
+        }
+
+        async function printViaBluetooth(widthMm) {
+            if (!navigator.bluetooth) {
+                showToast('Browser ini tidak mendukung Bluetooth. Gunakan Chrome/Edge (Android/komputer) dengan HTTPS.', 'error');
+                return false;
+            }
+            try {
+                if (!btPrinter.device) {
+                    const ok = await pairBluetoothPrinter();
+                    if (!ok) return false;
+                }
+                const cols = widthMm === 80 ? 48 : 32;
+                await btWrite(buildEscPos(buildThermalLines(cols), widthMm === 80));
+                showToast('Struk dikirim ke printer Bluetooth.', 'success');
+                return true;
+            } catch (err) {
+                btPrinter.char = null;
+                showToast('Gagal mencetak via Bluetooth: ' + (err.message || err), 'error');
+                return false;
+            }
         }
 
         // --- C. RETUR PEMBELIAN ---
@@ -9209,10 +9597,6 @@
             document.getElementById('set-sb-key').value = appState.settings.supabaseKey || '';
             pendingBannerImage = undefined;
             const bf = document.getElementById('set-banner-file'); if (bf) bf.value = '';
-            pendingLogoImage = undefined;
-            const lf = document.getElementById('set-logo-file'); if (lf) lf.value = '';
-            updateLogoPreview(appState.settings.logoImage || '');
-            const ln = document.getElementById('set-logo-note'); if (ln) ln.textContent = LOGO_NOTE_DEFAULT;
             switchSettingsTab(tab);
             document.getElementById('settings-modal').classList.remove('hidden');
         }
@@ -9232,74 +9616,6 @@
         }
 
         let pendingBannerImage; // undefined = tidak berubah, '' = kembali ke default
-
-        // ---------- Logo toko (ikon warung di dashboard diganti logo yang diupload) ----------
-        let pendingLogoImage; // undefined = tidak berubah, '' = hapus logo
-        const LOGO_NOTE_DEFAULT = 'Logo otomatis dikecilkan (maks. 256 px, latar transparan tetap dipertahankan) dan tersimpan bersama data toko.';
-
-        function renderStoreLogo() {
-            const img = document.getElementById('dash-logo-img');
-            const icon = document.getElementById('dash-logo-icon');
-            const box = document.getElementById('dash-logo-box');
-            if (!img || !icon || !box) return;
-            const logo = appState.settings?.logoImage || '';
-            if (logo) {
-                if (img.getAttribute('src') !== logo) img.src = logo;
-                img.classList.remove('hidden');
-                icon.classList.add('hidden');
-                box.classList.remove('bg-[#0063b1]');
-                box.classList.add('bg-white', 'border', 'border-slate-200');
-            } else {
-                img.removeAttribute('src');
-                img.classList.add('hidden');
-                icon.classList.remove('hidden');
-                box.classList.add('bg-[#0063b1]');
-                box.classList.remove('bg-white', 'border', 'border-slate-200');
-            }
-        }
-
-        function updateLogoPreview(src) {
-            const prev = document.getElementById('set-logo-preview');
-            const ph = document.getElementById('set-logo-placeholder');
-            if (!prev || !ph) return;
-            if (src) { prev.src = src; prev.classList.remove('hidden'); ph.classList.add('hidden'); }
-            else { prev.removeAttribute('src'); prev.classList.add('hidden'); ph.classList.remove('hidden'); }
-        }
-
-        function handleLogoFileSelect(event) {
-            const file = event.target.files?.[0];
-            if (!file) return;
-            if (!/^image\//.test(file.type)) { showToast('Pilih file gambar (PNG/JPG/WebP).', 'error'); event.target.value = ''; return; }
-            const note = document.getElementById('set-logo-note');
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const img = new Image();
-                img.onload = () => {
-                    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-                    if (!w || !h) { showToast('File gambar tidak dapat dibaca.', 'error'); return; }
-                    const scale = Math.min(1, 256 / Math.max(w, h));
-                    const c = document.createElement('canvas');
-                    c.width = Math.max(1, Math.round(w * scale));
-                    c.height = Math.max(1, Math.round(h * scale));
-                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-                    pendingLogoImage = c.toDataURL('image/png'); // PNG agar logo transparan tidak berlatar hitam
-                    updateLogoPreview(pendingLogoImage);
-                    if (note) note.textContent = `Logo baru siap (${Math.round(pendingLogoImage.length * 0.75 / 1024)} KB). Klik "Simpan Profil Toko" untuk menerapkan.`;
-                };
-                img.onerror = () => showToast('File gambar tidak dapat dibaca.', 'error');
-                img.src = ev.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function resetLogoImage() {
-            pendingLogoImage = '';
-            const inp = document.getElementById('set-logo-file');
-            if (inp) inp.value = '';
-            updateLogoPreview('');
-            const note = document.getElementById('set-logo-note');
-            if (note) note.textContent = 'Logo akan dihapus (kembali ke ikon warung) setelah klik "Simpan Profil Toko".';
-        }
 
         function handleBannerFileSelect(event) {
             const file = event.target.files?.[0];
@@ -9343,15 +9659,6 @@
                 pendingBannerImage = undefined;
                 const inp = document.getElementById('set-banner-file');
                 if (inp) inp.value = '';
-            }
-            if (pendingLogoImage !== undefined) {
-                if (pendingLogoImage) appState.settings.logoImage = pendingLogoImage;
-                else delete appState.settings.logoImage;
-                pendingLogoImage = undefined;
-                const lf = document.getElementById('set-logo-file');
-                if (lf) lf.value = '';
-                const ln = document.getElementById('set-logo-note');
-                if (ln) ln.textContent = LOGO_NOTE_DEFAULT;
             }
             await saveAppState();
             refreshAllUI();
