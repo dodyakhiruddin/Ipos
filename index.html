@@ -560,8 +560,9 @@
                         <!-- Kartu Informasi Identitas Perusahaan (Gaya Desktop iPos 5) -->
                         <div class="ipos-panel rounded-lg p-4 mb-4 bg-gradient-to-r from-white via-sky-50/40 to-white flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div class="flex items-center gap-3.5">
-                                <div class="w-12 h-12 rounded-lg bg-[#0063b1] text-white flex items-center justify-center text-2xl shadow shrink-0">
-                                    <i class="fas fa-store"></i>
+                                <div id="dash-logo-box" class="w-12 h-12 rounded-lg bg-[#0063b1] text-white flex items-center justify-center text-2xl shadow shrink-0 overflow-hidden">
+                                    <i id="dash-logo-icon" class="fas fa-store"></i>
+                                    <img id="dash-logo-img" alt="Logo toko" class="hidden w-full h-full object-contain bg-white">
                                 </div>
                                 <div>
                                     <div id="dash-company-name" class="text-base sm:text-lg font-extrabold text-[#1e3a5f]">DONET CELL [GROSIRDONET]</div>
@@ -1648,7 +1649,7 @@
                         <i class="fas fa-chart-bar text-sky-700"></i>
                         <h2 class="font-bold text-sm text-slate-800">Laporan</h2>
                     </div>
-                    <div id="rpt-tabs" class="flex gap-1 text-xs overflow-x-auto whitespace-nowrap -mb-px">
+                    <div id="rpt-tabs" class="flex gap-1 text-xs overflow-x-auto whitespace-nowrap -mb-px md:grid md:grid-cols-4 md:overflow-visible">
                         <button type="button" onclick="switchReportSubTab('master')" id="rsub-master" class="ipos-tab active px-3 py-1 rounded-t font-bold"><i class="fas fa-database mr-1.5"></i>Laporan Master Data</button>
                         <button type="button" onclick="switchReportSubTab('pembelian')" id="rsub-pembelian" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-file-invoice mr-1.5"></i>Laporan Pembelian</button>
                         <button type="button" onclick="switchReportSubTab('penjualan')" id="rsub-penjualan" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-cash-register mr-1.5"></i>Laporan Penjualan</button>
@@ -1979,6 +1980,18 @@
                     <div>
                         <label class="block font-bold mb-1">Catatan Kaki Struk Thermal (Footer)</label>
                         <input type="text" id="set-store-footer" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Logo Toko</label>
+                        <div class="flex items-center gap-2">
+                            <div class="w-12 h-12 rounded border border-slate-300 bg-white flex items-center justify-center overflow-hidden shrink-0">
+                                <img id="set-logo-preview" alt="Logo toko" class="hidden w-full h-full object-contain">
+                                <i id="set-logo-placeholder" class="fas fa-store text-slate-400 text-xl"></i>
+                            </div>
+                            <input type="file" id="set-logo-file" accept="image/*" onchange="handleLogoFileSelect(event)" class="flex-1 min-w-0 text-[11px] bg-white border border-slate-300 rounded px-2 py-1">
+                            <button type="button" onclick="resetLogoImage()" class="ipos-btn px-2.5 py-1 rounded font-semibold shrink-0">Hapus Logo</button>
+                        </div>
+                        <div id="set-logo-note" class="text-[10.5px] text-slate-500 mt-1">Logo otomatis dikecilkan (maks. 256 px, latar transparan tetap dipertahankan) dan tersimpan bersama data toko.</div>
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Foto Banner Dashboard</label>
@@ -4335,6 +4348,7 @@
             setText('dash-company-address', appState.settings.storeAddress || '-');
             setText('dash-company-phone', appState.settings.storePhone || '-');
             setText('dash-company-website', appState.settings.storeWebsite || '-');
+            renderStoreLogo();
             const bannerImg = document.getElementById('dash-banner-img');
             if (bannerImg) {
                 if (!bannerImg.dataset.def) bannerImg.dataset.def = bannerImg.src;
@@ -9195,6 +9209,10 @@
             document.getElementById('set-sb-key').value = appState.settings.supabaseKey || '';
             pendingBannerImage = undefined;
             const bf = document.getElementById('set-banner-file'); if (bf) bf.value = '';
+            pendingLogoImage = undefined;
+            const lf = document.getElementById('set-logo-file'); if (lf) lf.value = '';
+            updateLogoPreview(appState.settings.logoImage || '');
+            const ln = document.getElementById('set-logo-note'); if (ln) ln.textContent = LOGO_NOTE_DEFAULT;
             switchSettingsTab(tab);
             document.getElementById('settings-modal').classList.remove('hidden');
         }
@@ -9214,6 +9232,74 @@
         }
 
         let pendingBannerImage; // undefined = tidak berubah, '' = kembali ke default
+
+        // ---------- Logo toko (ikon warung di dashboard diganti logo yang diupload) ----------
+        let pendingLogoImage; // undefined = tidak berubah, '' = hapus logo
+        const LOGO_NOTE_DEFAULT = 'Logo otomatis dikecilkan (maks. 256 px, latar transparan tetap dipertahankan) dan tersimpan bersama data toko.';
+
+        function renderStoreLogo() {
+            const img = document.getElementById('dash-logo-img');
+            const icon = document.getElementById('dash-logo-icon');
+            const box = document.getElementById('dash-logo-box');
+            if (!img || !icon || !box) return;
+            const logo = appState.settings?.logoImage || '';
+            if (logo) {
+                if (img.getAttribute('src') !== logo) img.src = logo;
+                img.classList.remove('hidden');
+                icon.classList.add('hidden');
+                box.classList.remove('bg-[#0063b1]');
+                box.classList.add('bg-white', 'border', 'border-slate-200');
+            } else {
+                img.removeAttribute('src');
+                img.classList.add('hidden');
+                icon.classList.remove('hidden');
+                box.classList.add('bg-[#0063b1]');
+                box.classList.remove('bg-white', 'border', 'border-slate-200');
+            }
+        }
+
+        function updateLogoPreview(src) {
+            const prev = document.getElementById('set-logo-preview');
+            const ph = document.getElementById('set-logo-placeholder');
+            if (!prev || !ph) return;
+            if (src) { prev.src = src; prev.classList.remove('hidden'); ph.classList.add('hidden'); }
+            else { prev.removeAttribute('src'); prev.classList.add('hidden'); ph.classList.remove('hidden'); }
+        }
+
+        function handleLogoFileSelect(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            if (!/^image\//.test(file.type)) { showToast('Pilih file gambar (PNG/JPG/WebP).', 'error'); event.target.value = ''; return; }
+            const note = document.getElementById('set-logo-note');
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+                    if (!w || !h) { showToast('File gambar tidak dapat dibaca.', 'error'); return; }
+                    const scale = Math.min(1, 256 / Math.max(w, h));
+                    const c = document.createElement('canvas');
+                    c.width = Math.max(1, Math.round(w * scale));
+                    c.height = Math.max(1, Math.round(h * scale));
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    pendingLogoImage = c.toDataURL('image/png'); // PNG agar logo transparan tidak berlatar hitam
+                    updateLogoPreview(pendingLogoImage);
+                    if (note) note.textContent = `Logo baru siap (${Math.round(pendingLogoImage.length * 0.75 / 1024)} KB). Klik "Simpan Profil Toko" untuk menerapkan.`;
+                };
+                img.onerror = () => showToast('File gambar tidak dapat dibaca.', 'error');
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetLogoImage() {
+            pendingLogoImage = '';
+            const inp = document.getElementById('set-logo-file');
+            if (inp) inp.value = '';
+            updateLogoPreview('');
+            const note = document.getElementById('set-logo-note');
+            if (note) note.textContent = 'Logo akan dihapus (kembali ke ikon warung) setelah klik "Simpan Profil Toko".';
+        }
 
         function handleBannerFileSelect(event) {
             const file = event.target.files?.[0];
@@ -9257,6 +9343,15 @@
                 pendingBannerImage = undefined;
                 const inp = document.getElementById('set-banner-file');
                 if (inp) inp.value = '';
+            }
+            if (pendingLogoImage !== undefined) {
+                if (pendingLogoImage) appState.settings.logoImage = pendingLogoImage;
+                else delete appState.settings.logoImage;
+                pendingLogoImage = undefined;
+                const lf = document.getElementById('set-logo-file');
+                if (lf) lf.value = '';
+                const ln = document.getElementById('set-logo-note');
+                if (ln) ln.textContent = LOGO_NOTE_DEFAULT;
             }
             await saveAppState();
             refreshAllUI();
