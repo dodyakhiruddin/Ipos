@@ -364,11 +364,11 @@
                     <div class="flex-1 space-y-2.5">
                         <div class="flex items-center gap-2">
                             <label class="w-20 text-right text-[12px] text-slate-700 font-medium">User :</label>
-                            <input type="text" id="ipos-login-user" value="admin" required autocomplete="off" class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500 shadow-inner">
+                            <input type="text" id="ipos-login-user" value="admin" required autocomplete="off" autocapitalize="none" spellcheck="false" class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500 shadow-inner">
                         </div>
                         <div class="flex items-center gap-2">
                             <label class="w-20 text-right text-[12px] text-slate-700 font-medium">Password :</label>
-                            <input type="password" id="ipos-login-pass" value="admin" required class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500 shadow-inner">
+                            <input type="password" id="ipos-login-pass" value="" required autocomplete="new-password" class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500 shadow-inner">
                         </div>
                     </div>
                 </div>
@@ -3883,12 +3883,15 @@
             openLoginModal();
         }
 
+        let loginDbIsEmptyHere = false; // true = database ini belum punya data/akun tersimpan di browser PC ini
         async function openLoginModal() {
             const candidateState = await loadStateFromIndexedDBForDb(activeDatabaseName);
             if (candidateState && Array.isArray(candidateState.users) && candidateState.users.length > 0) {
                 appState.users = candidateState.users;
+                loginDbIsEmptyHere = false;
             } else {
                 appState.users = getDefaultUsersSeed();
+                loginDbIsEmptyHere = true;
             }
 
             document.getElementById('login-modal-db-title').innerText = activeDatabaseName;
@@ -3917,26 +3920,43 @@
                 : getDefaultUsersSeed();
 
             const submitBtn = e.submitter || e.target.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.disabled = true;
+            const btnLabel = submitBtn ? submitBtn.textContent : '';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Memeriksa...'; }
             let matchedAccount = null;
+            let usedPassInput = passInput;
+            let loginFailure = '';
             try {
-                for (const u of usersList) {
-                    if (u.username.toLowerCase() === userInput.toLowerCase() && await verifyPassword(u.password, passInput)) {
-                        matchedAccount = u;
-                        break;
+                // Coba password persis seperti diketik; jika gagal & ada spasi di ujung (sering ikut saat copy-paste di PC), coba tanpa spasi
+                const candidates = [passInput];
+                if (passInput !== passInput.trim() && passInput.trim()) candidates.push(passInput.trim());
+                outer:
+                for (const pw of candidates) {
+                    for (const u of usersList) {
+                        if (!u || typeof u.username !== 'string') continue;
+                        if (u.username.trim().toLowerCase() === userInput.toLowerCase() && await verifyPassword(u.password, pw)) {
+                            matchedAccount = u;
+                            usedPassInput = pw;
+                            break outer;
+                        }
                     }
                 }
+            } catch (err) {
+                console.error('Login error:', err);
+                loginFailure = 'Terjadi kesalahan saat memeriksa password: ' + (err && err.message ? err.message : err);
             } finally {
-                if (submitBtn) submitBtn.disabled = false;
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = btnLabel || 'Masuk'; }
             }
 
             if (!matchedAccount) {
+                errEl.textContent = loginFailure || (loginDbIsEmptyHere
+                    ? 'Database ini belum ada datanya di browser/PC ini, jadi hanya akun bawaan yang berlaku (admin / admin). Masuk dengan akun bawaan, lalu pulihkan data lewat Pengaturan > Backup & Reset > Import / Pulihkan Backup (JSON).'
+                    : 'User atau Password tidak valid untuk database ini!');
                 errEl.classList.remove('hidden');
                 return;
             }
 
             errEl.classList.add('hidden');
-            const usingWeakPw = passInput.toLowerCase() === String(matchedAccount.username).toLowerCase();
+            const usingWeakPw = usedPassInput.toLowerCase() === String(matchedAccount.username).toLowerCase();
             isLoggedIn = true;
             currentUser = {
                 username: matchedAccount.username.toUpperCase(),
@@ -3952,7 +3972,7 @@
             // Naikkan kekuatan hash lama memakai password yang baru saja diketik (hash yang sama = password yang sama)
             const liveUser = (appState.users || []).find(u => u && u.password === matchedAccount.password);
             if (liveUser && isPasswordHashWeak(liveUser.password)) {
-                liveUser.password = await hashPassword(passInput);
+                liveUser.password = await hashPassword(usedPassInput);
                 pwChanged = true;
             }
             if (pwChanged) await saveAppState();
