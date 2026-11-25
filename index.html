@@ -1640,49 +1640,54 @@
             </div>
         </section>
 
-        <!-- ==================== MENU 10: LAPORAN PENJUALAN, PPOB & SERVICE ==================== -->
+        <!-- ==================== MENU 10: LAPORAN ==================== -->
         <section id="view-laporan" class="hidden p-3 sm:p-4 max-w-7xl mx-auto">
-                    <div class="ipos-panel rounded-lg overflow-hidden">
-                        <div class="ipos-panel-header px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-chart-bar text-sky-700"></i>
-                                <h2 class="font-bold text-sm text-slate-800">Laporan Transaksi Penjualan, PPOB, BRILink & Service HP</h2>
-                            </div>
-                            <div class="flex items-center gap-2 text-xs">
-                                <select id="riwayat-filter-type" onchange="renderTransactionsTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1">
-                                    <option value="ALL">Semua Jenis Transaksi</option>
-                                    <option value="POS">Penjualan Kasir (POS)</option>
-                                    <option value="PPOB">Pulsa, Data & PPOB</option>
-                                    <option value="BRILINK">Transfer & Tarik Tunai BRILink</option>
-                                    <option value="SERVICE">Service HP</option>
-                                </select>
-                                <button onclick="exportTransactionsCSV()" class="ipos-btn px-3 py-1 rounded font-semibold">
-                                    <i class="fas fa-file-excel text-emerald-600 mr-1"></i> Export Excel/CSV
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="overflow-x-auto max-h-[68vh]">
-                            <table class="w-full table-grid border-collapse">
-                                <thead>
-                                    <tr>
-                                        <th class="w-36 text-left">Tanggal / Jam</th>
-                                        <th class="w-32 text-left">No. Transaksi</th>
-                                        <th class="w-24 text-center">Modul</th>
-                                        <th class="text-left">Keterangan / Tujuan</th>
-                                        <th class="w-28 text-right">Modal / Pokok</th>
-                                        <th class="w-28 text-right">Total Jual</th>
-                                        <th class="w-28 text-right">Laba Bersih</th>
-                                        <th class="w-36 text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="riwayat-tbody">
-                                    <!-- Rendered via JS -->
-                                </tbody>
-                            </table>
-                        </div>
+            <div class="ipos-panel rounded-lg overflow-hidden">
+                <div class="ipos-panel-header px-4 pt-2.5 space-y-1.5">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-chart-bar text-sky-700"></i>
+                        <h2 class="font-bold text-sm text-slate-800">Laporan</h2>
                     </div>
-                </section>
+                    <div id="rpt-tabs" class="flex gap-1 text-xs overflow-x-auto whitespace-nowrap -mb-px">
+                        <button type="button" onclick="switchReportSubTab('master')" id="rsub-master" class="ipos-tab active px-3 py-1 rounded-t font-bold"><i class="fas fa-database mr-1.5"></i>Laporan Master Data</button>
+                        <button type="button" onclick="switchReportSubTab('pembelian')" id="rsub-pembelian" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-file-invoice mr-1.5"></i>Laporan Pembelian</button>
+                        <button type="button" onclick="switchReportSubTab('penjualan')" id="rsub-penjualan" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-cash-register mr-1.5"></i>Laporan Penjualan</button>
+                        <button type="button" onclick="switchReportSubTab('hutang')" id="rsub-hutang" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-file-invoice-dollar mr-1.5"></i>Laporan Hutang Usaha</button>
+                        <button type="button" onclick="switchReportSubTab('piutang')" id="rsub-piutang" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-hand-holding-usd mr-1.5"></i>Laporan Piutang Usaha</button>
+                        <button type="button" onclick="switchReportSubTab('labarugi')" id="rsub-labarugi" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-balance-scale mr-1.5"></i>Laporan Rugi/Laba</button>
+                        <button type="button" onclick="switchReportSubTab('kas')" id="rsub-kas" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-wallet mr-1.5"></i>Laporan Kas</button>
+                    </div>
+                </div>
+
+                <div class="p-3 sm:p-4 text-xs space-y-3">
+                    <div class="flex flex-wrap items-end justify-between gap-2">
+                        <div id="rpt-filterbar" class="flex flex-wrap items-end gap-2">
+                            <div id="rpt-date-ctl" class="flex flex-wrap items-end gap-2">
+                            <label class="flex flex-col gap-0.5 font-semibold text-slate-600">Dari
+                                <input type="date" id="rpt-from" onchange="renderReport()" class="bg-white border border-slate-300 rounded px-2 py-1 font-normal text-slate-800">
+                            </label>
+                            <label class="flex flex-col gap-0.5 font-semibold text-slate-600">Sampai
+                                <input type="date" id="rpt-to" onchange="renderReport()" class="bg-white border border-slate-300 rounded px-2 py-1 font-normal text-slate-800">
+                            </label>
+                            <button type="button" onclick="setReportRangePreset('today')" class="ipos-btn px-2.5 py-1 rounded font-semibold">Hari Ini</button>
+                            <button type="button" onclick="setReportRangePreset('month')" class="ipos-btn px-2.5 py-1 rounded font-semibold">Bulan Ini</button>
+                            <button type="button" onclick="setReportRangePreset('all')" class="ipos-btn px-2.5 py-1 rounded font-semibold">Semua</button>
+                            </div>
+                            <label id="rpt-wallet-wrap" class="hidden flex-col gap-0.5 font-semibold text-slate-600">Dompet / Sumber Dana
+                                <select id="rpt-wallet" onchange="renderReport()" class="bg-white border border-slate-300 rounded px-2 py-1 font-normal text-slate-800"></select>
+                            </label>
+                        </div>
+                        <button type="button" onclick="exportReportExcel()" class="ipos-btn px-3 py-1 rounded font-semibold">
+                            <i class="fas fa-file-excel text-emerald-600 mr-1"></i> Export Excel
+                        </button>
+                    </div>
+
+                    <div id="rpt-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-2"></div>
+                    <div id="rpt-body" class="space-y-4"></div>
+                    <div id="rpt-note" class="text-[11px] text-slate-500 italic"></div>
+                </div>
+            </div>
+        </section>
 
                 <!-- ==================== MENU 12: PETUNJUK DAN PENGUNAAN ==================== -->
                 <section id="view-petunjuk" class="hidden p-3 sm:p-4 max-w-5xl mx-auto">
@@ -3346,7 +3351,18 @@
 
         // ---------- Hash password (PBKDF2-HMAC-SHA256, murni JS agar jalan di semua browser/konteks) ----------
         const PW_PREFIX = 'pbkdf2$';
-        const PW_ITER = 40000;
+        // Iterasi PBKDF2-HMAC-SHA256. Jumlah iterasi ikut tersimpan di setiap hash, sehingga hash lama tetap bisa diverifikasi.
+        // - WebCrypto (cepat; butuh https/localhost): 600.000 (anjuran OWASP untuk SHA-256)
+        // - JS murni (cadangan untuk konteks tanpa WebCrypto, jauh lebih lambat): 100.000
+        const PW_ITER_SUBTLE = 600000;
+        const PW_ITER_JS = 100000;
+        const PW_ITER_MAX = 10000000; // batas wajar agar data yang dirusak tidak membekukan aplikasi
+        function hasSubtleCrypto() {
+            return !!(window.crypto && window.crypto.subtle && window.crypto.subtle.importKey);
+        }
+        function getPasswordTargetIter() {
+            return hasSubtleCrypto() ? PW_ITER_SUBTLE : PW_ITER_JS;
+        }
         const SHA256_K = new Uint32Array([
             0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
             0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -3433,34 +3449,55 @@
             return typeof v === 'string' && v.startsWith(PW_PREFIX);
         }
 
-        function hashPassword(plain) {
+        async function derivePasswordKey(passBytes, saltBytes, iter) {
+            if (hasSubtleCrypto()) {
+                try {
+                    const key = await window.crypto.subtle.importKey('raw', passBytes, 'PBKDF2', false, ['deriveBits']);
+                    const bits = await window.crypto.subtle.deriveBits(
+                        { name: 'PBKDF2', hash: 'SHA-256', salt: saltBytes, iterations: iter }, key, 256);
+                    return new Uint8Array(bits);
+                } catch (e) { /* jatuh ke JS murni */ }
+            }
+            await new Promise(r => setTimeout(r, 0)); // beri kesempatan layar menggambar sebelum hitungan berat
+            return pbkdf2Sha256(passBytes, saltBytes, iter);
+        }
+
+        async function hashPassword(plain) {
             const salt = new Uint8Array(16);
             if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(salt);
             else for (let i = 0; i < salt.length; i++) salt[i] = Math.floor(Math.random() * 256);
-            const dk = pbkdf2Sha256(new TextEncoder().encode(String(plain ?? '')), salt, PW_ITER);
-            return `${PW_PREFIX}${PW_ITER}$${bytesToHex(salt)}$${bytesToHex(dk)}`;
+            const iter = getPasswordTargetIter();
+            const dk = await derivePasswordKey(new TextEncoder().encode(String(plain ?? '')), salt, iter);
+            return `${PW_PREFIX}${iter}$${bytesToHex(salt)}$${bytesToHex(dk)}`;
         }
 
-        function verifyPassword(stored, plain) {
+        async function verifyPassword(stored, plain) {
             if (!isPasswordHashed(stored)) return stored === plain; // data lama (teks biasa), dimigrasi saat login
             const parts = stored.split('$'); // ['pbkdf2', iterasi, salt, hash]
             if (parts.length !== 4) return false;
             const iter = parseInt(parts[1], 10);
-            if (!(iter > 0)) return false;
-            const dk = bytesToHex(pbkdf2Sha256(new TextEncoder().encode(String(plain ?? '')), hexToBytes(parts[2]), iter));
+            if (!(iter > 0) || iter > PW_ITER_MAX) return false;
+            const dk = bytesToHex(await derivePasswordKey(new TextEncoder().encode(String(plain ?? '')), hexToBytes(parts[2]), iter));
             let diff = dk.length ^ parts[3].length;
             for (let i = 0; i < dk.length; i++) diff |= dk.charCodeAt(i) ^ (parts[3].charCodeAt(i) || 0);
             return diff === 0;
         }
 
-        function migrateLegacyPasswords() {
+        // true jika hash memakai iterasi lebih sedikit dari target perangkat ini
+        function isPasswordHashWeak(stored) {
+            if (!isPasswordHashed(stored)) return false;
+            const iter = parseInt(String(stored).split('$')[1], 10);
+            return !(iter >= getPasswordTargetIter());
+        }
+
+        async function migrateLegacyPasswords() {
             let changed = false;
-            (appState.users || []).forEach(u => {
+            for (const u of (appState.users || [])) {
                 if (u && !isPasswordHashed(u.password)) {
-                    u.password = hashPassword(String(u.password ?? ''));
+                    u.password = await hashPassword(String(u.password ?? ''));
                     changed = true;
                 }
-            });
+            }
             return changed;
         }
 
@@ -3828,9 +3865,19 @@
                 ? appState.users
                 : getDefaultUsersSeed();
 
-            const matchedAccount = usersList.find(
-                u => u.username.toLowerCase() === userInput.toLowerCase() && verifyPassword(u.password, passInput)
-            );
+            const submitBtn = e.submitter || e.target.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+            let matchedAccount = null;
+            try {
+                for (const u of usersList) {
+                    if (u.username.toLowerCase() === userInput.toLowerCase() && await verifyPassword(u.password, passInput)) {
+                        matchedAccount = u;
+                        break;
+                    }
+                }
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
 
             if (!matchedAccount) {
                 errEl.classList.remove('hidden');
@@ -3850,7 +3897,14 @@
             document.getElementById('ipos-login-modal').classList.add('hidden');
 
             await loadDatabaseForActiveTenant();
-            if (migrateLegacyPasswords()) await saveAppState(); // ubah password teks biasa menjadi hash
+            let pwChanged = await migrateLegacyPasswords(); // ubah password teks biasa menjadi hash
+            // Naikkan kekuatan hash lama memakai password yang baru saja diketik (hash yang sama = password yang sama)
+            const liveUser = (appState.users || []).find(u => u && u.password === matchedAccount.password);
+            if (liveUser && isPasswordHashWeak(liveUser.password)) {
+                liveUser.password = await hashPassword(passInput);
+                pwChanged = true;
+            }
+            if (pwChanged) await saveAppState();
             updateDatabaseIdentityUI();
             refreshAllUI();
             showToast(`Berhasil login ke [${activeDatabaseName}] sebagai ${currentUser.username} (${currentUser.role})`, 'success');
@@ -8410,28 +8464,513 @@
             setT('pl-net-profit', formatRp(net));
         }
 
-        function renderTransactionsTable() {
-            const tbody = document.getElementById('riwayat-tbody');
-            if (!tbody) return;
-            const f = document.getElementById('riwayat-filter-type')?.value || 'ALL';
-            const list = f === 'ALL' ? appState.transactions : appState.transactions.filter(t => t.module === f);
+        // =========================================================================
+        // LAPORAN: 7 sub menu (Master Data, Pembelian, Penjualan, Hutang, Piutang, Rugi/Laba, Kas)
+        // =========================================================================
+        const REPORT_KEYS = ['master', 'pembelian', 'penjualan', 'hutang', 'piutang', 'labarugi', 'kas'];
+        let activeReportTab = 'master';
+        let currentReportData = null;
 
-            tbody.innerHTML = list.map(t => `
-                <tr>
-                    <td class="font-mono text-[11px]">${new Date(t.date).toLocaleString('id-ID')}</td>
-                    <td class="font-mono font-bold text-sky-900">${esc(t.id)}</td>
-                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-bold text-[10px]">${t.module}</span></td>
-                    <td>${esc(t.description)} <span class="text-slate-500">(${esc(t.customer)})</span></td>
-                    <td class="text-right font-mono">${formatRp(t.modal)}</td>
-                    <td class="text-right font-mono font-bold text-blue-900">${formatRp(t.total)}</td>
-                    <td class="text-right font-mono font-bold text-emerald-700">${formatRp(t.profit)}</td>
-                    <td class="text-center space-x-1">
-                        <button type="button" onclick="reprintTransactionById('${escJs(t.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]" title="Cetak Struk"><i class="fas fa-print"></i></button>
-                        <button type="button" onclick="openEditTransactionModal('${escJs(t.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button type="button" onclick="openDeleteTransactionModal('${escJs(t.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+        function rptPad(n) { return String(n).padStart(2, '0'); }
+        function rptLocalDay(v) {
+            if (!v) return '';
+            const s = String(v);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+            const d = new Date(s);
+            if (isNaN(d.getTime())) return '';
+            return `${d.getFullYear()}-${rptPad(d.getMonth() + 1)}-${rptPad(d.getDate())}`;
+        }
+        function rptFmtDay(v) {
+            const day = rptLocalDay(v);
+            if (!day) return '-';
+            const [y, m, d] = day.split('-');
+            return `${d}/${m}/${y}`;
+        }
+        function rptFmtDateTime(v) {
+            const d = new Date(v);
+            return isNaN(d.getTime()) ? '-' : d.toLocaleString('id-ID');
+        }
+        function rptInRange(v) {
+            const from = document.getElementById('rpt-from')?.value || '';
+            const to = document.getElementById('rpt-to')?.value || '';
+            if (!from && !to) return true;
+            const day = rptLocalDay(v);
+            if (!day) return false;
+            return !(from && day < from) && !(to && day > to);
+        }
+        function rptPeriodText() {
+            const from = document.getElementById('rpt-from')?.value || '';
+            const to = document.getElementById('rpt-to')?.value || '';
+            if (!from && !to) return 'Periode: Semua tanggal';
+            return `Periode: ${from ? rptFmtDay(from) : 'awal'} s/d ${to ? rptFmtDay(to) : 'sekarang'}`;
+        }
+        function rptTs(v) {
+            const t = new Date(v).getTime();
+            return isNaN(t) ? 0 : t;
+        }
+        function rptBadge(text, tone) {
+            return { html: `<span class="px-2 py-0.5 rounded bg-${tone}-100 text-${tone}-800 font-bold text-[10px]">${esc(text)}</span>`, raw: text };
+        }
+        function rptCell(v) {
+            if (v && typeof v === 'object') return v.html !== undefined ? v.html : esc(v.raw);
+            if (typeof v === 'number') return formatRp(v);
+            return esc(v);
+        }
+        function rptRaw(v) {
+            if (v && typeof v === 'object') return v.raw !== undefined ? v.raw : '';
+            return v === undefined || v === null ? '' : v;
+        }
+
+        function setReportRangePreset(p) {
+            const fromEl = document.getElementById('rpt-from');
+            const toEl = document.getElementById('rpt-to');
+            if (!fromEl || !toEl) return;
+            const today = getTodayIsoDate();
+            if (p === 'today') { fromEl.value = today; toEl.value = today; }
+            else if (p === 'month') { fromEl.value = today.slice(0, 8) + '01'; toEl.value = today; }
+            else { fromEl.value = ''; toEl.value = ''; }
+            renderReport();
+        }
+
+        function switchReportSubTab(key) {
+            activeReportTab = REPORT_KEYS.includes(key) ? key : 'master';
+            REPORT_KEYS.forEach(k => document.getElementById('rsub-' + k)?.classList.toggle('active', k === activeReportTab));
+            renderReport();
+        }
+
+        // ---------- 1. Laporan Master Data ----------
+        function buildMasterReport() {
+            const items = appState.items || [];
+            const sup = appState.suppliers || [];
+            const cus = appState.customers || [];
+            const stockQty = items.reduce((s, i) => s + (Number(i.stock) || 0), 0);
+            const stockVal = items.reduce((s, i) => s + (Number(i.stock) || 0) * (Number(i.cost) || 0), 0);
+            const emptyCount = items.filter(i => (Number(i.stock) || 0) <= 0).length;
+            const itemRows = items.map(i => {
+                const st = Number(i.stock) || 0;
+                return [i.code, i.name, i.category, i.unit,
+                    st <= 0 ? { html: `<span class="text-red-600 font-bold">${formatRp(st)}</span>`, raw: st } : st,
+                    Number(i.cost) || 0, Number(i.price) || 0, Number(i.wholesalePrice) || 0,
+                    st * (Number(i.cost) || 0)];
+            });
+            return {
+                title: 'Laporan Master Data',
+                summary: [
+                    { l: 'Jumlah Barang', v: items.length },
+                    { l: 'Total Stok (unit)', v: formatRp(stockQty) },
+                    { l: 'Nilai Stok (harga beli)', v: stockVal, rp: true, c: 'text-sky-900' },
+                    { l: 'Barang Stok Kosong', v: emptyCount, c: emptyCount ? 'text-red-700' : 'text-slate-800' },
+                    { l: 'Jumlah Supplier', v: sup.length },
+                    { l: 'Jumlah Pelanggan', v: cus.length }
+                ],
+                sections: [
+                    {
+                        title: 'Daftar Barang & Harga',
+                        cols: [{ h: 'Kode' }, { h: 'Nama Barang' }, { h: 'Kategori' }, { h: 'Satuan' },
+                            { h: 'Stok', a: 'right' }, { h: 'Harga Beli', a: 'right' }, { h: 'Harga Jual', a: 'right' },
+                            { h: 'Harga Grosir', a: 'right' }, { h: 'Nilai Stok', a: 'right' }],
+                        rows: itemRows,
+                        foot: ['', 'TOTAL', '', '', stockQty, '', '', '', stockVal]
+                    },
+                    {
+                        title: 'Daftar Supplier',
+                        cols: [{ h: 'Kode' }, { h: 'Nama Supplier' }, { h: 'Telepon' }, { h: 'Alamat' }, { h: 'Keterangan' }],
+                        rows: sup.map(s => [s.code, s.name, s.phone, s.address, s.note])
+                    },
+                    {
+                        title: 'Daftar Pelanggan',
+                        cols: [{ h: 'Kode' }, { h: 'Nama Pelanggan' }, { h: 'Grup' }, { h: 'Telepon' }, { h: 'Alamat' }],
+                        rows: cus.map(c => [c.code, c.name, c.group, c.phone, c.address])
+                    }
+                ],
+                note: 'Master data adalah kondisi saat ini, sehingga tidak memakai filter tanggal.'
+            };
+        }
+
+        // ---------- 2. Laporan Pembelian ----------
+        function buildPurchaseReport() {
+            const recs = (appState.purchaseRecords || []).filter(r => rptInRange(r.date))
+                .sort((a, b) => rptLocalDay(b.date).localeCompare(rptLocalDay(a.date)));
+            const rets = (appState.purchaseReturns || []).filter(r => rptInRange(r.date))
+                .sort((a, b) => rptLocalDay(b.date).localeCompare(rptLocalDay(a.date)));
+            const total = recs.reduce((s, r) => s + (Number(r.total) || 0), 0);
+            const tempo = recs.filter(r => r.isTempo).reduce((s, r) => s + (Number(r.total) || 0), 0);
+            const qty = recs.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+            const retTotal = rets.reduce((s, r) => s + (Number(r.total) || 0), 0);
+            return {
+                title: 'Laporan Pembelian',
+                summary: [
+                    { l: 'Total Pembelian', v: total, rp: true, c: 'text-sky-900' },
+                    { l: 'Jumlah Faktur', v: recs.length },
+                    { l: 'Pembelian Tempo (Utang)', v: tempo, rp: true, c: 'text-amber-700' },
+                    { l: 'Pembelian Tunai/Dompet', v: total - tempo, rp: true },
+                    { l: 'Retur Pembelian', v: retTotal, rp: true, c: 'text-red-700' },
+                    { l: 'Pembelian Bersih', v: total - retTotal, rp: true, c: 'text-emerald-700' }
+                ],
+                sections: [
+                    {
+                        title: 'Faktur Pembelian',
+                        cols: [{ h: 'Tanggal' }, { h: 'No. Faktur' }, { h: 'Supplier' }, { h: 'Qty', a: 'right' },
+                            { h: 'Total', a: 'right' }, { h: 'Pembayaran' }, { h: 'Jatuh Tempo' }],
+                        rows: recs.map(r => [rptFmtDay(r.date), r.id, r.supplier, Number(r.qty) || 0, Number(r.total) || 0,
+                            r.isTempo ? rptBadge('TEMPO', 'amber') : getWalletNameById(r.sourceWallet),
+                            r.isTempo ? rptFmtDay(r.dueDate) : '-']),
+                        foot: ['', 'TOTAL', '', qty, total, '', '']
+                    },
+                    {
+                        title: 'Retur Pembelian',
+                        cols: [{ h: 'Tanggal' }, { h: 'No. Retur' }, { h: 'Supplier' }, { h: 'Barang' },
+                            { h: 'Qty', a: 'right' }, { h: 'Nilai Retur', a: 'right' }, { h: 'Pengembalian' }],
+                        rows: rets.map(r => [rptFmtDay(r.date), r.id, r.supplier, r.itemName, Number(r.qty) || 0, Number(r.total) || 0,
+                            r.wallet === 'POTONG_UTANG' ? 'Potong Utang' : getWalletNameById(r.wallet)]),
+                        foot: ['', 'TOTAL', '', '', rets.reduce((s, r) => s + (Number(r.qty) || 0), 0), retTotal, '']
+                    }
+                ]
+            };
+        }
+
+        // ---------- 3. Laporan Penjualan ----------
+        function buildSalesReport() {
+            const trx = (appState.transactions || []).filter(t => rptInRange(t.date))
+                .sort((a, b) => rptTs(b.date) - rptTs(a.date));
+            const rets = (appState.salesReturns || []).filter(r => rptInRange(r.date))
+                .sort((a, b) => rptLocalDay(b.date).localeCompare(rptLocalDay(a.date)));
+            const total = trx.reduce((s, t) => s + (Number(t.total) || 0), 0);
+            const modal = trx.reduce((s, t) => s + (Number(t.modal) || 0), 0);
+            const profit = trx.reduce((s, t) => s + (Number(t.profit) || 0), 0);
+            const retTotal = rets.reduce((s, r) => s + (Number(r.total) || 0), 0);
+            const actions = t => ({
+                raw: '',
+                html: `<button type="button" onclick="reprintTransactionById('${escJs(t.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px]" title="Cetak Struk"><i class="fas fa-print"></i></button>
+                       <button type="button" onclick="openEditTransactionModal('${escJs(t.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-sky-700" title="Edit"><i class="fas fa-edit"></i></button>
+                       <button type="button" onclick="openDeleteTransactionModal('${escJs(t.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus"><i class="fas fa-trash"></i></button>`
+            });
+            return {
+                title: 'Laporan Penjualan',
+                summary: [
+                    { l: 'Total Penjualan', v: total, rp: true, c: 'text-sky-900' },
+                    { l: 'Total Modal / Pokok', v: modal, rp: true },
+                    { l: 'Laba Transaksi', v: profit, rp: true, c: 'text-emerald-700' },
+                    { l: 'Jumlah Transaksi', v: trx.length },
+                    { l: 'Retur Penjualan', v: retTotal, rp: true, c: 'text-red-700' }
+                ],
+                sections: [
+                    {
+                        title: 'Transaksi Penjualan, PPOB, BRILink & Service HP',
+                        cols: [{ h: 'Tanggal / Jam' }, { h: 'No. Transaksi' }, { h: 'Modul', a: 'center' }, { h: 'Keterangan / Pelanggan' },
+                            { h: 'Modal / Pokok', a: 'right' }, { h: 'Total Jual', a: 'right' }, { h: 'Laba', a: 'right' },
+                            { h: 'Aksi', a: 'center', noExport: true }],
+                        rows: trx.map(t => [rptFmtDateTime(t.date), t.id, rptBadge(t.module, 'sky'),
+                            `${t.description || ''} (${t.customer || '-'})`,
+                            Number(t.modal) || 0, Number(t.total) || 0, Number(t.profit) || 0, actions(t)]),
+                        foot: ['', 'TOTAL', '', '', modal, total, profit, '']
+                    },
+                    {
+                        title: 'Retur Penjualan',
+                        cols: [{ h: 'Tanggal' }, { h: 'No. Retur' }, { h: 'Pelanggan' }, { h: 'Barang' },
+                            { h: 'Qty', a: 'right' }, { h: 'Nilai Retur', a: 'right' }, { h: 'Pengembalian' }],
+                        rows: rets.map(r => [rptFmtDay(r.date), r.id, r.customer, r.itemName, Number(r.qty) || 0, Number(r.total) || 0,
+                            r.wallet === 'POTONG_PIUTANG' ? 'Potong Piutang' : getWalletNameById(r.wallet)]),
+                        foot: ['', 'TOTAL', '', '', rets.reduce((s, r) => s + (Number(r.qty) || 0), 0), retTotal, '']
+                    }
+                ]
+            };
+        }
+
+        // ---------- 4 & 5. Laporan Hutang Usaha / Piutang Usaha ----------
+        function buildDebtReport(type) {
+            const isP = type === 'PIUTANG';
+            const today = getTodayIsoDate();
+            const partyLabel = isP ? 'Pelanggan' : 'Supplier';
+            const all = (appState.debtsReceivables || []).filter(d => d.type === type);
+            const list = all.filter(d => rptInRange(d.date))
+                .sort((a, b) => rptLocalDay(b.date).localeCompare(rptLocalDay(a.date)));
+            const calc = d => {
+                const total = Number(d.totalAmount) || 0;
+                const paid = Math.min(total, Number(d.paidAmount) || 0);
+                const sisa = Math.max(0, total - paid);
+                const late = sisa > 0 && d.dueDate && String(d.dueDate) < today;
+                return { total, paid, sisa, late };
+            };
+            let tTotal = 0, tPaid = 0, tSisa = 0, tLate = 0, open = 0;
+            const rows = list.map(d => {
+                const c = calc(d);
+                tTotal += c.total; tPaid += c.paid; tSisa += c.sisa;
+                if (c.sisa > 0) open++;
+                if (c.late) tLate += c.sisa;
+                const st = c.sisa <= 0 ? rptBadge('LUNAS', 'emerald') : (c.late ? rptBadge('TERLAMBAT', 'red') : rptBadge('BELUM LUNAS', 'amber'));
+                return [rptFmtDay(d.date), d.id, d.party, d.description, d.dueDate ? rptFmtDay(d.dueDate) : '-', c.total, c.paid, c.sisa, st];
+            });
+            const perParty = {};
+            list.forEach(d => {
+                const c = calc(d);
+                if (c.sisa <= 0) return;
+                const k = d.party || '-';
+                if (!perParty[k]) perParty[k] = { n: 0, sisa: 0 };
+                perParty[k].n++; perParty[k].sisa += c.sisa;
+            });
+            const partyRows = Object.entries(perParty).sort((a, b) => b[1].sisa - a[1].sisa).map(([k, v]) => [k, v.n, v.sisa]);
+            const payRows = [];
+            list.forEach(d => (Array.isArray(d.payments) ? d.payments : []).forEach(p => {
+                if (rptInRange(p.date)) payRows.push({ p, d });
+            }));
+            payRows.sort((a, b) => rptTs(b.p.date) - rptTs(a.p.date));
+            const payTotal = payRows.reduce((s, x) => s + (Number(x.p.amount) || 0), 0);
+            const word = isP ? 'Piutang' : 'Utang';
+            return {
+                title: isP ? 'Laporan Piutang Usaha' : 'Laporan Hutang Usaha',
+                summary: [
+                    { l: `Total ${word}`, v: tTotal, rp: true, c: 'text-sky-900' },
+                    { l: 'Sudah Dibayar', v: tPaid, rp: true, c: 'text-emerald-700' },
+                    { l: 'Sisa Tagihan', v: tSisa, rp: true, c: 'text-red-700' },
+                    { l: 'Lewat Jatuh Tempo', v: tLate, rp: true, c: tLate ? 'text-red-700' : 'text-slate-800' },
+                    { l: 'Dokumen Belum Lunas', v: open }
+                ],
+                sections: [
+                    {
+                        title: `Daftar ${word} ${isP ? '(Kasbon Pelanggan)' : '(Supplier)'}`,
+                        cols: [{ h: 'Tanggal' }, { h: 'No. Ref' }, { h: partyLabel }, { h: 'Keterangan' }, { h: 'Jatuh Tempo' },
+                            { h: 'Total', a: 'right' }, { h: 'Dibayar', a: 'right' }, { h: 'Sisa', a: 'right' }, { h: 'Status', a: 'center' }],
+                        rows,
+                        foot: ['', 'TOTAL', '', '', '', tTotal, tPaid, tSisa, '']
+                    },
+                    {
+                        title: `Rekap Sisa ${word} per ${partyLabel}`,
+                        cols: [{ h: partyLabel }, { h: 'Dokumen Belum Lunas', a: 'right' }, { h: 'Sisa Tagihan', a: 'right' }],
+                        rows: partyRows,
+                        foot: ['TOTAL', open, tSisa]
+                    },
+                    {
+                        title: `Riwayat Pembayaran ${word}`,
+                        cols: [{ h: 'Tanggal / Jam' }, { h: 'No. Ref' }, { h: partyLabel }, { h: 'Dompet' }, { h: 'Jumlah', a: 'right' }],
+                        rows: payRows.map(x => [rptFmtDateTime(x.p.date), x.d.id, x.d.party, getWalletNameById(x.p.wallet), Number(x.p.amount) || 0]),
+                        foot: ['', '', '', 'TOTAL', payTotal]
+                    }
+                ],
+                note: 'Filter tanggal memakai tanggal pencatatan dokumen. Pilih "Semua" untuk melihat seluruh sisa tagihan yang masih berjalan.'
+            };
+        }
+
+        // ---------- 6. Laporan Rugi/Laba ----------
+        function buildProfitLossReport() {
+            const trx = (appState.transactions || []).filter(t => rptInRange(t.date));
+            const rets = (appState.salesReturns || []).filter(r => rptInRange(r.date));
+            const retTotal = rets.reduce((s, r) => s + (Number(r.total) || 0), 0);
+            const retCogs = rets.reduce((s, r) => s + (Number(r.cost) || 0) * (Number(r.qty) || 0), 0);
+            const mod = m => {
+                const l = trx.filter(t => t.module === m);
+                return { n: l.length, rev: l.reduce((s, t) => s + (Number(t.total) || 0), 0), cogs: l.reduce((s, t) => s + (Number(t.modal) || 0), 0) };
+            };
+            const defs = [
+                ['Penjualan Kasir (POS)', mod('POS')],
+                ['Pulsa, Data & PPOB', mod('PPOB')],
+                ['Transfer & Tarik Tunai BRILink', mod('BRILINK')],
+                ['Service HP', mod('SERVICE')]
+            ];
+            const lines = defs.map(([name, m]) => [name, m.n, m.rev, m.cogs, m.rev - m.cogs]);
+            lines.push(['Retur Penjualan (pengurang)', rets.length, -retTotal, -retCogs, -retTotal + retCogs]);
+            const rev = lines.reduce((s, r) => s + r[2], 0);
+            const cogs = lines.reduce((s, r) => s + r[3], 0);
+            const net = rev - cogs;
+            const nTrx = trx.length;
+            return {
+                title: 'Laporan Rugi/Laba',
+                summary: [
+                    { l: 'Total Pendapatan', v: rev, rp: true, c: 'text-sky-900' },
+                    { l: 'HPP & Modal', v: cogs, rp: true, c: 'text-red-700' },
+                    { l: net >= 0 ? 'Laba Bersih Usaha' : 'Rugi Usaha', v: net, rp: true, c: net >= 0 ? 'text-emerald-700' : 'text-red-700' },
+                    { l: 'Jumlah Transaksi', v: nTrx }
+                ],
+                sections: [{
+                    title: 'Rincian Pendapatan, HPP & Laba per Modul',
+                    cols: [{ h: 'Sumber Pendapatan' }, { h: 'Jml Transaksi', a: 'right' }, { h: 'Pendapatan', a: 'right' },
+                        { h: 'HPP / Modal', a: 'right' }, { h: 'Laba / (Rugi)', a: 'right' }],
+                    rows: lines,
+                    foot: ['LABA BERSIH USAHA', nTrx, rev, cogs, net]
+                }],
+                note: 'Dihitung sama seperti ringkasan di menu Akutansi: Pendapatan dikurangi HPP/Modal. Pembelian stok menjadi HPP saat barang terjual, dan biaya operasional (sewa, listrik, gaji, dsb.) tidak dihitung.'
+            };
+        }
+
+        // ---------- 7. Laporan Kas ----------
+        function buildCashReport() {
+            const wl = appState.walletList || [];
+            const nameToId = {};
+            wl.forEach(w => { nameToId[w.name] = w.id; });
+            const mv = [];
+            const add = (date, wid, ref, desc, inn, out) => {
+                if (!walletExists(wid)) return;
+                inn = Number(inn) || 0; out = Number(out) || 0;
+                if (!inn && !out) return;
+                mv.push({ date, ts: rptTs(date), wid, ref, desc, inn, out });
+            };
+            (appState.transactions || []).forEach(t => {
+                add(t.date, t.paymentMethod, t.id, `${t.module}: ${t.description || ''}`, t.total, 0);
+                if (t.module === 'PPOB' || t.module === 'BRILINK') add(t.date, t.sourceWallet, t.id, `Modal ${t.module}: ${t.description || ''}`, 0, t.modal);
+            });
+            (appState.purchaseRecords || []).forEach(r => {
+                if (!r.isTempo) add(r.date, r.sourceWallet, r.id, `Pembelian dari ${r.supplier || '-'}`, 0, r.total);
+            });
+            (appState.purchaseReturns || []).forEach(r => {
+                if (r.wallet !== 'POTONG_UTANG') add(r.date, r.wallet, r.id, `Retur pembelian ${r.itemName || ''}`, r.total, 0);
+            });
+            (appState.salesReturns || []).forEach(r => {
+                if (r.wallet !== 'POTONG_PIUTANG') add(r.date, r.wallet, r.id, `Retur penjualan ${r.itemName || ''}`, 0, r.total);
+            });
+            (appState.debtsReceivables || []).forEach(d => (Array.isArray(d.payments) ? d.payments : []).forEach(p => {
+                if (d.type === 'PIUTANG') add(p.date, p.wallet, d.id, `Terima pembayaran piutang ${d.party || ''}`, p.amount, 0);
+                else add(p.date, p.wallet, d.id, `Bayar utang ke ${d.party || ''}`, 0, p.amount);
+            }));
+            (appState.fundTransfers || []).forEach(f => {
+                const note = f.note ? ` - ${f.note}` : '';
+                add(f.date, nameToId[f.from], 'MUTASI', `Mutasi ke ${f.to}${note}`, 0, f.amount);
+                add(f.date, nameToId[f.to], 'MUTASI', `Mutasi dari ${f.from}${note}`, f.amount, 0);
+            });
+
+            const inRange = mv.filter(m => rptInRange(m.date));
+            const sel = document.getElementById('rpt-wallet')?.value || 'ALL';
+            const scoped = sel === 'ALL' ? inRange : inRange.filter(m => m.wid === sel);
+            scoped.sort((a, b) => rptLocalDay(b.date).localeCompare(rptLocalDay(a.date)) || b.ts - a.ts);
+            const sum = (arr, k) => arr.reduce((s, m) => s + m[k], 0);
+            const tIn = sum(scoped, 'inn'), tOut = sum(scoped, 'out');
+            const saldo = sel === 'ALL'
+                ? wl.reduce((s, w) => s + (Number(appState.wallets[w.id]) || 0), 0)
+                : (Number(appState.wallets[sel]) || 0);
+            const recapRows = wl.map(w => {
+                const l = inRange.filter(m => m.wid === w.id);
+                const i = sum(l, 'inn'), o = sum(l, 'out');
+                return [w.name, Number(appState.wallets[w.id]) || 0, i, o, i - o];
+            });
+            return {
+                title: 'Laporan Kas',
+                summary: [
+                    { l: sel === 'ALL' ? 'Saldo Saat Ini (Semua Dompet)' : `Saldo Saat Ini - ${getWalletNameById(sel)}`, v: saldo, rp: true, c: 'text-sky-900' },
+                    { l: 'Total Kas Masuk', v: tIn, rp: true, c: 'text-emerald-700' },
+                    { l: 'Total Kas Keluar', v: tOut, rp: true, c: 'text-red-700' },
+                    { l: 'Selisih Bersih Periode', v: tIn - tOut, rp: true, c: tIn - tOut >= 0 ? 'text-emerald-700' : 'text-red-700' }
+                ],
+                sections: [
+                    {
+                        title: 'Rekap Arus Kas per Dompet',
+                        cols: [{ h: 'Dompet / Sumber Dana' }, { h: 'Saldo Saat Ini', a: 'right' }, { h: 'Kas Masuk', a: 'right' },
+                            { h: 'Kas Keluar', a: 'right' }, { h: 'Selisih', a: 'right' }],
+                        rows: recapRows,
+                        foot: ['TOTAL', recapRows.reduce((s, r) => s + r[1], 0), recapRows.reduce((s, r) => s + r[2], 0),
+                            recapRows.reduce((s, r) => s + r[3], 0), recapRows.reduce((s, r) => s + r[4], 0)]
+                    },
+                    {
+                        title: 'Mutasi Kas',
+                        cols: [{ h: 'Tanggal' }, { h: 'Dompet' }, { h: 'Referensi' }, { h: 'Keterangan' },
+                            { h: 'Masuk', a: 'right' }, { h: 'Keluar', a: 'right' }],
+                        rows: scoped.map(m => [rptFmtDay(m.date), getWalletNameById(m.wid), m.ref, m.desc, m.inn || '', m.out || '']),
+                        foot: ['', '', '', 'TOTAL', tIn, tOut]
+                    }
+                ],
+                note: 'Disusun dari catatan transaksi yang tersimpan saat ini. Saldo awal periode, koreksi saldo manual, dan perakitan voucher tidak tercatat sebagai arus kas, sehingga selisih periode bisa berbeda dari perubahan saldo sebenarnya.'
+            };
+        }
+
+        // ---------- Render & ekspor ----------
+        function rptSectionHtml(sec) {
+            const cols = sec.cols;
+            const cls = i => `text-${cols[i].a || 'left'}${cols[i].a === 'right' ? ' font-mono' : ''}`;
+            const th = cols.map(c => `<th class="text-${c.a || 'left'}">${esc(c.h)}</th>`).join('');
+            const trs = sec.rows.length
+                ? sec.rows.map(r => `<tr>${r.map((v, i) => `<td class="${cls(i)}">${rptCell(v)}</td>`).join('')}</tr>`).join('')
+                : `<tr><td colspan="${cols.length}" class="text-center italic text-slate-400 py-3">Tidak ada data pada periode ini.</td></tr>`;
+            const foot = sec.foot && sec.rows.length
+                ? `<tfoot><tr class="font-bold bg-slate-100">${sec.foot.map((v, i) => `<td class="${cls(i)}">${rptCell(v)}</td>`).join('')}</tr></tfoot>`
+                : '';
+            return `
+                <div class="ipos-panel rounded-lg overflow-hidden">
+                    <div class="ipos-panel-header px-3 py-1.5 font-bold flex items-center justify-between gap-2">
+                        <span>${esc(sec.title)}</span>
+                        <span class="font-normal text-slate-500">${sec.rows.length} baris</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-[60vh]">
+                        <table class="w-full table-grid border-collapse">
+                            <thead><tr>${th}</tr></thead>
+                            <tbody>${trs}</tbody>
+                            ${foot}
+                        </table>
+                    </div>
+                </div>`;
+        }
+
+        function renderReport() {
+            const view = document.getElementById('view-laporan');
+            const body = document.getElementById('rpt-body');
+            if (!view || !body || view.classList.contains('hidden')) return; // tidak perlu dirender saat tab tidak aktif
+
+            const isKas = activeReportTab === 'kas';
+            document.getElementById('rpt-date-ctl')?.classList.toggle('hidden', activeReportTab === 'master');
+            const wrap = document.getElementById('rpt-wallet-wrap');
+            if (wrap) {
+                wrap.classList.toggle('hidden', !isKas);
+                wrap.classList.toggle('flex', isKas);
+            }
+            if (isKas) {
+                const sel = document.getElementById('rpt-wallet');
+                if (sel) {
+                    const prev = sel.value || 'ALL';
+                    sel.innerHTML = `<option value="ALL">Semua Dompet</option>` +
+                        (appState.walletList || []).map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
+                    sel.value = [...sel.options].some(o => o.value === prev) ? prev : 'ALL';
+                }
+            }
+
+            let data;
+            switch (activeReportTab) {
+                case 'pembelian': data = buildPurchaseReport(); break;
+                case 'penjualan': data = buildSalesReport(); break;
+                case 'hutang': data = buildDebtReport('UTANG'); break;
+                case 'piutang': data = buildDebtReport('PIUTANG'); break;
+                case 'labarugi': data = buildProfitLossReport(); break;
+                case 'kas': data = buildCashReport(); break;
+                default: data = buildMasterReport();
+            }
+            currentReportData = data;
+
+            document.getElementById('rpt-summary').innerHTML = data.summary.map(s => `
+                <div class="bg-white border border-slate-300 rounded p-2.5">
+                    <div class="text-[10px] text-slate-500 font-semibold">${esc(s.l)}</div>
+                    <div class="font-mono font-bold text-sm ${s.c || 'text-slate-800'}">${s.rp ? 'Rp ' + formatRp(s.v) : esc(s.v)}</div>
+                </div>`).join('');
+            body.innerHTML = data.sections.map(rptSectionHtml).join('');
+            const noteEl = document.getElementById('rpt-note');
+            if (noteEl) noteEl.textContent = data.note || '';
+        }
+
+        // Dipanggil oleh refreshAllUI (nama lama dipertahankan agar pemanggil lain tetap jalan)
+        function renderTransactionsTable() { renderReport(); }
+
+        function exportReportExcel() {
+            const d = currentReportData;
+            if (!d) { showToast('Tidak ada laporan untuk diekspor.', 'error'); return; }
+            const aoa = [[d.title], [appState.settings?.storeName || activeDatabaseName]];
+            if (activeReportTab !== 'master') aoa.push([rptPeriodText()]);
+            aoa.push([]);
+            d.summary.forEach(s => aoa.push([s.l, s.rp ? Number(s.v) || 0 : s.v]));
+            d.sections.forEach(sec => {
+                const keep = sec.cols.map((c, i) => c.noExport ? -1 : i).filter(i => i >= 0);
+                aoa.push([], [sec.title], keep.map(i => sec.cols[i].h));
+                sec.rows.forEach(r => aoa.push(keep.map(i => rptRaw(r[i]))));
+                if (sec.foot && sec.rows.length) aoa.push(keep.map(i => rptRaw(sec.foot[i])));
+            });
+            const fname = `${d.title.replace(/[^A-Za-z0-9]+/g, '_')}_${activeDatabaseName}_${getTodayIsoDate()}`;
+            if (typeof XLSX !== 'undefined') {
+                const ws = XLSX.utils.aoa_to_sheet(aoa);
+                ws['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 40 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, d.title.replace(/[\\\/\?\*\[\]:]/g, '-').slice(0, 31));
+                XLSX.writeFile(wb, fname + '.xlsx');
+            } else {
+                const csv = aoa.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }));
+                a.download = fname + '.csv';
+                a.click();
+            }
         }
 
         let lastReceiptTrx = null;
@@ -8801,10 +9340,10 @@
                     u.username = username;
                     u.role = role;
                     u.location = location;
-                    if (password) u.password = hashPassword(password); // kosong = password lama dipertahankan
+                    if (password) u.password = await hashPassword(password); // kosong = password lama dipertahankan
                 }
             } else {
-                appState.users.push({ username, password: hashPassword(password), role, location });
+                appState.users.push({ username, password: await hashPassword(password), role, location });
             }
             closeUserFormModal();
             await saveAppState();
@@ -8920,7 +9459,7 @@
             if (!appState.settings) appState.settings = {};
             if (!appState.settings.supabaseUrl && keepSbUrl) appState.settings.supabaseUrl = keepSbUrl;
             if (!appState.settings.supabaseKey && keepSbKey) appState.settings.supabaseKey = keepSbKey;
-            migrateLegacyPasswords(); // backup lama bisa berisi password teks biasa
+            await migrateLegacyPasswords(); // backup lama bisa berisi password teks biasa
 
             ensureCategoriesIntegrity();
             ensureWalletListIntegrity();
