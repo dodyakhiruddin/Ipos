@@ -1919,7 +1919,7 @@
                                             <th class="w-28 text-right">Sudah Dibayar</th>
                                             <th class="w-28 text-right">Sisa Tagihan</th>
                                             <th class="w-24 text-center">Status</th>
-                                            <th class="w-32 text-center">Aksi</th>
+                                            <th class="w-36 text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="up-tbody"></tbody>
@@ -3000,7 +3000,7 @@
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
                         <label class="block font-bold mb-1">Jenis Catatan</label>
-                        <select id="debt-type-input" onchange="toggleDebtWalletOption()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-bold">
+                        <select id="debt-type-input" onchange="onDebtTypeChange()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-bold">
                             <option value="PIUTANG">PIUTANG (Pelanggan Kasbon)</option>
                             <option value="UTANG">UTANG (Utang Toko / Supplier)</option>
                         </select>
@@ -3011,13 +3011,15 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block font-bold mb-1">Nama Pelanggan / Supplier</label>
-                    <input type="text" id="debt-party-input" required placeholder="Nama pihak terkait..." class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                    <label id="debt-party-label" class="block font-bold mb-1">Pelanggan (Data Pelanggan)</label>
+                    <select id="debt-party-select" onchange="onDebtPartyChange()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                    <input type="text" id="debt-party-input" oninput="updateDebtPartyInfo()" placeholder="Ketik nama pihak baru..." class="hidden mt-1.5 w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                    <div id="debt-party-info" class="hidden mt-1.5 bg-amber-50 border border-amber-200 rounded p-2 space-y-0.5"></div>
                 </div>
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
                         <label class="block font-bold mb-1">Nominal (Rp)</label>
-                        <input type="number" id="debt-amount-input" min="100" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                        <input type="number" id="debt-amount-input" min="100" required oninput="updateDebtPartyInfo()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Pengaruh ke Saldo</label>
@@ -9297,13 +9299,15 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 return true;
             });
 
+            const isAdm = isCurrentUserAdmin();
             tbody.innerHTML = filtered.map(x => {
                 const rem = Math.max(0, x.totalAmount - x.paidAmount);
+                const partyBal = getPartyDebtBalance(x.type, x.party);
                 return `
                     <tr>
                         <td class="font-mono text-[11px]">${new Date(x.date).toLocaleDateString('id-ID')}</td>
                         <td class="font-mono font-bold">${esc(x.id)}</td>
-                        <td class="font-semibold">${esc(x.party)}</td>
+                        <td class="font-semibold">${esc(x.party)}${partyBal.sisa > 0 ? `<div class="text-[10px] font-normal text-slate-500">Total sisa ${x.type === 'PIUTANG' ? 'piutang' : 'utang'}: <b class="font-mono text-red-700">${formatRp(partyBal.sisa)}</b> (${partyBal.n} dok.)</div>` : ''}</td>
                         <td>${esc(x.description)}${Array.isArray(x.payments) && x.payments.length ? `<div class="text-[10px] text-slate-500 mt-0.5">Cicilan: ${x.payments.map(p => `${new Date(p.date).toLocaleDateString('id-ID')} ${formatRp(p.amount)}${p.wallet ? ' (' + esc(getWalletNameById(p.wallet)) + ')' : ''}`).join(' &bull; ')}</div>` : ''}</td>
                         <td class="text-center font-mono">${esc(x.dueDate || '-')}</td>
                         <td class="text-right font-mono">${formatRp(x.totalAmount)}</td>
@@ -9312,17 +9316,121 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                         <td class="text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${x.status === 'LUNAS' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${x.status}</span></td>
                         <td class="text-center">
                             ${rem > 0 ? `<button type="button" onclick="openDebtPayModal('${escJs(x.id)}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold">Bayar</button>` : '<span class="text-slate-400">Selesai</span>'}
+                            ${isAdm ? `<button type="button" onclick="deleteDebtRecord('${escJs(x.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600 ml-1" title="Hapus (Admin)"><i class="fas fa-trash"></i></button>` : ''}
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
+        // Total sisa utang/piutang satu pihak (dicocokkan lewat nama, tanpa membedakan huruf besar/kecil)
+        function getPartyDebtBalance(type, party) {
+            const key = String(party || '').trim().toLowerCase();
+            let sisa = 0, n = 0;
+            (appState.debtsReceivables || []).forEach(d => {
+                if (d.type !== type || String(d.party || '').trim().toLowerCase() !== key) return;
+                const rem = Math.max(0, (Number(d.totalAmount) || 0) - (Number(d.paidAmount) || 0));
+                if (rem > 0) { sisa += rem; n++; }
+            });
+            return { sisa, n };
+        }
+
+        function onDebtTypeChange() {
+            toggleDebtWalletOption();
+            populateDebtPartyOptions();
+        }
+
+        // Isi pilihan pelanggan (untuk PIUTANG) atau supplier (untuk UTANG) dari data master
+        function populateDebtPartyOptions(selectedName) {
+            const type = document.getElementById('debt-type-input').value;
+            const isP = type === 'PIUTANG';
+            const sel = document.getElementById('debt-party-select');
+            if (!sel) return;
+            const lbl = document.getElementById('debt-party-label');
+            if (lbl) lbl.textContent = isP ? 'Pelanggan (Data Pelanggan)' : 'Supplier (Data Supplier)';
+            const list = ((isP ? appState.customers : appState.suppliers) || []).filter(c => c && c.name && !(isP && /^UMUM\b/i.test(c.name)));
+            sel.innerHTML = `<option value="">-- Pilih ${isP ? 'pelanggan' : 'supplier'} terdata --</option>` +
+                list.map(c => {
+                    const b = getPartyDebtBalance(type, c.name);
+                    return `<option value="${esc(c.name)}">${esc(c.code)} - ${esc(c.name)}${b.sisa > 0 ? ' (sisa Rp ' + formatRp(b.sisa) + ')' : ''}</option>`;
+                }).join('') +
+                `<option value="__NEW__">+ ${isP ? 'Pelanggan' : 'Supplier'} baru / belum terdata (ketik manual)</option>`;
+            sel.value = selectedName && [...sel.options].some(o => o.value === selectedName) ? selectedName : '';
+            onDebtPartyChange();
+        }
+
+        function onDebtPartyChange() {
+            const sel = document.getElementById('debt-party-select');
+            const inp = document.getElementById('debt-party-input');
+            if (inp) {
+                const isNew = sel && sel.value === '__NEW__';
+                inp.classList.toggle('hidden', !isNew);
+                if (!isNew) inp.value = '';
+            }
+            updateDebtPartyInfo();
+        }
+
+        // Nama pihak yang dipilih; pilihan manual yang namanya sama dengan data master dipakai nama masternya
+        function getSelectedDebtParty() {
+            const type = document.getElementById('debt-type-input').value;
+            const sel = document.getElementById('debt-party-select');
+            const v = sel ? sel.value : '';
+            if (v && v !== '__NEW__') return v;
+            if (v !== '__NEW__') return '';
+            const typed = (document.getElementById('debt-party-input').value || '').trim();
+            const list = (type === 'PIUTANG' ? appState.customers : appState.suppliers) || [];
+            const hit = list.find(c => c && String(c.name || '').trim().toLowerCase() === typed.toLowerCase());
+            return hit ? hit.name : typed;
+        }
+
+        function updateDebtPartyInfo() {
+            const box = document.getElementById('debt-party-info');
+            if (!box) return;
+            const type = document.getElementById('debt-type-input').value;
+            const party = getSelectedDebtParty();
+            if (!party) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+            const word = type === 'PIUTANG' ? 'piutang' : 'utang';
+            const b = getPartyDebtBalance(type, party);
+            const add = Number(document.getElementById('debt-amount-input')?.value) || 0;
+            box.innerHTML = `
+                <div class="flex justify-between"><span>Sisa ${word} saat ini:</span><b class="font-mono">Rp ${formatRp(b.sisa)}${b.n ? ' (' + b.n + ' dok.)' : ''}</b></div>
+                ${add > 0 ? `<div class="flex justify-between"><span>Total ${word} setelah dicatat:</span><b class="font-mono text-red-700">Rp ${formatRp(b.sisa + add)}</b></div>` : ''}`;
+            box.classList.remove('hidden');
+        }
+
         function openDebtModal(defaultType = 'PIUTANG') {
             document.getElementById('debt-type-input').value = defaultType;
             document.getElementById('debt-due-input').value = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
             toggleDebtWalletOption();
+            populateDebtPartyOptions();
             document.getElementById('debt-modal').classList.remove('hidden');
+        }
+
+        // Hapus catatan utang/piutang (khusus ADMIN). Cicilan yang sudah tercatat dikembalikan ke saldo dompet.
+        async function deleteDebtRecord(id) {
+            if (!requireAdmin('Menghapus catatan utang/piutang')) return;
+            const rec = (appState.debtsReceivables || []).find(d => d.id === id);
+            if (!rec) { showToast('Catatan tidak ditemukan.', 'error'); return; }
+            const word = rec.type === 'PIUTANG' ? 'piutang' : 'utang';
+            const nPay = Array.isArray(rec.payments) ? rec.payments.length : 0;
+            let msg = `Hapus catatan ${word} ${rec.id}?\n\nPihak: ${rec.party}\nTotal: Rp ${formatRp(rec.totalAmount)} | Dibayar: Rp ${formatRp(rec.paidAmount)}`;
+            msg += nPay ? `\n\n${nPay} pembayaran/cicilan akan dibatalkan dan saldo dompetnya dikembalikan.` : '';
+            if (rec.manual && rec.initWallet && rec.initWallet !== 'NONE' && walletExists(rec.initWallet)) {
+                msg += `\nPengaruh saldo awal pada ${getWalletNameById(rec.initWallet)} juga dikembalikan.`;
+            }
+            if (!rec.manual) {
+                msg += `\n\nCatatan: bila ini berasal dari faktur penjualan/pembelian tempo, fakturnya TIDAK ikut terhapus. Untuk membatalkan seluruh transaksi, hapus dari menu fakturnya.`;
+            }
+            if (!confirm(msg)) return;
+            const r = removeLinkedDebt(id);
+            if (rec.manual && rec.initWallet && rec.initWallet !== 'NONE' && walletExists(rec.initWallet)) {
+                const amt = Number(rec.totalAmount) || 0;
+                if (rec.type === 'PIUTANG') appState.wallets[rec.initWallet] += amt;
+                else appState.wallets[rec.initWallet] -= amt;
+            }
+            await saveAppState();
+            const extra = r.unknownPaid > 0 ? ` Catatan: pembayaran Rp ${formatRp(r.unknownPaid)} tidak tercatat dompetnya, cek manual.` : '';
+            showToast(`Catatan ${word} ${id} dihapus.${extra}`, 'info');
         }
 
         function toggleDebtWalletOption() {
@@ -9336,10 +9444,14 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             e.preventDefault();
             const type = document.getElementById('debt-type-input').value;
             const dueDate = document.getElementById('debt-due-input').value;
-            const party = document.getElementById('debt-party-input').value.trim();
+            const party = getSelectedDebtParty();
             const amount = Number(document.getElementById('debt-amount-input').value) || 0;
             const wallet = document.getElementById('debt-wallet-effect').value;
             const desc = document.getElementById('debt-desc-input').value.trim();
+            if (!party) {
+                showToast(`Pilih ${type === 'PIUTANG' ? 'pelanggan' : 'supplier'} dari daftar, atau ketik nama baru.`, 'error');
+                return;
+            }
 
             if (wallet !== 'NONE' && appState.wallets[wallet] !== undefined) {
                 if (type === 'PIUTANG') appState.wallets[wallet] -= amount;
@@ -9356,7 +9468,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 totalAmount: amount,
                 paidAmount: 0,
                 status: 'BELUM_LUNAS',
-                payments: []
+                payments: [],
+                manual: true,
+                initWallet: wallet
             });
             closeModal('debt-modal');
             e.target.reset();
@@ -9668,6 +9782,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         // ---------- 4 & 5. Laporan Hutang Usaha / Piutang Usaha ----------
         function buildDebtReport(type) {
             const isP = type === 'PIUTANG';
+            const isAdm = isCurrentUserAdmin();
             const today = getTodayIsoDate();
             const partyLabel = isP ? 'Pelanggan' : 'Supplier';
             const all = (appState.debtsReceivables || []).filter(d => d.type === type);
@@ -9687,7 +9802,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 if (c.sisa > 0) open++;
                 if (c.late) tLate += c.sisa;
                 const st = c.sisa <= 0 ? rptBadge('LUNAS', 'emerald') : (c.late ? rptBadge('TERLAMBAT', 'red') : rptBadge('BELUM LUNAS', 'amber'));
-                return [rptFmtDay(d.date), d.id, d.party, d.description, d.dueDate ? rptFmtDay(d.dueDate) : '-', c.total, c.paid, c.sisa, st];
+                const row = [rptFmtDay(d.date), d.id, d.party, d.description, d.dueDate ? rptFmtDay(d.dueDate) : '-', c.total, c.paid, c.sisa, st];
+                if (isAdm) row.push({ raw: '', html: `<button type="button" onclick="deleteDebtRecord('${escJs(d.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[11px] text-red-600" title="Hapus (Admin)"><i class="fas fa-trash"></i></button>` });
+                return row;
             });
             const perParty = {};
             list.forEach(d => {
@@ -9718,9 +9835,10 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                     {
                         title: `Daftar ${word} ${isP ? '(Kasbon Pelanggan)' : '(Supplier)'}`,
                         cols: [{ h: 'Tanggal' }, { h: 'No. Ref' }, { h: partyLabel }, { h: 'Keterangan' }, { h: 'Jatuh Tempo' },
-                            { h: 'Total', a: 'right' }, { h: 'Dibayar', a: 'right' }, { h: 'Sisa', a: 'right' }, { h: 'Status', a: 'center' }],
+                            { h: 'Total', a: 'right' }, { h: 'Dibayar', a: 'right' }, { h: 'Sisa', a: 'right' }, { h: 'Status', a: 'center' },
+                            ...(isAdm ? [{ h: 'Aksi', a: 'center', noExport: true }] : [])],
                         rows,
-                        foot: ['', 'TOTAL', '', '', '', tTotal, tPaid, tSisa, '']
+                        foot: ['', 'TOTAL', '', '', '', tTotal, tPaid, tSisa, '', ...(isAdm ? [''] : [])]
                     },
                     {
                         title: `Rekap Sisa ${word} per ${partyLabel}`,
