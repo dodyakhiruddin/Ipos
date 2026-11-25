@@ -4403,6 +4403,7 @@
                 if (k === 'wallets' || k === 'settings') continue;
                 out[k] = (Array.isArray(l[k]) || Array.isArray(r[k])) ? syncMergeColl(k, b[k], l[k], r[k]) : pick(b[k], l[k], r[k]);
             }
+            if (Array.isArray(out.stockLedger)) out.stockLedger.sort((x, y) => (Date.parse(y && y.date) || 0) - (Date.parse(x && x.date) || 0));
             const bw = b.wallets || {}, lw = l.wallets || {}, rw = r.wallets || {};
             out.wallets = {};
             new Set([...Object.keys(lw), ...Object.keys(rw)]).forEach(k => { out.wallets[k] = (Number(rw[k]) || 0) + ((Number(lw[k]) || 0) - (Number(bw[k]) || 0)); });
@@ -5400,7 +5401,12 @@
                 if (!it || !it.code) continue;
                 // Kartu stok disimpan terbaru di depan: entri yang lebih baru dari pembelian ini ada sebelum indeksnya
                 const ownIdx = ledger.findIndex(r => r && r.ref === rec.id && r.code === it.code);
-                const newer = ownIdx >= 0 ? ledger.slice(0, ownIdx) : ledger;
+                const ownT = ownIdx >= 0 ? Date.parse(ledger[ownIdx].date) : NaN;
+                const newer = ownIdx >= 0 ? ledger.filter((r, i) => {
+                    if (i === ownIdx || !r) return false;
+                    const t = Date.parse(r.date);
+                    return (Number.isFinite(t) && Number.isFinite(ownT)) ? (t > ownT || (t === ownT && i < ownIdx)) : i < ownIdx;
+                }) : ledger;
                 const out = newer.find(r => r && r.code === it.code && (Number(r.outQty) || 0) > 0
                     && r.ref !== rec.id && liveRefs.has(r.ref));
                 if (out) return `barang ${it.name || it.code} sudah ada transaksinya (${out.type} ${out.ref})`;
@@ -8079,6 +8085,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         async function deleteSelectedSale() {
+            if (!requireAdmin('Menghapus transaksi penjualan')) return;
             const trx = getSelectedSaleTrx();
             if (!trx) {
                 showToast('Pilih salah satu baris Penjualan yang ingin dihapus!', 'error');
@@ -9779,12 +9786,14 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         function openDeleteTransactionModal(id) {
+            if (!requireAdmin('Menghapus transaksi penjualan')) return;
             document.getElementById('delete-trx-id').value = id;
             document.getElementById('delete-trx-label').textContent = id;
             document.getElementById('delete-trx-modal').classList.remove('hidden');
         }
 
         async function confirmDeleteTransaction() {
+            if (!requireAdmin('Menghapus transaksi penjualan')) { closeModal('delete-trx-modal'); return; }
             const id = document.getElementById('delete-trx-id').value;
             const idx = appState.transactions.findIndex(t => t.id === id);
             closeModal('delete-trx-modal');
