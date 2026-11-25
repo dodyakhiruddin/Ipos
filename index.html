@@ -1657,7 +1657,7 @@
                             </div>
 
                             <!-- Dynamic Wallets Grid -->
-                            <div id="sumberdana-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div id="sumberdana-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
                                 <!-- Rendered dynamically via JS -->
                             </div>
 
@@ -2902,9 +2902,14 @@
                     <label class="block font-bold mb-1">Jatuh Tempo Piutang</label>
                     <input type="date" id="sc-due-date" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
                 </div>
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
-                    <button type="button" onclick="closeModal('service-complete-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
+                <div class="flex justify-between gap-2 pt-2 border-t border-slate-200">
+                    <button type="button" onclick="cancelServiceTicket(document.getElementById('sc-ticket-id').value)" class="ipos-btn-danger px-3 py-1.5 rounded font-bold" title="Mis. setelah diperiksa teknisi, HP tidak bisa diperbaiki">
+                        <i class="fas fa-ban mr-1"></i> Batalkan Service
+                    </button>
+                    <div class="flex gap-2">
+                    <button type="button" onclick="closeModal('service-complete-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Tutup</button>
                     <button type="submit" class="ipos-btn-success px-4 py-1.5 rounded font-bold shadow">Selesaikan Service</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -4829,52 +4834,36 @@
                     const c = colorMap[w.color] || colorMap.teal;
                     const bal = Number(appState.wallets[w.id]) || 0;
                     return `
-                        <div class="border ${c.border} ${c.bg} rounded-lg p-3.5 flex flex-col justify-between shadow-sm">
-                            <div>
-                                <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.badge} uppercase">${esc(w.type || 'AKUN')}</span>
-                                        <div class="font-bold ${c.title} text-sm mt-1">${idx + 1}. ${esc(w.name)}</div>
-                                    </div>
-                                    <div class="flex items-center gap-1 shrink-0">
-                                        <button type="button" onclick="openWalletModal('${escJs(w.id)}')" class="ipos-btn px-2 py-1 rounded text-[11px] text-sky-800" title="Edit Nama / Saldo Sumber Dana">
-                                            <i class="fas fa-edit"></i> Edit
+                        <div class="border ${c.border} ${c.bg} rounded-md p-2 flex flex-col justify-between shadow-sm min-w-0" title="${esc(w.desc || '')}">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="text-[9px] font-bold px-1 py-0.5 rounded ${c.badge} uppercase truncate">${esc(w.type || 'AKUN')}</span>
+                                <div class="flex items-center gap-0.5 shrink-0">
+                                    <button type="button" onclick="openWalletModal('${escJs(w.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[10px] text-sky-800" title="Edit Nama / Saldo Sumber Dana">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    ${appState.walletList.length > 1 ? `
+                                        <button type="button" onclick="deleteWalletAccount('${escJs(w.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-[10px] text-red-600" title="Hapus Sumber Dana">
+                                            <i class="fas fa-trash-alt"></i>
                                         </button>
-                                        ${appState.walletList.length > 1 ? `
-                                            <button type="button" onclick="deleteWalletAccount('${escJs(w.id)}')" class="ipos-btn px-2 py-1 rounded text-[11px] text-red-600" title="Hapus Sumber Dana">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        ` : ''}
-                                    </div>
+                                    ` : ''}
                                 </div>
-                                <div class="text-2xl font-extrabold ${c.amount} my-1.5 font-mono">${formatRp(bal)}</div>
                             </div>
-                            <div class="text-[11px] text-slate-600 border-t border-slate-200/70 pt-1.5 flex items-center justify-between">
-                                <span class="truncate">${esc(w.desc || '-')}</span>
-                                <span class="font-mono text-[10px] text-slate-400 ml-2 shrink-0">${esc(w.id)}</span>
-                            </div>
+                            <div class="font-bold ${c.title} text-[11px] leading-tight mt-1 truncate">${idx + 1}. ${esc(w.name)}</div>
+                            <div class="text-sm font-extrabold ${c.amount} font-mono truncate">${formatRp(bal)}</div>
                         </div>
                     `;
                 }).join('');
 
                 const voucherCardHtml = `
-                    <div class="border border-amber-300 bg-amber-50/80 rounded-lg p-3.5 flex flex-col justify-between shadow-sm">
-                        <div>
-                            <div class="flex items-start justify-between gap-2">
-                                <div>
-                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-900 uppercase">ASET BARANG FISIK</span>
-                                    <div class="font-bold text-amber-950 text-sm mt-1">${appState.walletList.length + 1}. Total Nilai Stok Barang Fisik</div>
-                                </div>
-                                <button type="button" onclick="switchTab('masterdata')" class="ipos-btn px-2 py-1 rounded text-[11px] text-amber-900 shrink-0" title="Lihat Rincian Stok Barang Fisik">
-                                    <i class="fas fa-boxes"></i> Rincian
-                                </button>
-                            </div>
-                            <div class="text-2xl font-extrabold text-amber-700 my-1.5 font-mono">${formatRp(totalPhysicalVal)}</div>
+                    <div class="border border-amber-300 bg-amber-50/80 rounded-md p-2 flex flex-col justify-between shadow-sm min-w-0" title="Voucher, Perdana, Aksesoris & Sparepart (${physicalItems.length} jenis / ${totalPhysicalPcs} PCS)">
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-amber-200/80 text-amber-900 uppercase truncate">ASET FISIK</span>
+                            <button type="button" onclick="switchTab('masterdata')" class="ipos-btn px-1.5 py-0.5 rounded text-[10px] text-amber-900 shrink-0" title="Lihat Rincian Stok Barang Fisik">
+                                <i class="fas fa-boxes"></i>
+                            </button>
                         </div>
-                        <div class="text-[11px] text-slate-600 border-t border-amber-200/80 pt-1.5 flex items-center justify-between">
-                            <span class="truncate">Voucher, Perdana, Aksesoris & Sparepart (${physicalItems.length} jenis / ${totalPhysicalPcs} PCS)</span>
-                            <span class="font-mono text-[10px] text-amber-700 ml-2 shrink-0">ASET_BARANG_FISIK</span>
-                        </div>
+                        <div class="font-bold text-amber-950 text-[11px] leading-tight mt-1 truncate">${appState.walletList.length + 1}. Nilai Stok Barang Fisik</div>
+                        <div class="text-sm font-extrabold text-amber-700 font-mono truncate">${formatRp(totalPhysicalVal)}</div>
                     </div>
                 `;
 
@@ -8899,7 +8888,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         function renderPpobRecentList() {
             const box = document.getElementById('ppob-recent-list');
             if (!box) return;
-            const list = appState.transactions.filter(t => t.module === 'PPOB' || t.module === 'BRILINK').slice(0, 6);
+            const list = appState.transactions.filter(t => t.module === 'PPOB' || t.module === 'BRILINK').slice(0, 30);
             box.innerHTML = list.map(t => `
                 <div class="bg-white border border-slate-200 rounded p-2 flex items-center justify-between">
                     <div class="truncate pr-2">
@@ -8910,7 +8899,11 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                         <div class="font-mono font-bold text-blue-800">${formatRp(t.total)}</div>
                         <div class="text-[10px] font-mono text-emerald-700">+${formatRp(t.profit)}</div>
                     </div>
-                    <button type="button" onclick="reprintTransactionById('${escJs(t.id)}')" class="ipos-btn px-2 py-1 rounded ml-2 shrink-0" title="Cetak / Kirim Nota"><i class="fas fa-print text-blue-700"></i></button>
+                    <div class="flex items-center gap-1 ml-2 shrink-0">
+                        <button type="button" onclick="reprintTransactionById('${escJs(t.id)}')" class="ipos-btn px-2 py-1 rounded" title="Cetak / Kirim Nota"><i class="fas fa-print text-blue-700"></i></button>
+                        <button type="button" onclick="openEditTransactionModal('${escJs(t.id)}')" class="ipos-btn px-2 py-1 rounded" title="Edit Transaksi"><i class="fas fa-edit text-sky-700"></i></button>
+                        <button type="button" onclick="openDeleteTransactionModal('${escJs(t.id)}')" class="ipos-btn px-2 py-1 rounded" title="Hapus Transaksi (Admin)"><i class="fas fa-trash text-red-600"></i></button>
+                    </div>
                 </div>
             `).join('') || '<div class="text-slate-400 italic">Belum ada riwayat loket.</div>';
         }
@@ -9002,7 +8995,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             refreshServiceHpIntakeHeader();
             const tbody = document.getElementById('service-hp-tbody');
             if (!tbody) return;
-            const activeCount = appState.serviceTickets.filter(t => t.status !== 'SELESAI').length;
+            const activeCount = appState.serviceTickets.filter(t => t.status !== 'SELESAI' && t.status !== 'BATAL').length;
             const cntEl = document.getElementById('srv-active-count');
             if (cntEl) cntEl.textContent = activeCount;
 
@@ -9017,20 +9010,49 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                     <td>
                         <div class="text-[11px]">${esc(t.issue)}</div>
                         ${t.status === 'SELESAI' ? `<div class="text-[10.5px] font-mono text-emerald-700 font-bold mt-0.5">Biaya: Rp ${formatRp(t.price)} (Modal: Rp ${formatRp(t.cost)})</div>` : ''}
+                        ${t.status === 'BATAL' ? `<div class="text-[10.5px] text-rose-700 font-bold mt-0.5">Dibatalkan: ${esc(t.cancelReason || '-')}</div>` : ''}
                     </td>
                     <td class="text-center">
-                        <span class="px-2 py-0.5 rounded text-[10.5px] font-bold ${t.status === 'SELESAI' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${t.status}</span>
+                        <span class="px-2 py-0.5 rounded text-[10.5px] font-bold ${t.status === 'SELESAI' ? 'bg-emerald-100 text-emerald-800' : (t.status === 'BATAL' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')}">${esc(t.status)}</span>
                     </td>
                     <td class="text-center space-x-1">
                         <button type="button" onclick="printServiceIntakeById('${escJs(t.id)}')" class="ipos-btn px-2 py-0.5 rounded text-[11px]" title="Cetak Ulang Tanda Terima">
                             <i class="fas fa-print text-sky-700"></i>
                         </button>
-                        ${t.status !== 'SELESAI'
-                            ? `<button type="button" onclick="openCompleteServiceModal('${escJs(t.id)}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold">Input Biaya</button>`
-                            : `<span class="text-[10px] text-emerald-700 font-bold">Lunas</span>`}
+                        ${t.status === 'SELESAI'
+                            ? `<span class="text-[10px] text-emerald-700 font-bold">Lunas</span>`
+                            : (t.status === 'BATAL'
+                                ? `<button type="button" onclick="reopenServiceTicket('${escJs(t.id)}')" class="ipos-btn px-2 py-0.5 rounded text-[11px] font-bold text-sky-800" title="Buka kembali tiket yang dibatalkan">Buka Lagi</button>`
+                                : `<button type="button" onclick="openCompleteServiceModal('${escJs(t.id)}')" class="ipos-btn-success px-2 py-0.5 rounded text-[11px] font-bold">Input Biaya</button>
+                                   <button type="button" onclick="cancelServiceTicket('${escJs(t.id)}')" class="ipos-btn-danger px-2 py-0.5 rounded text-[11px] font-bold" title="Batalkan service (mis. HP tidak bisa diperbaiki)">Batal</button>`)}
                     </td>
                 </tr>
             `).join('');
+        }
+
+        async function cancelServiceTicket(ticketId) {
+            const t = appState.serviceTickets.find(x => x.id === ticketId);
+            if (!t) return;
+            if (t.status === 'SELESAI') { showToast('Tiket sudah selesai & dibukukan. Hapus transaksinya di Laporan Penjualan bila ingin membatalkan.', 'error'); return; }
+            const reason = (prompt(`BATALKAN SERVICE ${t.id}\n${t.customer} - ${t.device}\n\nAlasan pembatalan (mis. HP tidak bisa diperbaiki, pelanggan menolak biaya):`, 'HP tidak bisa diperbaiki') || '').trim();
+            if (!reason) { showToast('Pembatalan dibatalkan: alasan wajib diisi.', 'info'); return; }
+            t.status = 'BATAL';
+            t.cancelReason = reason;
+            t.cancelDate = new Date().toISOString();
+            closeModal('service-complete-modal');
+            await saveAppState();
+            showToast(`Tiket ${t.id} dibatalkan. Tidak ada biaya/saldo yang dibukukan.`, 'info');
+        }
+
+        async function reopenServiceTicket(ticketId) {
+            const t = appState.serviceTickets.find(x => x.id === ticketId);
+            if (!t || t.status !== 'BATAL') return;
+            if (!confirm(`Buka kembali tiket ${t.id} (${t.customer} - ${t.device}) menjadi status PROSES?`)) return;
+            t.status = 'PROSES';
+            delete t.cancelReason;
+            delete t.cancelDate;
+            await saveAppState();
+            showToast(`Tiket ${t.id} dibuka kembali.`, 'success');
         }
 
         function openCompleteServiceModal(ticketId) {
