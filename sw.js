@@ -1,39 +1,56 @@
-// Service worker: simpan library CDN ke cache saat pertama kali dimuat, lalu pakai cache saat offline.
-const CACHE = 'donet-cdn-v1';
-const CDN_HOSTS = [
-  'cdn.tailwindcss.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net',
-  'fonts.googleapis.com', 'fonts.gstatic.com', 'tessdata.projectnaptha.com'
-];
+// Service Worker DONET CELL: cache offline + menerima gambar dari menu "Bagikan" (WhatsApp, galeri, dll)
+const CACHE = 'donet-app-v2';
+const SHARE_CACHE = 'share-target-v1';
+const CACHEABLE_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'cdn.tailwindcss.com', 'code.jquery.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil(
-  caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-    .then(() => self.clients.claim())
-));
+
+self.addEventListener('activate', e => e.waitUntil((async () => {
+    for (const k of await caches.keys()) {
+        if (k !== CACHE && k !== SHARE_CACHE) await caches.delete(k);
+    }
+    await self.clients.claim();
+})()));
 
 self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  const isPage = url.origin === location.origin && (req.mode === 'navigate' || url.pathname.endsWith('/index.html'));
-  const isCdn = CDN_HOSTS.includes(url.hostname);
-  if (!isCdn && !isPage) return;
-
-  // CDN: cache dulu. Halaman utama: jaringan dulu supaya update tetap masuk, cache sebagai cadangan offline.
-  e.respondWith((async () => {
-    const cache = await caches.open(CACHE);
-    if (isCdn) {
-      const hit = await cache.match(req);
-      if (hit) return hit;
+    const req = e.request;
+    const url = new URL(req.url);
+    if (req.method === 'POST' && url.pathname.endsWith('/share-target')) {
+        e.respondWith(handleShare(req));
+        return;
     }
-    try {
-      const res = await fetch(req);
-      if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
-      return res;
-    } catch (err) {
-      const fallback = await cache.match(req);
-      if (fallback) return fallback;
-      throw err;
-    }
-  })());
+    if (req.method !== 'GET') return;
+    const sameOrigin = url.origin === self.location.origin;
+    if (!sameOrigin && !CACHEABLE_HOSTS.includes(url.hostname)) return; // mis. Supabase: jangan di-cache
+    e.respondWith(networkFirst(req));
 });
+
+async function handleShare(req) {
+    try {
+        const fd = await req.formData();
+        const file = fd.get('bukti');
+        if (file && file.size) {
+            const c = await caches.open(SHARE_CACHE);
+            await c.put(new URL('shared-proof', self.registration.scope).href,
+                new Response(file, { headers: { 'Content-Type': file.type || 'image/jpeg' } }));
+        }
+    } catch (err) { /* lanjut: aplikasi tetap dibuka */ }
+    return Response.redirect(new URL('./?share-target=1', self.registration.scope).href, 303);
+}
+
+async function networkFirst(req) {
+    const cache = await caches.open(CACHE);
+    try {
+        const res = await fetch(req);
+        if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
+        return res;
+    } catch (err) {
+        const hit = await cache.match(req, { ignoreSearch: true });
+        if (hit) return hit;
+        if (req.mode === 'navigate') {
+            const page = await cache.match(new URL('./', self.registration.scope).href, { ignoreSearch: true });
+            if (page) return page;
+        }
+        throw err;
+    }
+}

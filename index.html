@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0b2557">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <title>Menu Utama - DONET CELL [GROSIRDONET]</title>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -3852,6 +3855,7 @@
             refreshAllUI();
             showToast(`Berhasil login ke [${activeDatabaseName}] sebagai ${currentUser.username} (${currentUser.role})`, 'success');
             if (usingWeakPw) showToast('Password Anda masih bawaan/mudah ditebak. Segera ganti di Pengaturan > Kelola User.', 'error');
+            offerSharedProof();
         }
 
         function updateDatabaseIdentityUI() {
@@ -9337,6 +9341,68 @@
         // =========================================================================
         // 14. KEYBOARD SHORTCUTS & INITIAL BOOT
         // =========================================================================
+        // ---------- Terima bukti transfer dari menu "Bagikan" (WhatsApp, galeri, dll) ----------
+        // Butuh: aplikasi dibuka lewat https & sudah di-install (Tambahkan ke Layar Utama) di Android/Chrome.
+        let pendingSharedProof = null;
+        async function loadSharedProofFromCache() {
+            if (!/[?&]share-target\b/.test(location.search)) return;
+            try { history.replaceState(null, '', location.pathname); } catch (e) {}
+            try {
+                if (!('caches' in window)) return;
+                const cache = await caches.open('share-target-v1');
+                const key = new URL('shared-proof', location.href).href;
+                const res = await cache.match(key);
+                if (!res) return;
+                const blob = await res.blob();
+                await cache.delete(key);
+                if (blob.size) pendingSharedProof = new File([blob], 'bukti-transfer', { type: blob.type || 'image/jpeg' });
+            } catch (e) { console.warn('Gagal membaca gambar yang dibagikan:', e); }
+        }
+        function offerSharedProof() {
+            if (!pendingSharedProof || !isLoggedIn) return;
+            document.getElementById('shared-proof-chooser')?.remove();
+            const box = document.createElement('div');
+            box.id = 'shared-proof-chooser';
+            box.className = 'fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4';
+            box.innerHTML = `
+                <div class="ipos-win-modal bg-white rounded-lg w-full max-w-xs p-4 space-y-2 text-xs">
+                    <div class="font-bold text-sm text-slate-800"><i class="fas fa-share-alt mr-1.5 text-sky-600"></i> Bukti transfer diterima</div>
+                    <div class="text-slate-600">Gunakan gambar ini untuk:</div>
+                    <button type="button" data-act="kasir" class="ipos-btn-primary w-full py-2 rounded font-bold">Kasir (POS)</button>
+                    <button type="button" data-act="faktur" class="ipos-btn-primary w-full py-2 rounded font-bold">Faktur Penjualan</button>
+                    <button type="button" data-act="ppob" class="ipos-btn-primary w-full py-2 rounded font-bold">PPOB / Pulsa</button>
+                    <button type="button" data-act="batal" class="ipos-btn w-full py-2 rounded font-semibold">Batal</button>
+                </div>`;
+            box.addEventListener('click', ev => {
+                const act = ev.target.closest('button')?.dataset.act;
+                if (!act) return;
+                box.remove();
+                if (act === 'batal') { pendingSharedProof = null; return; }
+                useSharedProof(act);
+            });
+            document.body.appendChild(box);
+        }
+        async function useSharedProof(act) {
+            const file = pendingSharedProof;
+            pendingSharedProof = null;
+            if (!file) return;
+            if (act === 'faktur') {
+                switchTab('kasir', 'jual');
+                openSaleFormModal(-1);
+                openSalesTransferScan('faktur');
+            } else if (act === 'kasir') {
+                switchTab('kasir', 'kasir');
+                openSalesTransferScan('kasir');
+            } else {
+                switchTab('ppob', 'pulsa');
+                openOcrScannerModal('ppob');
+                const img = document.getElementById('ocr-preview-img');
+                if (img) { img.removeAttribute('src'); img.classList.add('hidden'); }
+                document.getElementById('ocr-upload-placeholder')?.classList.remove('hidden');
+            }
+            await handleOcrImageUpload({ target: { files: [file] } });
+        }
+
         document.addEventListener('keydown', (e) => {
             if (!isLoggedIn) return; // kunci pintas dinonaktifkan sebelum login
             if (e.key === 'F2') { e.preventDefault(); switchTab('kasir', 'kasir'); }
@@ -9376,6 +9442,7 @@
         })();
 
         window.addEventListener('DOMContentLoaded', async () => {
+            await loadSharedProofFromCache();
             await loadDatabaseForActiveTenant();
             updateDatabaseIdentityUI();
             setPpobMode('pulsa');
