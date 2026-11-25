@@ -2246,11 +2246,13 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block font-bold mb-1">Sumber Dana Pembayaran</label>
+                        <label class="block font-bold mb-1">Mode Pembayaran</label>
+                        <select id="buy-pay-mode" onchange="applyPayMode('buy')" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"><option value="TUNAI">Tunai</option><option value="TRANSFER">Transfer</option><option value="UTANG">Utang (Tempo)</option></select>
+                        <label id="buy-pay-label" class="block font-bold mb-1 mt-1.5">Sumber Dana (Kas Tunai)</label>
                         <select id="buy-item-source" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
                     </div>
                     <div>
-                        <label class="block font-bold mb-1">Jatuh Tempo (Isi jika Utang / Tempo)</label>
+                        <label class="block font-bold mb-1">Jatuh Tempo (Aktif jika mode Utang)</label>
                         <input type="date" id="buy-due-date" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
                     </div>
                 </div>
@@ -3163,7 +3165,9 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block font-bold mb-1">Metode Pembayaran / Masuk Ke</label>
+                        <label class="block font-bold mb-1">Mode Pembayaran</label>
+                        <select id="sale-pay-mode" onchange="applyPayMode('sale')" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"><option value="TUNAI">Tunai</option><option value="TRANSFER">Transfer</option><option value="UTANG">Utang (Tempo)</option></select>
+                        <label id="sale-pay-label" class="block font-bold mb-1 mt-1.5">Masuk Ke (Kas Tunai)</label>
                         <div class="flex gap-1">
                             <select id="sale-form-payment" class="flex-1 min-w-0 bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
                             <button type="button" onclick="openSalesTransferScan('faktur')" class="ipos-btn px-2.5 py-1.5 rounded font-bold text-sky-800 shrink-0 flex items-center gap-1" title="Scan Bukti Transfer Pelanggan"><i class="fas fa-camera"></i> Scan</button>
@@ -3171,7 +3175,7 @@
                         <div id="sale-transfer-proof-badge" class="hidden mt-1"></div>
                     </div>
                     <div>
-                        <label class="block font-bold mb-1">Jatuh Tempo (Isi jika Tempo / Kasbon)</label>
+                        <label class="block font-bold mb-1">Jatuh Tempo (Aktif jika mode Utang / Kasbon)</label>
                         <input type="date" id="sale-due-date" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
                     </div>
                 </div>
@@ -4468,6 +4472,63 @@
             syncSelect('ret-form-wallet', '', '<option value="POTONG_UTANG">Potong Utang Supplier (Tanpa Kas Masuk)</option>');
             syncSelect('sale-form-payment', '', '<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>');
             syncSelect('sret-form-wallet', '', '<option value="POTONG_PIUTANG">Potong Piutang Pelanggan (Tanpa Kas Keluar)</option>');
+            refreshPayModes();
+        }
+
+        // ---------- Mode Pembayaran (Tunai / Transfer / Utang) untuk Pembelian & Penjualan ----------
+        const PAY_MODE_CFG = {
+            buy:  { mode: 'buy-pay-mode',  select: 'buy-item-source',   due: 'buy-due-date',  debtVal: 'UTANG_TEMPO',   debtLabel: 'TEMPO / HUTANG SUPPLIER',        lbl: 'buy-pay-label',  who: 'Sumber Dana' },
+            sale: { mode: 'sale-pay-mode', select: 'sale-form-payment', due: 'sale-due-date', debtVal: 'PIUTANG_TEMPO', debtLabel: 'TEMPO / KASBON (MASUK PIUTANG)', lbl: 'sale-pay-label', who: 'Masuk Ke' }
+        };
+        function payWalletOptions(list) {
+            return list.map(w => `<option value="${esc(w.id)}">${esc(w.name)} (${formatRp(appState.wallets[w.id] || 0)})</option>`).join('');
+        }
+        // Kembalikan dropdown ke daftar lengkap (semua dompet + opsi tempo) agar nilai lama bisa dipasang
+        function payFullOptions(key) {
+            const c = PAY_MODE_CFG[key];
+            const sel = document.getElementById(c.select);
+            if (!sel) return;
+            sel.innerHTML = payWalletOptions(appState.walletList || []) + `<option value="${c.debtVal}">${c.debtLabel}</option>`;
+        }
+        function payModeOfValue(key, val) {
+            if (val === PAY_MODE_CFG[key].debtVal) return 'UTANG';
+            const w = (appState.walletList || []).find(x => x.id === val);
+            return (w && w.type !== 'TUNAI') ? 'TRANSFER' : 'TUNAI';
+        }
+        function applyPayMode(key, keepVal) {
+            const c = PAY_MODE_CFG[key];
+            const modeEl = document.getElementById(c.mode);
+            const sel = document.getElementById(c.select);
+            const due = document.getElementById(c.due);
+            const lbl = document.getElementById(c.lbl);
+            if (!modeEl || !sel) return;
+            const mode = modeEl.value;
+            const wallets = appState.walletList || [];
+            if (mode === 'UTANG') {
+                sel.innerHTML = `<option value="${c.debtVal}">${c.debtLabel}</option>`;
+                if (lbl) lbl.textContent = 'Dicatat Sebagai';
+                if (due) { due.disabled = false; due.classList.remove('bg-slate-100'); }
+            } else {
+                const list = mode === 'TUNAI' ? wallets.filter(w => w.type === 'TUNAI') : wallets.filter(w => w.type !== 'TUNAI');
+                sel.innerHTML = list.length ? payWalletOptions(list) : '<option value="">(Belum ada akun untuk mode ini)</option>';
+                if (keepVal && list.some(w => w.id === keepVal)) sel.value = keepVal;
+                if (lbl) lbl.textContent = c.who + (mode === 'TUNAI' ? ' (Kas Tunai)' : ' (Rekening / Non-Tunai)');
+                if (due) { due.value = ''; due.disabled = true; due.classList.add('bg-slate-100'); }
+            }
+        }
+        // Tentukan mode dari nilai dropdown / jatuh tempo yang sudah terisi (mode edit & data lama)
+        function payModeFromValue(key) {
+            const c = PAY_MODE_CFG[key];
+            const sel = document.getElementById(c.select);
+            const modeEl = document.getElementById(c.mode);
+            const due = document.getElementById(c.due);
+            if (!sel || !modeEl) return;
+            const val = sel.value;
+            modeEl.value = (due && due.value) ? 'UTANG' : payModeOfValue(key, val);
+            applyPayMode(key, val);
+        }
+        function refreshPayModes() {
+            Object.keys(PAY_MODE_CFG).forEach(payModeFromValue);
         }
 
         function openWalletModal(walletId = '') {
@@ -5614,6 +5675,7 @@
         function openPurchaseFormModal(idx = -1) {
             populatePurchaseDropdowns();
             document.getElementById('edit-purchase-index').value = idx;
+            payFullOptions('buy');
             document.getElementById('buy-linked-po-id').value = '';
             if (idx >= 0 && appState.purchaseRecords[idx]) {
                 const p = appState.purchaseRecords[idx];
@@ -5634,6 +5696,7 @@
                 syncPurchaseItemCost();
             }
             renderPurchaseDraftItemsTable();
+            payModeFromValue('buy');
             document.getElementById('purchase-form-modal').classList.remove('hidden');
         }
 
@@ -5700,6 +5763,7 @@
             const buyDate = document.getElementById('buy-form-date').value;
             const supplier = document.getElementById('buy-item-supplier').value;
             const srcWallet = document.getElementById('buy-item-source').value;
+            if (!srcWallet) { showToast('Pilih akun pembayaran untuk mode ini terlebih dahulu!', 'error'); return; }
             const dueDate = document.getElementById('buy-due-date').value;
             const linkedPoId = document.getElementById('buy-linked-po-id').value;
             const isTempo = (srcWallet === 'UTANG_TEMPO' || Boolean(dueDate));
@@ -7115,6 +7179,7 @@
             const t = appState.transactions[idx];
             const isEdit = idx >= 0 && t && t.module === 'POS';
             document.getElementById('edit-sale-index').value = isEdit ? idx : -1;
+            payFullOptions('sale');
             saleTransferProof = (isEdit && t.transferProof) ? Object.assign({}, t.transferProof) : null;
             document.getElementById('sale-linked-so-id').value = '';
             if (isEdit) {
@@ -7139,6 +7204,7 @@
                 syncSaleItemPrice();
             }
             renderSaleDraftItemsTable();
+            payModeFromValue('sale');
             document.getElementById('sale-form-modal').classList.remove('hidden');
         }
 
@@ -7207,6 +7273,7 @@
             const docNo = document.getElementById('sale-form-no').value;
             const customer = document.getElementById('sale-form-customer').value || 'UMUM';
             const payWallet = document.getElementById('sale-form-payment').value;
+            if (!payWallet) { showToast('Pilih akun pembayaran untuk mode ini terlebih dahulu!', 'error'); return; }
             const dueDate = document.getElementById('sale-due-date').value;
             const linkedSoId = document.getElementById('sale-linked-so-id').value;
             const isTempo = payWallet === 'PIUTANG_TEMPO';
@@ -9185,7 +9252,7 @@
             if (ocrSalesContext === 'faktur') {
                 saleTransferProof = proof;
                 const sel = document.getElementById('sale-form-payment');
-                if (sel && walletId) sel.value = walletId;
+                if (sel && walletId) { payFullOptions('sale'); sel.value = walletId; payModeFromValue('sale'); }
             } else {
                 switchTab('kasir', 'kasir');
                 posTransferProof = proof;
