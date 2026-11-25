@@ -12,6 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.4/dist/tesseract.min.js"></script>
     <!-- Library Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <!-- html2canvas untuk nota JPG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         
@@ -201,6 +203,21 @@
         .ipos-btn-success:hover { background:linear-gradient(180deg,#fd9a55 0%,#f06a14 100%); }
         .table-grid th { background:linear-gradient(180deg,#eef5fd 0%,#d6e5f7 100%); border-bottom:2px solid #fdba74; }
         .table-grid tr:hover { background-color:#fff1e3; }
+
+        /* ===================== TAMPILAN DESKTOP: MENU DI ATAS ===================== */
+        @media (min-width: 640px) {
+            body > .flex.flex-1.overflow-hidden { flex-direction:column; }
+            .ipos-sidebar { width:100% !important; flex-direction:row !important; align-items:stretch;
+                border-bottom:2px solid var(--orange); box-shadow:0 2px 8px rgba(11,37,87,.25); }
+            .ipos-sidebar > div:first-child { flex:1; min-width:0; overflow-x:auto !important; overflow-y:hidden !important; scrollbar-width:thin; }
+            .ipos-sidebar > div:first-child > div:first-child { display:none; }
+            .ipos-sidebar .space-y-0\.5 { display:flex; gap:2px; padding:4px 8px 0; }
+            .ipos-sidebar-item { width:auto !important; white-space:nowrap; padding:8px 12px !important; margin:0 !important;
+                gap:7px !important; border-left:0 !important; border-bottom:3px solid transparent; border-radius:6px 6px 0 0; }
+            .ipos-sidebar-item.active { border-bottom-color:#ffd8b0; }
+            .ipos-sidebar > div:last-child { flex-shrink:0; gap:10px; padding:6px 10px !important; border-top:0 !important;
+                border-left:1px solid rgba(255,255,255,.15); }
+        }
 
         /* ===================== TAMPILAN HP ===================== */
         @media (max-width: 639px) {
@@ -1345,12 +1362,19 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     <div>
                                         <label class="block font-bold mb-1">Provider / Bank Layanan</label>
-                                        <select id="ppob-provider" onchange="autoFillPpobPreset()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-bold"></select>
+                                        <input type="text" id="ppob-provider" list="ppob-provider-list" required autocomplete="off" placeholder="Pilih atau ketik sendiri, mis. Token Listrik / Bank Mandiri" onfocus="this.dataset.prev=this.value;this.value=''" onblur="if(!this.value.trim())this.value=this.dataset.prev||''" oninput="autoFillPpobPreset()" onchange="autoFillPpobPreset()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-bold"><datalist id="ppob-provider-list"></datalist><div class="text-[10.5px] text-slate-500 mt-0.5">Ketuk kolom untuk memilih daftar, atau ketik nama layanan/bank sendiri.</div>
                                     </div>
                                     <div>
                                         <label class="block font-bold mb-1">No. HP / Rekening / ID Pelanggan</label>
                                         <input type="text" id="ppob-target-number" required placeholder="0812xxxx / No. Rek Tujuan" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                                     </div>
+                                </div>
+                                <div class="bg-orange-50 border border-orange-200 rounded p-2 flex flex-col sm:flex-row gap-2 sm:items-end">
+                                    <div class="flex-1">
+                                        <label class="block font-bold mb-1">No. Ref / SN / Token Listrik</label>
+                                        <input type="text" id="ppob-ref" autocomplete="off" placeholder="Ketik, atau scan otomatis dari bukti" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold uppercase">
+                                    </div>
+                                    <button type="button" onclick="openOcrScannerModal('ppob')" class="ipos-btn-success px-3 py-1.5 rounded font-bold whitespace-nowrap"><i class="fas fa-camera mr-1"></i> Scan Bukti (OCR)</button>
                                 </div>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     <div>
@@ -2571,16 +2595,21 @@
                     </div>
 
                     <!-- Dropzone & File Input -->
-                    <div id="ocr-drop-zone" onclick="document.getElementById('ocr-file-input').click()" class="border-2 border-dashed border-sky-400 bg-sky-50/60 hover:bg-sky-100/70 rounded-lg p-4 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[170px]">
-                        <input type="file" id="ocr-file-input" accept="image/*" capture="environment" class="hidden" onchange="handleOcrImageUpload(event)">
+                    <div id="ocr-drop-zone" onclick="document.getElementById('ocr-file-input').click()" ondragover="event.preventDefault();this.classList.add('drop-zone-active')" ondragleave="this.classList.remove('drop-zone-active')" ondrop="event.preventDefault();this.classList.remove('drop-zone-active');handleOcrImageUpload({ target: { files: event.dataTransfer.files } })" class="border-2 border-dashed border-sky-400 bg-sky-50/60 hover:bg-sky-100/70 rounded-lg p-4 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[170px]">
+                        <input type="file" id="ocr-file-input" accept="image/*" class="hidden" onchange="handleOcrImageUpload(event)">
                         <img id="ocr-preview-img" class="hidden max-h-40 rounded shadow mb-2 object-contain" alt="Preview Scan">
                         <div id="ocr-upload-placeholder" class="space-y-1.5">
                             <div class="w-10 h-10 rounded-full bg-sky-600 text-white flex items-center justify-center mx-auto text-base shadow">
-                                <i class="fas fa-camera"></i>
+                                <i class="fas fa-upload"></i>
                             </div>
-                            <div class="font-bold text-sky-900">Klik Foto Kamera / Upload Gambar</div>
-                            <div class="text-[11px] text-slate-500">Mendukung JPG, PNG, Screenshot M-Banking, atau <b>Ctrl+V</b> (Paste Gambar)</div>
+                            <div class="font-bold text-sky-900">Upload Bukti dari Galeri / File</div>
+                            <div class="text-[11px] text-slate-500">Pilih JPG, PNG, atau screenshot M-Banking dari galeri/file, seret &amp; lepas gambar ke sini, atau <b>Ctrl+V</b> (Paste Gambar)</div>
                         </div>
+                    </div>
+
+                    <div class="flex">
+                        <input type="file" id="ocr-camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleOcrImageUpload(event)">
+                        <button type="button" onclick="document.getElementById('ocr-camera-input').click()" class="ipos-btn w-full py-1.5 rounded font-semibold text-blue-800"><i class="fas fa-camera mr-1"></i> Ambil Foto dengan Kamera</button>
                     </div>
 
                     <!-- Progress Bar OCR -->
@@ -2628,6 +2657,10 @@
                         </div>
                     </div>
                     <div id="ocr-amount-candidates" class="hidden flex flex-wrap items-center gap-1 text-[11px]"></div>
+                    <div id="ocr-ppob-extra">
+                        <label class="block font-bold text-slate-600 mb-1">No. Ref / SN / Token Listrik</label>
+                        <input type="text" id="ocr-ext-sn" placeholder="Terbaca otomatis (token 20 digit, SN, atau no. referensi)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold uppercase">
+                    </div>
                     <div id="ocr-sales-extra" class="hidden space-y-2">
                         <div>
                             <label class="block font-bold text-slate-600 mb-1">No. Referensi / Resi Transfer</label>
@@ -2811,9 +2844,15 @@
             <div class="p-4 bg-slate-100 max-h-[70vh] overflow-y-auto flex justify-center">
                 <div id="receipt-print-area" class="bg-white p-3 shadow border border-slate-300 w-full max-w-[300px] font-mono text-[11px] text-slate-900"></div>
             </div>
-            <div class="p-3 bg-white border-t border-slate-200 flex justify-end gap-2 text-xs">
-                <button type="button" onclick="closeModal('receipt-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Tutup</button>
-                <button type="button" onclick="window.print()" class="ipos-btn-primary px-4 py-1.5 rounded font-bold"><i class="fas fa-print mr-1"></i> Cetak Struk</button>
+            <div class="p-3 bg-white border-t border-slate-200 space-y-2 text-xs">
+                <input type="tel" id="receipt-wa-phone" placeholder="No. WA pelanggan (opsional), mis. 0812xxxx" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="sendReceiptWhatsApp()" class="ipos-btn-success px-2 py-2 rounded font-bold"><i class="fab fa-whatsapp mr-1"></i> Kirim Teks (WA)</button>
+                    <button type="button" onclick="shareReceiptJpg()" class="ipos-btn px-2 py-2 rounded font-bold text-blue-800"><i class="fas fa-image mr-1"></i> Kirim JPG</button>
+                    <button type="button" onclick="saveReceiptJpg()" class="ipos-btn px-2 py-2 rounded font-semibold"><i class="fas fa-download mr-1"></i> Simpan JPG</button>
+                    <button type="button" onclick="window.print()" class="ipos-btn-primary px-2 py-2 rounded font-bold"><i class="fas fa-print mr-1"></i> Cetak Nota</button>
+                </div>
+                <button type="button" onclick="closeModal('receipt-modal')" class="ipos-btn w-full py-1.5 rounded font-semibold">Tutup</button>
             </div>
         </div>
     </div>
@@ -7659,9 +7698,9 @@
 
             const cfg = PPOB_CONFIG[mode] || PPOB_CONFIG.pulsa;
             const provSel = document.getElementById('ppob-provider');
-            if (provSel) {
-                provSel.innerHTML = cfg.providers.map(p => `<option value="${p}">${p}</option>`).join('');
-            }
+            const provList = document.getElementById('ppob-provider-list');
+            if (provList) provList.innerHTML = cfg.providers.map(p => `<option value="${esc(p)}"></option>`).join('');
+            if (provSel) provSel.value = cfg.providers[0] || '';
 
             const presetBox = document.getElementById('ppob-quick-presets');
             if (presetBox) {
@@ -7716,7 +7755,7 @@
         async function submitPpobTransaction(e) {
             e.preventDefault();
             const mode = document.getElementById('ppob-mode').value;
-            const provider = document.getElementById('ppob-provider').value;
+            const provider = document.getElementById('ppob-provider').value.trim();
             const target = document.getElementById('ppob-target-number').value.trim();
             const prodDesc = document.getElementById('ppob-product-desc').value.trim();
             const cust = document.getElementById('ppob-customer-name').value.trim() || 'Pelanggan Umum';
@@ -7724,6 +7763,7 @@
             const dstWallet = document.getElementById('ppob-dest-wallet').value;
             const modal = Number(document.getElementById('ppob-modal-amount').value) || 0;
             const sell = Number(document.getElementById('ppob-sell-amount').value) || 0;
+            const ref = (document.getElementById('ppob-ref')?.value || '').trim().toUpperCase();
 
             if (modal <= 0 || sell <= 0) {
                 showToast('Harga modal dan harga jual harus lebih dari 0!', 'error');
@@ -7765,11 +7805,13 @@
                 profit: sell - modal,
                 paymentMethod: dstWallet,
                 sourceWallet: srcWallet,
+                ppob: { mode, provider, target, prodDesc, ref },
                 items: [{ name: `${provider} (${prodDesc}) - ${target}`, qty: 1, price: sell }]
             };
 
             appState.transactions.unshift(trx);
             document.getElementById('ppob-target-number').value = '';
+            const refEl2 = document.getElementById('ppob-ref'); if (refEl2) refEl2.value = '';
             await saveAppState();
             showReceiptModal(trx);
             showToast(`Transaksi ${trxId} berhasil diproses!`, 'success');
@@ -7789,6 +7831,7 @@
                         <div class="font-mono font-bold text-blue-800">${formatRp(t.total)}</div>
                         <div class="text-[10px] font-mono text-emerald-700">+${formatRp(t.profit)}</div>
                     </div>
+                    <button type="button" onclick="reprintTransactionById('${escJs(t.id)}')" class="ipos-btn px-2 py-1 rounded ml-2 shrink-0" title="Cetak / Kirim Nota"><i class="fas fa-print text-blue-700"></i></button>
                 </div>
             `).join('') || '<div class="text-slate-400 italic">Belum ada riwayat loket.</div>';
         }
@@ -7842,6 +7885,7 @@
         function showServiceIntakeReceipt(t) {
             const area = document.getElementById('receipt-print-area');
             if (!area) return;
+            lastReceiptTrx = null;
             area.innerHTML = `
                 <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
                     <div class="font-bold text-sm uppercase">${esc(appState.settings.storeName)}</div>
@@ -8319,9 +8363,13 @@
             `).join('');
         }
 
+        let lastReceiptTrx = null;
         function showReceiptModal(trx) {
             const area = document.getElementById('receipt-print-area');
             if (!area) return;
+            lastReceiptTrx = trx;
+            const waEl = document.getElementById('receipt-wa-phone');
+            if (waEl) waEl.value = /^08\d{8,12}$/.test(trx.ppob?.target || '') ? trx.ppob.target : '';
             area.innerHTML = `
                 <div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">
                     <div class="font-bold text-sm">${esc(appState.settings.storeName)}</div>
@@ -8332,6 +8380,7 @@
                     <div>No: <b>${esc(trx.id)}</b></div>
                     <div>Tgl: ${new Date(trx.date).toLocaleString('id-ID')}</div>
                     <div>Plg: ${esc(trx.customer)}</div>
+                    ${trx.ppob?.ref ? `<div>Ref/SN/Token: <b>${esc(trx.ppob.ref)}</b></div>` : ''}
                     ${trx.transferProof ? `<div>Transfer: ${esc(trx.transferProof.provider || '-')}${trx.transferProof.ref ? ' / Ref ' + esc(trx.transferProof.ref) : ''}</div>` : ''}
                 </div>
                 <div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">
@@ -8349,6 +8398,70 @@
                 <div class="text-center text-[10px] text-slate-600">${esc(appState.settings.storeFooter)}</div>
             `;
             document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        // ---------- Kirim nota: teks (WhatsApp) & gambar JPG ----------
+        function buildReceiptText(trx) {
+            if (!trx) return (document.getElementById('receipt-print-area')?.innerText || '').trim();
+            const st = appState.settings, L = [];
+            L.push(`*${st.storeName}*`);
+            if (st.storeAddress) L.push(st.storeAddress);
+            if (st.storePhone) L.push(`Telp/WA: ${st.storePhone}`);
+            L.push('------------------------------', `No: ${trx.id}`, `Tgl: ${new Date(trx.date).toLocaleString('id-ID')}`, `Pelanggan: ${trx.customer}`);
+            if (trx.ppob?.ref) L.push(`Ref/SN/Token: ${trx.ppob.ref}`);
+            else if (trx.transferProof?.ref) L.push(`Ref Transfer: ${trx.transferProof.ref}`);
+            L.push('------------------------------');
+            (trx.items || []).forEach(i => L.push(`${i.name} x${i.qty}  Rp ${formatRp(i.price * i.qty)}`));
+            L.push('------------------------------', `*TOTAL: Rp ${formatRp(trx.total)}*`);
+            if (st.storeFooter) L.push('', st.storeFooter);
+            return L.join('\n');
+        }
+
+        function sendReceiptWhatsApp() {
+            const raw = (document.getElementById('receipt-wa-phone')?.value || '').trim();
+            const phone = normalizeWaNumber(raw);
+            if (raw && !phone) { showToast('Nomor WhatsApp tidak valid. Contoh: 081234567890', 'error'); return; }
+            const w = window.open(`https://wa.me/${phone}?text=${encodeURIComponent(buildReceiptText(lastReceiptTrx))}`, '_blank', 'noopener');
+            if (!w) showToast('Pop-up diblokir browser! Izinkan pop-up untuk membuka WhatsApp.', 'error');
+        }
+
+        async function receiptToJpgBlob() {
+            if (typeof html2canvas === 'undefined') throw new Error('html2canvas belum termuat');
+            const canvas = await html2canvas(document.getElementById('receipt-print-area'), { scale: 2, backgroundColor: '#ffffff' });
+            return await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+        }
+
+        function receiptJpgName() { return `nota-${lastReceiptTrx?.id || 'struk'}.jpg`; }
+
+        async function saveReceiptJpg() {
+            try {
+                const blob = await receiptToJpgBlob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = receiptJpgName();
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+                showToast('Nota JPG disimpan.', 'success');
+                return true;
+            } catch (e) {
+                showToast('Gagal membuat JPG (library gambar perlu internet saat pertama kali dimuat).', 'error');
+                return false;
+            }
+        }
+
+        async function shareReceiptJpg() {
+            try {
+                const blob = await receiptToJpgBlob();
+                const file = new File([blob], receiptJpgName(), { type: 'image/jpeg' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: 'Nota', text: buildReceiptText(lastReceiptTrx) });
+                } else if (await saveReceiptJpg()) {
+                    showToast('Browser tidak bisa mengirim gambar langsung. JPG sudah disimpan, lampirkan manual di WhatsApp.', 'info');
+                }
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                showToast('Gagal membagikan JPG.', 'error');
+            }
         }
 
         function reprintTransactionById(id) {
@@ -8830,6 +8943,8 @@
         function openOcrScannerModal(mode = 'ppob') {
             if (mode !== 'penjualan') ocrSalesContext = 'kasir';
             document.getElementById('ocr-target-mode').value = mode;
+            const snEl0 = document.getElementById('ocr-ext-sn'); if (snEl0) snEl0.value = '';
+            ['ocr-file-input', 'ocr-camera-input'].forEach(id => { const f = document.getElementById(id); if (f) f.value = ''; });
             const mg = Number(appState.settings?.ocrPpobMargin);
             document.getElementById('ocr-ext-margin').value = Number.isFinite(mg) && mg >= 0 && appState.settings?.ocrPpobMargin !== undefined ? mg : 3000;
             onOcrModeChange();
@@ -8946,6 +9061,8 @@
             document.getElementById('ocr-ext-desc').value = txt.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 2).join(' - ');
             const refEl = document.getElementById('ocr-ext-ref');
             if (refEl) { const r = pickOcrReference(txt); if (r) refEl.value = r; }
+            const snEl = document.getElementById('ocr-ext-sn');
+            if (snEl) { const v = pickOcrSnToken(txt) || pickOcrReference(txt); if (v) snEl.value = v; }
             updateOcrSalesMatch();
             document.getElementById('ocr-detected-badge')?.classList.remove('hidden');
         }
@@ -8953,7 +9070,7 @@
         // ---------- Scan Bukti Transfer pada menu Penjualan (Kasir Cepat & Faktur Penjualan) ----------
         function openSalesTransferScan(ctx) {
             ocrSalesContext = ctx === 'faktur' ? 'faktur' : 'kasir';
-            ['ocr-raw-text', 'ocr-ext-provider', 'ocr-ext-target', 'ocr-ext-amount', 'ocr-ext-desc', 'ocr-ext-ref', 'ocr-file-input']
+            ['ocr-raw-text', 'ocr-ext-provider', 'ocr-ext-target', 'ocr-ext-amount', 'ocr-ext-desc', 'ocr-ext-ref', 'ocr-file-input', 'ocr-camera-input']
                 .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
             const img = document.getElementById('ocr-preview-img');
             if (img) { img.removeAttribute('src'); img.classList.add('hidden'); }
@@ -8966,6 +9083,7 @@
         function onOcrModeChange() {
             const sales = document.getElementById('ocr-target-mode')?.value === 'penjualan';
             document.getElementById('ocr-sales-extra')?.classList.toggle('hidden', !sales);
+            document.getElementById('ocr-ppob-extra')?.classList.toggle('hidden', document.getElementById('ocr-target-mode')?.value !== 'ppob');
             ['ocr-ext-margin', 'ocr-ext-qty'].forEach(id => {
                 document.getElementById(id)?.parentElement?.classList.toggle('hidden', sales);
             });
@@ -9014,6 +9132,15 @@
                 if (tok) return tok.toUpperCase();
             }
             return '';
+        }
+
+        // Token listrik (20 digit) atau nomor SN dari teks hasil OCR
+        function pickOcrSnToken(raw) {
+            const t = String(raw || '');
+            const tok = t.match(/\b(?:\d{4}[ -]?){4}\d{4}\b/);
+            if (tok) return tok[0].replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
+            const m = /(?:\bSN\b|S\/N|serial\s*(?:number|no\.?)?|no\.?\s*serial)\s*[:.\-]?\s*([A-Za-z0-9]{6,})/i.exec(t);
+            return m ? m[1].toUpperCase() : '';
         }
 
         function findWalletIdForProvider(provider) {
@@ -9128,6 +9255,9 @@
                 switchTab('ppob');
                 document.getElementById('ppob-target-number').value = target;
                 document.getElementById('ppob-product-desc').value = desc;
+                const provRaw = (document.getElementById('ocr-ext-provider')?.value || '').trim();
+                if (provRaw) document.getElementById('ppob-provider').value = /^PLN$/i.test(provRaw) ? 'Token Listrik PLN' : provRaw;
+                document.getElementById('ppob-ref').value = (document.getElementById('ocr-ext-sn')?.value || '').trim();
                 document.getElementById('ppob-modal-amount').value = amount;
                 const margin = Math.max(0, Number(document.getElementById('ocr-ext-margin')?.value) || 0);
                 appState.settings.ocrPpobMargin = margin; // jadi default scan berikutnya
@@ -9163,6 +9293,20 @@
         if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
             navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker gagal didaftarkan:', e));
         }
+
+        // Ikon pada sub menu (tab di dalam halaman)
+        (function addSubTabIcons() {
+            const M = { 'msub-items': 'fa-boxes', 'msub-suppliers': 'fa-truck', 'msub-customers': 'fa-users', 'msub-kartustok': 'fa-clipboard-list',
+                'psub-po': 'fa-clipboard-list', 'psub-pembelian': 'fa-file-invoice', 'psub-retur': 'fa-undo-alt',
+                'ssub-so': 'fa-clipboard-list', 'ssub-jual': 'fa-file-invoice-dollar', 'ssub-retur': 'fa-undo-alt', 'ssub-kasir': 'fa-cash-register',
+                'ppob-tab-pulsa': 'fa-mobile-alt', 'ppob-tab-transfer': 'fa-exchange-alt', 'ppob-tab-tarik': 'fa-money-bill-wave', 'ppob-tab-ewallet': 'fa-bolt',
+                'upsub-piutang': 'fa-hand-holding-usd', 'upsub-utang': 'fa-file-invoice-dollar',
+                'stab-general': 'fa-store', 'stab-users': 'fa-users-cog', 'stab-supabase': 'fa-cloud', 'stab-backup': 'fa-database' };
+            Object.entries(M).forEach(([id, ic]) => {
+                const b = document.getElementById(id);
+                if (b && !b.querySelector('i')) b.insertAdjacentHTML('afterbegin', `<i class="fas ${ic} mr-1.5"></i>`);
+            });
+        })();
 
         window.addEventListener('DOMContentLoaded', async () => {
             await loadDatabaseForActiveTenant();
