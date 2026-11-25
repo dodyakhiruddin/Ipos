@@ -3987,6 +3987,7 @@
                 try { return await fn(); } catch (err) { console.error('Pasca-login gagal [' + name + ']:', err); failedSteps.push(name); }
             };
             await run('muat-data', loadDatabaseForActiveTenant);
+            await run('snapshot', () => takeSnapshot('login'));
             let pwChanged = await run('migrasi-password', migrateLegacyPasswords) || false;
             // Naikkan kekuatan hash lama memakai password yang baru saja diketik (hash yang sama = password yang sama)
             await run('upgrade-hash', async () => {
@@ -4187,28 +4188,27 @@
             });
         }
 
-        async function loadStateFromIndexedDBForDb(dbName) {
+        // dataLocked = data lokal GAGAL dibaca: aplikasi dilarang menulis apa pun ke penyimpanan agar data asli tidak tertimpa data demo
+        let dataLocked = false;
+        async function loadStateStrict(dbName) {
             try {
                 const db = await openIndexedDB();
                 return await new Promise((resolve) => {
-                    const tx = db.transaction(STORE_NAME, 'readonly');
-                    const store = tx.objectStore(STORE_NAME);
-                    const req = store.get(`tenant_${dbName}`);
-                    req.onsuccess = () => resolve(req.result ? req.result.payload : null);
-                    req.onerror = () => resolve(null);
+                    const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(`tenant_${dbName}`);
+                    req.onsuccess = () => resolve({ ok: true, payload: req.result ? req.result.payload : null });
+                    req.onerror = () => resolve({ ok: false, payload: null });
                 });
-            } catch (e) {
-                return null;
-            }
+            } catch (e) { return { ok: false, payload: null }; }
         }
+        async function loadStateFromIndexedDBForDb(dbName) { return (await loadStateStrict(dbName)).payload; }
 
         async function saveStateToIndexedDBForDb(dbName, payload) {
+            if (dataLocked && dbName === activeDatabaseName) { console.warn('Penyimpanan diblokir: data lokal gagal dibaca.'); return; }
             try {
                 const db = await openIndexedDB();
                 await new Promise((resolve, reject) => {
                     const tx = db.transaction(STORE_NAME, 'readwrite');
-                    const store = tx.objectStore(STORE_NAME);
-                    store.put({ id: `tenant_${dbName}`, payload, updatedAt: new Date().toISOString() });
+                    tx.objectStore(STORE_NAME).put({ id: `tenant_${dbName}`, payload, updatedAt: new Date().toISOString() });
                     tx.oncomplete = () => resolve();
                     tx.onerror = () => reject(tx.error);
                 });
@@ -4228,10 +4228,75 @@
             } catch (e) {}
         }
 
+        const DATA_COLLECTIONS = ['items','suppliers','customers','voucherProductions','serviceTickets','debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','salesOrders','salesReturns','transactions','stockLedger'];
+        function buildStateFromSaved(saved) {
+            const d = createDefaultState(activeDatabaseName);
+            DATA_COLLECTIONS.forEach(k => { if (!Array.isArray(saved[k])) d[k] = []; }); // koleksi hilang = kosong, BUKAN barang demo
+            if (!saved.wallets || typeof saved.wallets !== 'object') d.wallets = {};
+            return Object.assign(d, saved);
+        }
+        function isPristineSeed(st) { // true bila isinya masih data demo bawaan HTML (belum ada data asli)
+            try {
+                const d = createDefaultState(activeDatabaseName);
+                return !(st.transactions || []).length && !(st.purchaseRecords || []).length && J(st.items) === J(d.items) && J(st.suppliers) === J(d.suppliers);
+            } catch (e) { return false; }
+        }
+
+        // ---------- Snapshot otomatis (jaring pengaman) ----------
+        const SNAP_THROTTLE_MS = { 'login': 6 * 3600e3, 'sebelum-sinkron': 3600e3 };
+        async function takeSnapshot(reason) {
+            const cur = getSanitizedStateForExport();   // diambil SEBELUM ada await
+            try {
+                if (dataLocked || isPristineSeed(cur)) return;
+                const key = '__snaps_' + activeDatabaseName;
+                const r = await loadStateStrict(key);
+                if (!r.ok) return;
+                const list = Array.isArray(r.payload) ? r.payload : [];
+                const last = list[0];
+                if (last && J(last.payload) === J(cur)) return;
+                if (last && SNAP_THROTTLE_MS[reason] && Date.now() - Date.parse(last.at) < SNAP_THROTTLE_MS[reason]) return;
+                list.unshift({ at: new Date().toISOString(), reason, payload: cur });
+                await saveStateToIndexedDBForDb(key, list.slice(0, 8));
+            } catch (e) { console.warn('Snapshot gagal:', e); }
+        }
+        async function renderSnapshotPanel() {
+            const pane = document.getElementById('settings-pane-backup');
+            if (!pane) return;
+            let box = document.getElementById('snapshot-panel');
+            if (!box) { pane.insertAdjacentHTML('afterbegin', '<div id="snapshot-panel" class="bg-white border border-sky-300 rounded p-2.5 text-[11px] space-y-1.5"></div>'); box = document.getElementById('snapshot-panel'); }
+            const r = await loadStateStrict('__snaps_' + activeDatabaseName);
+            const list = (r.ok && Array.isArray(r.payload)) ? r.payload : [];
+            box.innerHTML = '<div class="font-bold text-sky-900"><i class="fas fa-history mr-1"></i> Snapshot Otomatis (cadangan di perangkat ini)</div>' +
+                (list.length ? list.map((x, i) => `<div class="flex items-center justify-between gap-2 border-t border-slate-200 pt-1">
+                    <span>${esc(new Date(x.at).toLocaleString('id-ID'))} &bull; ${esc(x.reason)} &bull; ${(x.payload.items || []).length} barang</span>
+                    <button type="button" onclick="restoreSnapshot(${i})" class="ipos-btn px-2 py-0.5 rounded font-semibold">Pulihkan</button></div>`).join('')
+                    : '<div class="text-slate-500">Belum ada snapshot.</div>');
+        }
+        async function restoreSnapshot(i) {
+            if (!requireAdmin('Memulihkan snapshot')) return;
+            const r = await loadStateStrict('__snaps_' + activeDatabaseName);
+            const snap = r.ok && Array.isArray(r.payload) ? r.payload[i] : null;
+            if (!snap) return;
+            if (!confirm('Pulihkan data ke kondisi ' + new Date(snap.at).toLocaleString('id-ID') + '?\n\nData saat ini disimpan dulu sebagai snapshot.')) return;
+            await takeSnapshot('sebelum-pulih-snapshot');
+            dataLocked = false;
+            syncApplyState(syncClone(snap.payload));
+            await saveAppState();
+            showToast('Data dipulihkan dari snapshot.', 'success');
+            renderSnapshotPanel();
+        }
+
         async function loadDatabaseForActiveTenant() {
-            const saved = await loadStateFromIndexedDBForDb(activeDatabaseName);
-            if (saved) {
-                appState = Object.assign(createDefaultState(activeDatabaseName), saved);
+            dataLocked = false;
+            const loaded = await loadStateStrict(activeDatabaseName);
+            const saved = loaded.payload;
+            if (!loaded.ok) {
+                // Gagal membaca != data kosong. JANGAN membuat/menyimpan data demo; kunci penyimpanan.
+                dataLocked = true;
+                appState = createDefaultState(activeDatabaseName);
+                showToast('Data lokal GAGAL dibaca. Tidak ada data yang ditimpa. Muat ulang halaman, atau pulihkan dari Cloud/Backup.', 'error');
+            } else if (saved) {
+                appState = buildStateFromSaved(saved);
                 ensureCategoriesIntegrity();
                 ensureWalletListIntegrity();
                 if (!Array.isArray(appState.debtsReceivables)) appState.debtsReceivables = [];
@@ -4347,8 +4412,9 @@
             return out;
         }
         function syncApplyState(st) {
+            takeSnapshot('sebelum-sinkron');
             const keep = { url: appState.settings?.supabaseUrl || '', key: appState.settings?.supabaseKey || '' };
-            appState = Object.assign(createDefaultState(activeDatabaseName), st);
+            appState = buildStateFromSaved(st);
             appState.settings = appState.settings || {};
             appState.settings.supabaseUrl = keep.url; appState.settings.supabaseKey = keep.key;
             ['debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','salesOrders','salesReturns','voucherProductions','stockLedger','serviceTickets','transactions','items','suppliers','customers']
@@ -4361,6 +4427,7 @@
 
         async function syncNow() {
             if (!supabaseClient) return { ok: false, error: 'Supabase belum dikonfigurasi' };
+            if (dataLocked) return { ok: false, error: 'Data lokal terkunci (gagal dibaca)' };
             if (syncBase === null) return { ok: true, queued: true };   // sinkron awal belum selesai
             if (syncBusy) { syncAgain = true; return { ok: true, queued: true }; }
             syncBusy = true;
@@ -4370,6 +4437,9 @@
                     if (e1) throw e1;
                     const local = getSanitizedStateForExport();
                     const now = new Date().toISOString();
+                    if (row && row.payload && isPristineSeed(local) && !isPristineSeed(row.payload)) { // perangkat masih data demo, cloud berisi data asli: ambil cloud
+                        syncVersion = row.version; syncBase = syncClone(row.payload); syncApplyState(syncClone(row.payload)); syncPersistMeta(); setCloudSyncStatus(true); return { ok: true };
+                    }
                     if (!row) {
                         const { error } = await supabaseClient.from(SYNC_TABLE).insert({ id: syncTid(), payload: local, version: 1, updated_at: now });
                         if (error && error.code !== '23505') throw error;
@@ -4410,13 +4480,24 @@
         async function initialCloudSync() {
             if (!supabaseClient || !isLoggedIn) return;
             try {
+                if (dataLocked) { // pemulihan: data lokal rusak -> ambil dari cloud bila ada
+                    const { data: row } = await supabaseClient.from(SYNC_TABLE).select('payload,version').eq('id', syncTid()).maybeSingle();
+                    if (row && row.payload && confirm('Data lokal gagal dibaca. Pulihkan dari data Supabase Cloud?')) {
+                        dataLocked = false; syncBase = syncClone(row.payload); syncVersion = row.version || 0;
+                        syncApplyState(syncClone(row.payload)); syncPersistMeta();
+                    } else return;
+                }
                 const meta = await loadStateFromIndexedDBForDb('__sync_' + activeDatabaseName);
                 if (meta && meta.base) { syncBase = meta.base; syncVersion = meta.version || 0; }
                 else {
                     const { data: row, error } = await supabaseClient.from(SYNC_TABLE).select('payload,version').eq('id', syncTid()).maybeSingle();
                     if (error) throw error;
                     if (row && row.payload) {
-                        const useCloud = confirm('Data database [' + activeDatabaseName + '] sudah ada di Supabase.\n\nOK = PAKAI DATA CLOUD (data di perangkat ini diganti)\nBatal = TIMPA CLOUD dengan data perangkat ini');
+                        let useCloud = isPristineSeed(appState); // perangkat baru/masih demo: otomatis pakai cloud
+                        if (!useCloud) {
+                            useCloud = confirm('Data database [' + activeDatabaseName + '] sudah ada di Supabase.\n\nOK = PAKAI DATA CLOUD (data di perangkat ini diganti)\nBatal = TIMPA CLOUD dengan data perangkat ini');
+                            if (!useCloud && !confirm('YAKIN menimpa data CLOUD dengan data perangkat ini?\nData di cloud akan diganti.')) useCloud = true;
+                        }
                         syncBase = syncClone(row.payload); syncVersion = row.version || 0;
                         if (useCloud) syncApplyState(syncClone(row.payload));
                     } else { syncBase = {}; syncVersion = 0; }
@@ -9755,6 +9836,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             document.getElementById(`settings-pane-${tab}`)?.classList.remove('hidden');
             document.getElementById(`stab-${tab}`)?.classList.add('active');
             if (tab === 'users') renderSettingsUsersTable();
+            if (tab === 'backup') renderSnapshotPanel();
         }
 
         let pendingBannerImage; // undefined = tidak berubah, '' = kembali ke default
@@ -10011,7 +10093,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             // Backup tidak memuat kunci Supabase: pertahankan konfigurasi yang sedang aktif
             const keepSbUrl = appState.settings?.supabaseUrl || '';
             const keepSbKey = appState.settings?.supabaseKey || '';
-            const mergedState = Object.assign(createDefaultState(activeDatabaseName), pendingImportedState);
+            await takeSnapshot('sebelum-restore-backup');
+            dataLocked = false;
+            const mergedState = buildStateFromSaved(pendingImportedState);
             appState = mergedState;
             if (!appState.settings) appState.settings = {};
             if (!appState.settings.supabaseUrl && keepSbUrl) appState.settings.supabaseUrl = keepSbUrl;
@@ -10048,6 +10132,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
 
         async function executeTutupBuku() {
             if (!requireAdmin('Tutup Buku')) return;
+            await takeSnapshot('sebelum-tutup-buku');
             const nowIso = new Date().toISOString();
 
             // 1. Kosongkan seluruh riwayat transaksi penjualan, PPOB/BRILink, service HP, pembelian, PO, retur, perakitan & mutasi
@@ -10571,6 +10656,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} // cegah browser menghapus data otomatis
             try { initDesktopMenuScroll(); } catch (e) { console.error('Menu geser gagal:', e); }
             // Daftar database dirender PERTAMA agar login selalu bisa dilakukan,
             // walau ada langkah lain yang error (mis. data lama di browser PC ini kurang lengkap).
