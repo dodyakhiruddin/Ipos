@@ -5123,7 +5123,61 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // =========================================================================
+        // ATURAN FIFO: dokumen & barang yang sudah masuk transaksi TIDAK BOLEH dihapus
+        // =========================================================================
+        // Barang dianggap sudah bertransaksi bila muncul di PO, Pembelian, Retur Pembelian, SO, Penjualan,
+        // Retur Penjualan, Perakitan Voucher, atau punya riwayat kartu stok selain STOK AWAL.
+        // Mengembalikan daftar keterangan (kosong = boleh dihapus).
+        function getItemTransactionUsage(item) {
+            const hits = [];
+            if (!item) return hits;
+            const code = item.code, name = item.name;
+            const hasCode = (rec) => {
+                if (!rec) return false;
+                if (Array.isArray(rec.items) && rec.items.some(x => x && x.code === code)) return true;
+                return rec.itemCode === code || rec.code === code;
+            };
+            const add = (label, list) => {
+                const n = (list || []).filter(hasCode).length;
+                if (n) hits.push(`${label} (${n})`);
+            };
+            add('Pesanan Pembelian', appState.purchaseOrders);
+            add('Pembelian', appState.purchaseRecords);
+            add('Retur Pembelian', appState.purchaseReturns);
+            add('Pesanan Penjualan', appState.salesOrders);
+            add('Penjualan', appState.transactions);
+            add('Retur Penjualan', appState.salesReturns);
+            const vp = (appState.voucherProductions || []).filter(v => v && name && v.targetName === name).length;
+            if (vp) hits.push(`Perakitan Voucher (${vp})`);
+            if (!hits.length) {
+                const led = (appState.stockLedger || []).filter(r => r && r.code === code && r.type !== 'STOK AWAL').length;
+                if (led) hits.push(`Riwayat Kartu Stok (${led})`);
+            }
+            return hits;
+        }
+
+        // Alasan PO tidak boleh dihapus ('' = boleh): sudah ditarik menjadi transaksi Pembelian
+        function getPoLockReason(po) {
+            if (!po) return '';
+            const used = (appState.purchaseRecords || []).find(r => r && r.poRef === po.id);
+            return used ? `sudah diproses menjadi Pembelian ${used.id}` : '';
+        }
+
+        // Alasan SO tidak boleh dihapus ('' = boleh): sudah ditarik menjadi transaksi Penjualan
+        function getSoLockReason(so) {
+            if (!so) return '';
+            const used = (appState.transactions || []).find(t => t && t.soRef === so.id);
+            return used ? `sudah diproses menjadi Penjualan ${used.id}` : '';
+        }
+
         async function deleteMasterItem(idx) {
+            const item = appState.items[idx];
+            const usage = getItemTransactionUsage(item);
+            if (usage.length) {
+                showToast(`Barang ${item.name} (${item.code}) tidak bisa dihapus karena sudah ada transaksi (sistem FIFO): ${usage.join(', ')}.`, 'error');
+                return;
+            }
             appState.items.splice(idx, 1);
             await saveAppState();
             showToast('Barang dihapus dari Master Data.', 'info');
@@ -5602,6 +5656,11 @@
         async function deleteSelectedPo() {
             if (selectedPoIndex < 0 || !appState.purchaseOrders[selectedPoIndex]) {
                 showToast('Pilih salah satu baris Pesanan (PO) yang ingin dihapus!', 'error');
+                return;
+            }
+            const lockPo = getPoLockReason(appState.purchaseOrders[selectedPoIndex]);
+            if (lockPo) {
+                showToast(`Pesanan ${appState.purchaseOrders[selectedPoIndex].id} tidak bisa dihapus karena ${lockPo} (sistem FIFO).`, 'error');
                 return;
             }
             const removed = appState.purchaseOrders.splice(selectedPoIndex, 1)[0];
@@ -7329,6 +7388,11 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 return;
             }
             const target = appState.salesOrders[selectedSoIndex];
+            const lockSo = getSoLockReason(target);
+            if (lockSo) {
+                showToast(`Pesanan ${target.id} tidak bisa dihapus karena ${lockSo} (sistem FIFO).`, 'error');
+                return;
+            }
             if (!confirm(`Hapus Pesanan Penjualan ${target.id}?`)) return;
             const removed = appState.salesOrders.splice(selectedSoIndex, 1)[0];
             selectedSoIndex = -1;
