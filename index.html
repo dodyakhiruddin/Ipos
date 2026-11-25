@@ -887,7 +887,7 @@
                         <div class="ipos-panel-header px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-file-invoice text-indigo-600"></i>
-                                <h2 class="font-bold text-sm text-slate-800">Manajemen Pesanan (PO), Pembelian & Retur Pembelian</h2>
+                                <h2 class="font-bold text-sm text-slate-800">Manajemen Pesanan (PO), Pembelian, Retur Pembelian & Cashback</h2>
                             </div>
                             <div class="flex flex-wrap items-center gap-1.5 text-xs">
                                 <button type="button" onclick="switchPurchaseSubTab('po')" id="psub-po" class="ipos-tab active px-3 py-1 rounded-t font-bold">
@@ -898,6 +898,9 @@
                                 </button>
                                 <button type="button" onclick="switchPurchaseSubTab('retur')" id="psub-retur" class="ipos-tab px-3 py-1 rounded-t font-bold">
                                     <i class="fas fa-undo-alt text-rose-600 mr-1"></i> Retur Pembelian
+                                </button>
+                                <button type="button" onclick="switchPurchaseSubTab('cashback')" id="psub-cashback" class="ipos-tab px-3 py-1 rounded-t font-bold">
+                                    <i class="fas fa-hand-holding-usd text-emerald-600 mr-1"></i> Cashback
                                 </button>
                                 <button type="button" onclick="openOcrScannerModal('pembelian')" class="ipos-btn-primary px-2.5 py-1 rounded text-xs font-bold shadow ml-1">
                                     <i class="fas fa-camera mr-1"></i> Scan Nota
@@ -1061,6 +1064,57 @@
                                     </div>
                                     <div class="text-[11px] text-slate-600">
                                         Baris Terpilih: <b id="selected-retur-label" class="font-mono text-rose-800">Belum ada yang dipilih</b>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-PANE 4: CASHBACK PEMBELIAN -->
+                            <div id="ppane-cashback" class="hidden space-y-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-50/70 border border-emerald-200 rounded p-2.5">
+                                    <div class="text-emerald-950">
+                                        <b>Cashback Pembelian dari Supplier:</b> Catat cashback saat benar-benar cair (tanggal dan nominalnya bebas, tidak harus sama dengan tanggal faktur). Nominal otomatis masuk ke dompet yang dipilih.
+                                    </div>
+                                    <input type="text" id="cashback-search-input" onkeyup="renderPurchaseCashbacksTable()" placeholder="Cari No. Cashback / Supplier / Faktur..." class="bg-white border border-slate-300 rounded px-2.5 py-1 w-64">
+                                </div>
+
+                                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-[52vh]">
+                                    <table class="w-full table-grid border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th class="w-10 text-center">Pilih</th>
+                                                <th class="w-28 text-left">Tanggal Cair</th>
+                                                <th class="w-32 text-left">No. Cashback</th>
+                                                <th class="text-left">Supplier</th>
+                                                <th class="w-36 text-left">Faktur Terkait</th>
+                                                <th class="w-32 text-right">Nominal</th>
+                                                <th class="text-left">Keterangan / Masuk Ke</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cashback-list-tbody"></tbody>
+                                        <tfoot>
+                                            <tr class="bg-slate-100 font-bold">
+                                                <td colspan="5" class="text-right">TOTAL CASHBACK (sesuai pencarian)</td>
+                                                <td id="cashback-total-cell" class="text-right font-mono text-emerald-800">Rp 0</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-300 bg-slate-50 p-2.5 rounded">
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" onclick="openCashbackFormModal(-1)" class="ipos-btn-primary px-3.5 py-1.5 rounded font-bold shadow flex items-center gap-1.5">
+                                            <i class="fas fa-plus"></i> Tambah
+                                        </button>
+                                        <button type="button" onclick="editSelectedCashback()" class="ipos-btn px-3.5 py-1.5 rounded font-bold text-sky-800 shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button type="button" onclick="deleteSelectedCashback()" class="ipos-btn-danger px-3.5 py-1.5 rounded font-bold shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-trash-alt"></i> Hapus
+                                        </button>
+                                    </div>
+                                    <div class="text-[11px] text-slate-600">
+                                        Baris Terpilih: <b id="selected-cashback-label" class="font-mono text-emerald-800">Belum ada yang dipilih</b>
                                     </div>
                                 </div>
                             </div>
@@ -2408,7 +2462,7 @@
                         <button type="button" onclick="document.getElementById('item-import-file').click()" class="ipos-btn-success px-2.5 py-1 rounded text-[11px] font-bold"><i class="fas fa-file-import mr-1"></i> Import Excel/CSV</button>
                         <input type="file" id="item-import-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importItemsFromFile(event)">
                     </div>
-                    <div class="text-[10px] text-emerald-900">Kolom: No, Kode, Kategori, Nama Barang, Satuan, HPP, Harga Umum, Harga Grosir. Kode &amp; nama yang sama tidak dibuat ganda (hanya harga diperbarui). Kode kosong = dibuat otomatis.</div>
+                    <div class="text-[10px] text-emerald-900">Kolom: No, Kode, Nama Item, Kategori, Satuan, HPP, Harga Eceran (Umum), Harga Grosir. Kode &amp; nama yang sama tidak dibuat ganda (hanya harga diperbarui). Kode kosong = dibuat otomatis.</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -3094,6 +3148,53 @@
                 <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
                     <button type="button" onclick="closeModal('return-form-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
                     <button type="submit" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">Simpan Retur</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: TAMBAH / EDIT CASHBACK PEMBELIAN ==================== -->
+    <div id="cashback-form-modal" class="fixed inset-0 bg-slate-900/55 z-50 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between bg-emerald-50">
+                <span id="cashback-modal-title" class="font-bold text-xs sm:text-sm text-emerald-950"><i class="fas fa-hand-holding-usd mr-1.5 text-emerald-600"></i> Tambah Cashback Pembelian</span>
+                <button onclick="closeModal('cashback-form-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <form onsubmit="savePurchaseCashbackRecord(event)" class="p-4 space-y-3 text-xs">
+                <input type="hidden" id="edit-cashback-index" value="-1">
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-bold mb-1">No. Cashback</label>
+                        <input type="text" id="cb-form-no" readonly class="w-full bg-slate-100 border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Tanggal Cashback Cair</label>
+                        <input type="date" id="cb-form-date" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Pilih Supplier</label>
+                    <select id="cb-form-supplier" onchange="fillCashbackInvoiceOptions()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Faktur Pembelian Terkait <span class="font-normal text-slate-500">(opsional)</span></label>
+                    <select id="cb-form-invoice" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono"></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Nominal Cashback (Rp)</label>
+                    <input type="number" id="cb-form-amount" min="1" step="any" required placeholder="Isi sesuai yang benar-benar diterima" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Cashback Masuk Ke</label>
+                    <select id="cb-form-wallet" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Keterangan</label>
+                    <input type="text" id="cb-form-note" placeholder="Contoh: Cashback target bulan Oktober / Bonus pembelian" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                    <button type="button" onclick="closeModal('cashback-form-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Batal</button>
+                    <button type="submit" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">Simpan Cashback</button>
                 </div>
             </form>
         </div>
@@ -4120,6 +4221,7 @@
                 purchaseOrders: [],
                 purchaseRecords: [],
                 purchaseReturns: [],
+                purchaseCashbacks: [],
                 salesOrders: [],
                 salesReturns: [],
                 transactions: [
@@ -4228,7 +4330,7 @@
             } catch (e) {}
         }
 
-        const DATA_COLLECTIONS = ['walletDeletions','items','suppliers','customers','voucherProductions','serviceTickets','debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','salesOrders','salesReturns','transactions','stockLedger'];
+        const DATA_COLLECTIONS = ['walletDeletions','items','suppliers','customers','voucherProductions','serviceTickets','debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','transactions','stockLedger'];
         function buildStateFromSaved(saved) {
             const d = createDefaultState(activeDatabaseName);
             DATA_COLLECTIONS.forEach(k => { if (!Array.isArray(saved[k])) d[k] = []; }); // koleksi hilang = kosong, BUKAN barang demo
@@ -4307,6 +4409,7 @@
                 if (!Array.isArray(appState.purchaseOrders)) appState.purchaseOrders = [];
                 if (!Array.isArray(appState.purchaseRecords)) appState.purchaseRecords = [];
                 if (!Array.isArray(appState.purchaseReturns)) appState.purchaseReturns = [];
+                if (!Array.isArray(appState.purchaseCashbacks)) appState.purchaseCashbacks = [];
                 if (!Array.isArray(appState.salesOrders)) appState.salesOrders = [];
                 if (!Array.isArray(appState.salesReturns)) appState.salesReturns = [];
                 if (!Array.isArray(appState.voucherProductions)) appState.voucherProductions = [];
@@ -4421,7 +4524,7 @@
             appState = buildStateFromSaved(st);
             appState.settings = appState.settings || {};
             appState.settings.supabaseUrl = keep.url; appState.settings.supabaseKey = keep.key;
-            ['debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','salesOrders','salesReturns','voucherProductions','stockLedger','serviceTickets','transactions','items','suppliers','customers']
+            ['debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','voucherProductions','stockLedger','serviceTickets','transactions','items','suppliers','customers']
                 .forEach(k => { if (!Array.isArray(appState[k])) appState[k] = []; });
             try { ensureCategoriesIntegrity(); ensureWalletListIntegrity(); } catch (e) {}
             saveStateToIndexedDBForDb(activeDatabaseName, appState).catch(() => {});
@@ -4563,7 +4666,7 @@
             let maxSeq = reservedInvoiceSeq[ymd] || 0;
             const pools = [
                 appState.transactions, appState.purchaseOrders, appState.purchaseRecords,
-                appState.purchaseReturns, appState.serviceTickets, appState.debtsReceivables,
+                appState.purchaseReturns, appState.purchaseCashbacks, appState.serviceTickets, appState.debtsReceivables,
                 appState.salesOrders, appState.salesReturns
             ];
             pools.forEach(list => {
@@ -4691,6 +4794,7 @@
             renderPoTable();
             renderPurchasesTable();
             renderPurchaseReturnsTable();
+            renderPurchaseCashbacksTable();
             populateSalesDropdowns();
             renderSoTable();
             renderSalesTable();
@@ -4841,6 +4945,7 @@
             syncSelect('sc-dest-wallet', '', '<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>');
             syncSelect('dp-wallet-select');
             syncSelect('ret-form-wallet', '', '<option value="POTONG_UTANG">Potong Utang Supplier (Tanpa Kas Masuk)</option>');
+            syncSelect('cb-form-wallet', '', '<option value="POTONG_UTANG">Potong Utang Supplier (Tanpa Kas Masuk)</option>');
             syncSelect('sale-form-payment', '', '<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>');
             syncSelect('sret-form-wallet', '', '<option value="POTONG_PIUTANG">Potong Piutang Pelanggan (Tanpa Kas Keluar)</option>');
             refreshPayModes();
@@ -4975,6 +5080,7 @@
             cnt('Pembelian', L(appState.purchaseRecords).filter(r => r && r.sourceWallet === id).length);
             cnt('Pesanan Pembelian', L(appState.purchaseOrders).filter(r => r && r.sourceWallet === id).length);
             cnt('Retur Pembelian', L(appState.purchaseReturns).filter(r => r && r.wallet === id).length);
+            cnt('Cashback Pembelian', L(appState.purchaseCashbacks).filter(r => r && r.wallet === id).length);
             cnt('Retur Penjualan', L(appState.salesReturns).filter(r => r && r.wallet === id).length);
             cnt('Service HP', L(appState.serviceTickets).filter(t => t && (t.paymentMethod === id || t.wallet === id || t.sourceWallet === id)).length);
             cnt('Bayar Utang/Piutang', L(appState.debtsReceivables).reduce((n, d) => n + L(d && d.payments).filter(p => p && p.wallet === id).length, 0));
@@ -5192,8 +5298,8 @@
         }
 
                 // ---------- EXPORT / IMPORT DATA BARANG (Excel & CSV) ----------
-        const ITEM_IO_HEADERS = ['No', 'Kode', 'Kategori', 'Nama Barang', 'Satuan', 'HPP', 'Harga Umum', 'Harga Grosir'];
-        const ITEM_IO_COLS = [{ wch: 6 }, { wch: 14 }, { wch: 16 }, { wch: 38 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+        const ITEM_IO_HEADERS = ['No', 'Kode', 'Nama Item', 'Kategori', 'Satuan', 'HPP', 'Harga Eceran (Umum)', 'Harga Grosir'];
+        const ITEM_IO_COLS = [{ wch: 6 }, { wch: 14 }, { wch: 38 }, { wch: 16 }, { wch: 8 }, { wch: 12 }, { wch: 20 }, { wch: 12 }];
 
         function itemIoCheckLib() {
             if (typeof XLSX === 'undefined') {
@@ -5215,17 +5321,18 @@
             if (!itemIoCheckLib()) return;
             const rows = [
                 ITEM_IO_HEADERS,
-                [1, 'VCR-001', 'Voucher', 'Voucher Telkomsel 3GB / 5 Hari', 'PCS', 10000, 13000, 12000],
-                [2, '', 'Aksesoris', 'Kabel Data Type-C', 'PCS', 15000, 25000, 20000]
+                [1, 'VCR-001', 'Voucher Telkomsel 3GB / 5 Hari', 'Voucher', 'PCS', 10000, 13000, 12000],
+                [2, '', 'Kabel Data Type-C', 'Aksesoris', 'PCS', 15000, 25000, 20000]
             ];
             const guide = [
                 ['Petunjuk Pengisian'],
                 ['1. Jangan ubah nama kolom pada baris pertama sheet "Data Barang". Kolom No hanya nomor urut.'],
-                ['2. Kode boleh dikosongkan (dibuat otomatis). Nama Barang wajib diisi.'],
-                ['3. Jika Kode dan Nama Barang sama dengan data yang sudah ada, barang TIDAK dibuat ganda; hanya HPP/Harga yang diperbarui.'],
-                ['4. Jika Kode sama tetapi Nama Barang berbeda, baris dilewati agar kode tidak bentrok.'],
+                ['2. Kode boleh dikosongkan (dibuat otomatis). Nama Item wajib diisi.'],
+                ['3. Jika Kode dan Nama Item sama dengan data yang sudah ada, barang TIDAK dibuat ganda; hanya HPP/Harga yang diperbarui.'],
+                ['4. Jika Kode sama tetapi Nama Item berbeda, baris dilewati agar kode tidak bentrok.'],
                 ['5. Kategori baru otomatis ditambahkan. Satuan kosong = PCS. Stok tidak diimpor (barang baru stok 0).'],
-                ['6. HPP, Harga Umum, Harga Grosir diisi angka tanpa titik/Rp.']
+                ['6. HPP, Harga Eceran (Umum), Harga Grosir diisi angka tanpa titik/Rp.'],
+                ['7. Urutan kolom: No, Kode, Nama Item, Kategori, Satuan, HPP, Harga Eceran (Umum), Harga Grosir.']
             ];
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -5244,7 +5351,7 @@
                 return;
             }
             const rows = [ITEM_IO_HEADERS].concat(items.map((it, i) => [
-                i + 1, it.code || '', it.category || '', it.name || '', it.unit || 'PCS',
+                i + 1, it.code || '', it.name || '', it.category || '', it.unit || 'PCS',
                 Number(it.cost) || 0, Number(it.price) || 0,
                 Number(it.wholesalePrice) || Number(it.price) || 0
             ]));
@@ -5270,6 +5377,7 @@
 
         function itemIoKey(h) {
             const k = String(h ?? '').toLowerCase().replace(/[^a-z]/g, '');
+            if (k.startsWith('hargaeceran') || k.startsWith('hargaumum')) return 'price'; // "Harga Eceran (Umum)", "Harga Umum", dst.
             const map = {
                 kode: 'code', kodeitem: 'code', kodebarang: 'code', barcode: 'code', code: 'code', sku: 'code',
                 kategori: 'category', jenis: 'category', category: 'category',
@@ -5302,7 +5410,7 @@
                         return o;
                     });
                     if (!rows.some(r => 'name' in r)) {
-                        showToast('Kolom "Nama Barang" tidak ditemukan. Gunakan template dari tombol "Unduh Template".', 'error');
+                        showToast('Kolom "Nama Item" tidak ditemukan. Gunakan template dari tombol "Unduh Template".', 'error');
                         return;
                     }
 
@@ -5668,6 +5776,7 @@
         let selectedPoIndex = -1;
         let selectedPurchaseIndex = -1;
         let selectedReturnIndex = -1;
+        let selectedCashbackIndex = -1;
         let poDraftItems = [];
         let purchaseDraftItems = [];
 
@@ -5688,7 +5797,7 @@
         }
 
         function switchPurchaseSubTab(sub) {
-            ['po', 'pembelian', 'retur'].forEach(s => {
+            ['po', 'pembelian', 'retur', 'cashback'].forEach(s => {
                 document.getElementById(`ppane-${s}`)?.classList.add('hidden');
                 document.getElementById(`psub-${s}`)?.classList.remove('active');
             });
@@ -5698,11 +5807,12 @@
             renderPoTable();
             renderPurchasesTable();
             renderPurchaseReturnsTable();
+            renderPurchaseCashbacksTable();
         }
 
         function populatePurchaseDropdowns() {
             const supHtml = appState.suppliers.map(s => `<option value="${esc(s.name)}">${esc(s.code)} - ${esc(s.name)}</option>`).join('');
-            ['po-form-supplier', 'buy-item-supplier', 'ret-form-supplier'].forEach(id => {
+            ['po-form-supplier', 'buy-item-supplier', 'ret-form-supplier', 'cb-form-supplier'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     const prev = el.value;
@@ -7068,6 +7178,165 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             document.getElementById('selected-retur-label').textContent = 'Belum ada yang dipilih';
             await saveAppState();
             showToast(`Retur Pembelian ${old.id} dihapus & stok/saldo dipulihkan!`, 'info');
+        }
+
+
+        // --- D. CASHBACK PEMBELIAN (cair di hari berbeda, nominal bebas) ---
+        function renderPurchaseCashbacksTable() {
+            const tbody = document.getElementById('cashback-list-tbody');
+            if (!tbody) return;
+            const q = (document.getElementById('cashback-search-input')?.value || '').toLowerCase();
+            const all = Array.isArray(appState.purchaseCashbacks) ? appState.purchaseCashbacks : [];
+            const list = all.filter(r => r && (
+                (r.id || '').toLowerCase().includes(q) ||
+                (r.supplier || '').toLowerCase().includes(q) ||
+                (r.invoiceRef || '').toLowerCase().includes(q) ||
+                (r.note || '').toLowerCase().includes(q)
+            )).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+            const totalCell = document.getElementById('cashback-total-cell');
+            if (totalCell) totalCell.textContent = formatRp(list.reduce((s, r) => s + (Number(r.amount) || 0), 0));
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">Belum ada data Cashback. Klik tombol <b>Tambah</b> di bawah saat cashback dari supplier sudah cair.</td></tr>`;
+                if (!all[selectedCashbackIndex]) {
+                    selectedCashbackIndex = -1;
+                    const lb = document.getElementById('selected-cashback-label');
+                    if (lb) lb.textContent = 'Belum ada yang dipilih';
+                }
+                return;
+            }
+
+            tbody.innerHTML = list.map((r) => {
+                const realIdx = all.indexOf(r);
+                const isSelected = realIdx === selectedCashbackIndex;
+                const dest = r.wallet === 'POTONG_UTANG' ? 'Potong Utang' : getWalletNameById(r.wallet);
+                return `
+                    <tr onclick="selectCashbackRow(${realIdx})" ondblclick="openCashbackFormModal(${realIdx})" class="cursor-pointer ${isSelected ? '!bg-emerald-100/90 font-semibold' : ''}">
+                        <td class="text-center"><input type="radio" name="cashback-row-radio" ${isSelected ? 'checked' : ''} onchange="selectCashbackRow(${realIdx})"></td>
+                        <td class="font-mono">${(r.date || '').slice(0, 10)}</td>
+                        <td class="font-mono font-bold text-emerald-900">${esc(r.id)}</td>
+                        <td>${esc(r.supplier)}</td>
+                        <td class="font-mono">${esc(r.invoiceRef || '-')}</td>
+                        <td class="text-right font-mono font-bold text-emerald-800">${formatRp(r.amount)}</td>
+                        <td>${esc(r.note || '')}${r.note ? ' ' : ''}(${esc(dest)})</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function selectCashbackRow(idx) {
+            selectedCashbackIndex = idx;
+            const r = (appState.purchaseCashbacks || [])[idx];
+            const lb = document.getElementById('selected-cashback-label');
+            if (lb) lb.textContent = r ? `${r.id} - ${r.supplier} (${formatRp(r.amount)})` : 'Belum ada yang dipilih';
+            renderPurchaseCashbacksTable();
+        }
+
+        function fillCashbackInvoiceOptions(selected = '') {
+            const sel = document.getElementById('cb-form-invoice');
+            if (!sel) return;
+            const sup = document.getElementById('cb-form-supplier')?.value || '';
+            const recs = (appState.purchaseRecords || []).filter(r => r && (!sup || r.supplier === sup))
+                .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+            sel.innerHTML = '<option value="">- Tidak terkait faktur tertentu -</option>' +
+                recs.map(r => `<option value="${esc(r.id)}">${esc(r.id)} (${(r.date || '').slice(0, 10)}) - ${formatRp(r.total)}</option>`).join('');
+            if (selected && Array.from(sel.options).some(o => o.value === selected)) sel.value = selected;
+        }
+
+        function openCashbackFormModal(idx = -1) {
+            populatePurchaseDropdowns();
+            populateWalletDropdownsSafe();
+            document.getElementById('edit-cashback-index').value = idx;
+            const list = appState.purchaseCashbacks || [];
+            if (idx >= 0 && list[idx]) {
+                const r = list[idx];
+                document.getElementById('cashback-modal-title').innerHTML = `<i class="fas fa-edit mr-1.5 text-emerald-600"></i> Edit Cashback: ${esc(r.id)}`;
+                document.getElementById('cb-form-no').value = r.id;
+                document.getElementById('cb-form-date').value = (r.date || '').slice(0, 10) || getTodayIsoDate();
+                document.getElementById('cb-form-supplier').value = r.supplier;
+                fillCashbackInvoiceOptions(r.invoiceRef || '');
+                document.getElementById('cb-form-amount').value = r.amount;
+                document.getElementById('cb-form-wallet').value = r.wallet || 'KAS_TOKO';
+                document.getElementById('cb-form-note').value = r.note || '';
+            } else {
+                document.getElementById('cashback-modal-title').innerHTML = `<i class="fas fa-hand-holding-usd mr-1.5 text-emerald-600"></i> Tambah Cashback Pembelian`;
+                document.getElementById('cb-form-no').value = generateInvoiceId('CBK');
+                document.getElementById('cb-form-date').value = getTodayIsoDate();
+                fillCashbackInvoiceOptions('');
+                document.getElementById('cb-form-amount').value = '';
+                document.getElementById('cb-form-note').value = '';
+            }
+            document.getElementById('cashback-form-modal').classList.remove('hidden');
+        }
+
+        // Pastikan pilihan dompet di form cashback terisi (dompet diisi oleh refreshAllUI; ini cadangan bila belum)
+        function populateWalletDropdownsSafe() {
+            const el = document.getElementById('cb-form-wallet');
+            if (!el || el.options.length) return;
+            const opts = (appState.walletList || []).map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
+            el.innerHTML = opts + '<option value="POTONG_UTANG">Potong Utang Supplier (Tanpa Kas Masuk)</option>';
+        }
+
+        function editSelectedCashback() {
+            if (selectedCashbackIndex < 0 || !(appState.purchaseCashbacks || [])[selectedCashbackIndex]) {
+                showToast('Pilih salah satu baris Cashback terlebih dahulu!', 'error');
+                return;
+            }
+            openCashbackFormModal(selectedCashbackIndex);
+        }
+
+        async function savePurchaseCashbackRecord(e) {
+            e.preventDefault();
+            if (!Array.isArray(appState.purchaseCashbacks)) appState.purchaseCashbacks = [];
+            const idx = Number(document.getElementById('edit-cashback-index').value);
+            const docNo = document.getElementById('cb-form-no').value;
+            const date = document.getElementById('cb-form-date').value;
+            const supplier = document.getElementById('cb-form-supplier').value;
+            const invoiceRef = document.getElementById('cb-form-invoice').value;
+            const amount = Number(document.getElementById('cb-form-amount').value) || 0;
+            const wallet = document.getElementById('cb-form-wallet').value;
+            const note = document.getElementById('cb-form-note').value.trim();
+
+            if (!supplier) { showToast('Pilih supplier terlebih dahulu!', 'error'); return; }
+            if (!(amount > 0)) { showToast('Nominal cashback harus lebih dari 0!', 'error'); return; }
+            if (!wallet) { showToast('Pilih dompet tujuan cashback!', 'error'); return; }
+
+            if (idx >= 0 && appState.purchaseCashbacks[idx]) {
+                const old = appState.purchaseCashbacks[idx];
+                if (old.wallet !== 'POTONG_UTANG' && appState.wallets[old.wallet] !== undefined) {
+                    appState.wallets[old.wallet] -= Number(old.amount) || 0; // batalkan efek lama dulu
+                }
+            }
+            if (wallet !== 'POTONG_UTANG' && appState.wallets[wallet] !== undefined) {
+                appState.wallets[wallet] += amount;
+            }
+
+            const rec = { id: docNo, date, supplier, invoiceRef, amount, wallet, note };
+            if (idx >= 0) appState.purchaseCashbacks[idx] = rec;
+            else appState.purchaseCashbacks.unshift(rec);
+
+            closeModal('cashback-form-modal');
+            await saveAppState();
+            showToast(`Cashback ${docNo} berhasil disimpan!`, 'success');
+        }
+
+        async function deleteSelectedCashback() {
+            const list = appState.purchaseCashbacks || [];
+            if (selectedCashbackIndex < 0 || !list[selectedCashbackIndex]) {
+                showToast('Pilih salah satu baris Cashback yang ingin dihapus!', 'error');
+                return;
+            }
+            const cur = list[selectedCashbackIndex];
+            if (!confirm(`Hapus cashback ${cur.id} (${formatRp(cur.amount)})?\n\nSaldo dompet akan dikurangi kembali.`)) return;
+            const old = list.splice(selectedCashbackIndex, 1)[0];
+            if (old.wallet !== 'POTONG_UTANG' && appState.wallets[old.wallet] !== undefined) {
+                appState.wallets[old.wallet] -= Number(old.amount) || 0;
+            }
+            selectedCashbackIndex = -1;
+            const lb = document.getElementById('selected-cashback-label');
+            if (lb) lb.textContent = 'Belum ada yang dipilih';
+            await saveAppState();
+            showToast(`Cashback ${old.id} dihapus & saldo dipulihkan!`, 'info');
         }
 
         function openDepositModal() {
@@ -9282,6 +9551,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             const tempo = recs.filter(r => r.isTempo).reduce((s, r) => s + (Number(r.total) || 0), 0);
             const qty = recs.reduce((s, r) => s + (Number(r.qty) || 0), 0);
             const retTotal = rets.reduce((s, r) => s + (Number(r.total) || 0), 0);
+            const cbs = (appState.purchaseCashbacks || []).filter(r => r && rptInRange(r.date))
+                .sort((a, b) => rptLocalDay(b.date).localeCompare(rptLocalDay(a.date)));
+            const cbTotal = cbs.reduce((s, r) => s + (Number(r.amount) || 0), 0);
             return {
                 title: 'Laporan Pembelian',
                 summary: [
@@ -9290,7 +9562,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                     { l: 'Pembelian Tempo (Utang)', v: tempo, rp: true, c: 'text-amber-700' },
                     { l: 'Pembelian Tunai/Dompet', v: total - tempo, rp: true },
                     { l: 'Retur Pembelian', v: retTotal, rp: true, c: 'text-red-700' },
-                    { l: 'Pembelian Bersih', v: total - retTotal, rp: true, c: 'text-emerald-700' }
+                    { l: 'Cashback Diterima', v: cbTotal, rp: true, c: 'text-emerald-700' },
+                    { l: 'Pembelian Bersih (setelah Retur & Cashback)', v: total - retTotal - cbTotal, rp: true, c: 'text-emerald-700' }
                 ],
                 sections: [
                     {
@@ -9309,6 +9582,14 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                         rows: rets.map(r => [rptFmtDay(r.date), r.id, r.supplier, r.itemName, Number(r.qty) || 0, Number(r.total) || 0,
                             r.wallet === 'POTONG_UTANG' ? 'Potong Utang' : getWalletNameById(r.wallet)]),
                         foot: ['', 'TOTAL', '', '', rets.reduce((s, r) => s + (Number(r.qty) || 0), 0), retTotal, '']
+                    },
+                    {
+                        title: 'Cashback Pembelian',
+                        cols: [{ h: 'Tanggal Cair' }, { h: 'No. Cashback' }, { h: 'Supplier' }, { h: 'Faktur Terkait' },
+                            { h: 'Nominal', a: 'right' }, { h: 'Masuk Ke' }],
+                        rows: cbs.map(r => [rptFmtDay(r.date), r.id, r.supplier, r.invoiceRef || '-', Number(r.amount) || 0,
+                            r.wallet === 'POTONG_UTANG' ? 'Potong Utang' : getWalletNameById(r.wallet)]),
+                        foot: ['', 'TOTAL', '', '', cbTotal, '']
                     }
                 ]
             };
@@ -9498,6 +9779,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             });
             (appState.purchaseReturns || []).forEach(r => {
                 if (r.wallet !== 'POTONG_UTANG') add(r.date, r.wallet, r.id, `Retur pembelian ${r.itemName || ''}`, r.total, 0);
+            });
+            (appState.purchaseCashbacks || []).forEach(r => {
+                if (r.wallet !== 'POTONG_UTANG') add(r.date, r.wallet, r.id, `Cashback pembelian ${r.supplier || ''}`, r.amount, 0);
             });
             (appState.salesReturns || []).forEach(r => {
                 if (r.wallet !== 'POTONG_PIUTANG') add(r.date, r.wallet, r.id, `Retur penjualan ${r.itemName || ''}`, 0, r.total);
@@ -10166,6 +10450,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             if (!Array.isArray(appState.purchaseOrders)) appState.purchaseOrders = [];
             if (!Array.isArray(appState.purchaseRecords)) appState.purchaseRecords = [];
             if (!Array.isArray(appState.purchaseReturns)) appState.purchaseReturns = [];
+            if (!Array.isArray(appState.purchaseCashbacks)) appState.purchaseCashbacks = [];
             if (!Array.isArray(appState.salesOrders)) appState.salesOrders = [];
             if (!Array.isArray(appState.salesReturns)) appState.salesReturns = [];
             if (!Array.isArray(appState.voucherProductions)) appState.voucherProductions = [];
@@ -10197,6 +10482,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             appState.purchaseOrders = [];
             appState.purchaseRecords = [];
             appState.purchaseReturns = [];
+            appState.purchaseCashbacks = [];
             appState.salesOrders = [];
             appState.salesReturns = [];
             appState.voucherProductions = [];
