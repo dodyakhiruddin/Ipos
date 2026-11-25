@@ -5901,12 +5901,11 @@
                 grandTotal += sub;
                 return `
                     <tr class="border-b border-slate-300">
-                        <td class="py-1.5 px-2 text-center border-r border-slate-300">${idx + 1}</td>
-                        <td class="py-1.5 px-2 font-mono border-r border-slate-300">${esc(it.code)}</td>
-                        <td class="py-1.5 px-2 border-r border-slate-300">${esc(it.name)}</td>
-                        <td class="py-1.5 px-2 text-center font-mono border-r border-slate-300">${it.qty}</td>
-                        <td class="py-1.5 px-2 text-right font-mono border-r border-slate-300">${formatRp(it.cost)}</td>
-                        <td class="py-1.5 px-2 text-right font-mono font-bold">${formatRp(sub)}</td>
+                        <td class="py-0.5 px-2 leading-tight text-center border-r border-slate-300">${idx + 1}</td>
+                        <td class="py-0.5 px-2 leading-tight border-r border-slate-300">${esc(it.name)}</td>
+                        <td class="py-0.5 px-2 leading-tight text-center font-mono border-r border-slate-300">${it.qty}</td>
+                        <td class="py-0.5 px-2 leading-tight text-right font-mono border-r border-slate-300">${formatRp(it.cost)}</td>
+                        <td class="py-0.5 px-2 leading-tight text-right font-mono font-bold">${formatRp(sub)}</td>
                     </tr>
                 `;
             }).join('');
@@ -5941,8 +5940,7 @@
                 <table class="w-full border border-slate-400 border-collapse mb-3 text-[11px]">
                     <thead>
                         <tr class="bg-slate-200 border-b border-slate-400 font-bold">
-                            <th class="py-1.5 px-2 text-center border-r border-slate-400 w-8">No</th>
-                            <th class="py-1.5 px-2 text-left border-r border-slate-400 w-24">Kode</th>
+                            <th class="py-1 px-2 text-center border-r border-slate-400 w-8">No</th>
                             <th class="py-1.5 px-2 text-left border-r border-slate-400">Nama Produk</th>
                             <th class="py-1.5 px-2 text-center border-r border-slate-400 w-14">Qty</th>
                             <th class="py-1.5 px-2 text-right border-r border-slate-400 w-24">Harga Satuan</th>
@@ -5954,7 +5952,7 @@
                     </tbody>
                     <tfoot>
                         <tr class="bg-slate-100 font-extrabold border-t-2 border-slate-400">
-                            <td colspan="3" class="py-2 px-2 text-right border-r border-slate-400">TOTAL KESELURUHAN :</td>
+                            <td colspan="2" class="py-1 px-2 text-right border-r border-slate-400">TOTAL KESELURUHAN :</td>
                             <td class="py-2 px-2 text-center font-mono border-r border-slate-400">${formatNum(totalQty)}</td>
                             <td class="py-2 px-2 border-r border-slate-400"></td>
                             <td class="py-2 px-2 text-right font-mono text-sm">Rp ${formatRp(grandTotal)}</td>
@@ -7480,12 +7478,11 @@
                 grandTotal += sub;
                 return `
                     <tr class="border-b border-slate-300">
-                        <td class="py-1.5 px-2 text-center border-r border-slate-300">${idx + 1}</td>
-                        <td class="py-1.5 px-2 font-mono border-r border-slate-300">${esc(it.code)}</td>
-                        <td class="py-1.5 px-2 border-r border-slate-300">${esc(it.name)}</td>
-                        <td class="py-1.5 px-2 text-center font-mono border-r border-slate-300">${it.qty}</td>
-                        <td class="py-1.5 px-2 text-right font-mono border-r border-slate-300">${formatRp(it.price)}</td>
-                        <td class="py-1.5 px-2 text-right font-mono font-bold">${formatRp(sub)}</td>
+                        <td class="py-0.5 px-2 leading-tight text-center border-r border-slate-300">${idx + 1}</td>
+                        <td class="py-0.5 px-2 leading-tight border-r border-slate-300">${esc(it.name)}</td>
+                        <td class="py-0.5 px-2 leading-tight text-center font-mono border-r border-slate-300">${it.qty}</td>
+                        <td class="py-0.5 px-2 leading-tight text-right font-mono border-r border-slate-300">${formatRp(it.price)}</td>
+                        <td class="py-0.5 px-2 leading-tight text-right font-mono font-bold">${formatRp(sub)}</td>
                     </tr>
                 `;
             }).join('');
@@ -7519,8 +7516,7 @@
                 <table class="w-full border border-slate-400 border-collapse mb-3 text-[11px]">
                     <thead>
                         <tr class="bg-slate-200 border-b border-slate-400 font-bold">
-                            <th class="py-1.5 px-2 text-center border-r border-slate-400 w-8">No</th>
-                            <th class="py-1.5 px-2 text-left border-r border-slate-400 w-24">Kode</th>
+                            <th class="py-1 px-2 text-center border-r border-slate-400 w-8">No</th>
                             <th class="py-1.5 px-2 text-left border-r border-slate-400">Nama Produk</th>
                             <th class="py-1.5 px-2 text-center border-r border-slate-400 w-14">Qty</th>
                             <th class="py-1.5 px-2 text-right border-r border-slate-400 w-24">Harga Satuan</th>
@@ -7530,7 +7526,7 @@
                     <tbody>${rowsHtml}</tbody>
                     <tfoot>
                         <tr class="bg-slate-100 font-extrabold border-t-2 border-slate-400">
-                            <td colspan="3" class="py-2 px-2 text-right border-r border-slate-400">TOTAL KESELURUHAN :</td>
+                            <td colspan="2" class="py-1 px-2 text-right border-r border-slate-400">TOTAL KESELURUHAN :</td>
                             <td class="py-2 px-2 text-center font-mono border-r border-slate-400">${formatNum(totalQty)}</td>
                             <td class="py-2 px-2 border-r border-slate-400"></td>
                             <td class="py-2 px-2 text-right font-mono text-sm">Rp ${formatRp(grandTotal)}</td>
