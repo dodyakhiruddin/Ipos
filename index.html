@@ -212,10 +212,15 @@
             body > .flex.flex-1.overflow-hidden { flex-direction:column; }
             .ipos-sidebar { width:100% !important; flex-direction:row !important; align-items:stretch;
                 border-bottom:2px solid var(--orange); box-shadow:0 2px 8px rgba(11,37,87,.25); }
-            .ipos-sidebar > div:first-child { flex:1; min-width:0; overflow:visible !important; }
+            /* Satu baris, digeser ke kiri/kanan (scroll, roda mouse, atau tarik dengan mouse) */
+            .ipos-sidebar > div:first-child { flex:1; min-width:0; overflow-x:auto !important; overflow-y:hidden !important;
+                scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.35) transparent; cursor:grab; }
+            .ipos-sidebar > div:first-child.dragging { cursor:grabbing; user-select:none; }
+            .ipos-sidebar > div:first-child::-webkit-scrollbar { height:6px; }
+            .ipos-sidebar > div:first-child::-webkit-scrollbar-thumb { background:rgba(255,255,255,.35); border-radius:3px; }
             .ipos-sidebar > div:first-child > div:first-child { display:none; }
-            .ipos-sidebar .space-y-0\.5 { display:flex; flex-wrap:wrap; gap:2px; padding:4px 8px 0; }
-            .ipos-sidebar-item { width:auto !important; white-space:nowrap; padding:8px 12px !important; margin:0 !important;
+            .ipos-sidebar .space-y-0\.5 { display:flex; flex-wrap:nowrap; width:max-content; gap:2px; padding:4px 8px 0; }
+            .ipos-sidebar-item { flex-shrink:0; width:auto !important; white-space:nowrap; padding:8px 12px !important; margin:0 !important;
                 gap:7px !important; border-left:0 !important; border-bottom:3px solid transparent; border-radius:6px 6px 0 0; }
             .ipos-sidebar-item.active { border-bottom-color:#ffd8b0; }
             .ipos-sidebar > div:last-child { flex-shrink:0; gap:10px; padding:6px 10px !important; border-top:0 !important;
@@ -3966,19 +3971,29 @@
             };
 
             document.getElementById('ipos-login-modal').classList.add('hidden');
+            try { updateDatabaseIdentityUI(); } catch (err) { console.error('Identitas user gagal:', err); }
 
-            await loadDatabaseForActiveTenant();
-            let pwChanged = await migrateLegacyPasswords(); // ubah password teks biasa menjadi hash
+            // Tiap langkah dibungkus sendiri-sendiri: error di satu langkah tidak boleh membuat user
+            // tertinggal sebagai TAMU (jendela login sudah tertutup).
+            const failedSteps = [];
+            const run = async (name, fn) => {
+                try { return await fn(); } catch (err) { console.error('Pasca-login gagal [' + name + ']:', err); failedSteps.push(name); }
+            };
+            await run('muat-data', loadDatabaseForActiveTenant);
+            let pwChanged = await run('migrasi-password', migrateLegacyPasswords) || false;
             // Naikkan kekuatan hash lama memakai password yang baru saja diketik (hash yang sama = password yang sama)
-            const liveUser = (appState.users || []).find(u => u && u.password === matchedAccount.password);
-            if (liveUser && isPasswordHashWeak(liveUser.password)) {
-                liveUser.password = await hashPassword(usedPassInput);
-                pwChanged = true;
-            }
-            if (pwChanged) await saveAppState();
-            updateDatabaseIdentityUI();
-            refreshAllUI();
+            await run('upgrade-hash', async () => {
+                const liveUser = (appState.users || []).find(u => u && u.password === matchedAccount.password);
+                if (liveUser && isPasswordHashWeak(liveUser.password)) {
+                    liveUser.password = await hashPassword(usedPassInput);
+                    pwChanged = true;
+                }
+            });
+            if (pwChanged) await run('simpan', saveAppState);
+            await run('identitas', updateDatabaseIdentityUI);
+            await run('tampilan', refreshAllUI);
             showToast(`Berhasil login ke [${activeDatabaseName}] sebagai ${currentUser.username} (${currentUser.role})`, 'success');
+            if (failedSteps.length) showToast('Login berhasil, tetapi sebagian data gagal dimuat (' + failedSteps.join(', ') + '). Buka Console (F12) untuk detail.', 'error');
             if (usingWeakPw) showToast('Password Anda masih bawaan/mudah ditebak. Segera ganti di Pengaturan > Kelola User.', 'error');
             offerSharedProof();
         }
@@ -10262,13 +10277,51 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             });
         })();
 
+        // ---------- Menu desktop satu baris: geser dengan roda mouse / tarik / klik ----------
+        function initDesktopMenuScroll() {
+            const box = document.querySelector('.ipos-sidebar > div:first-child');
+            if (!box) return;
+            const isDesktop = () => window.matchMedia('(min-width: 640px)').matches;
+            box.addEventListener('wheel', (ev) => {
+                if (!isDesktop() || box.scrollWidth <= box.clientWidth) return;
+                const d = Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : ev.deltaY;
+                box.scrollLeft += d;
+                ev.preventDefault();
+            }, { passive: false });
+            let down = false, startX = 0, startLeft = 0, moved = false;
+            box.addEventListener('mousedown', (ev) => {
+                if (!isDesktop() || ev.button !== 0) return;
+                down = true; moved = false; startX = ev.clientX; startLeft = box.scrollLeft;
+            });
+            window.addEventListener('mousemove', (ev) => {
+                if (!down) return;
+                const dx = ev.clientX - startX;
+                if (Math.abs(dx) > 5) { moved = true; box.classList.add('dragging'); }
+                if (moved) box.scrollLeft = startLeft - dx;
+            });
+            window.addEventListener('mouseup', () => { down = false; box.classList.remove('dragging'); });
+            // Cegah klik tak sengaja setelah menarik menu
+            box.addEventListener('click', (ev) => { if (moved) { ev.stopPropagation(); ev.preventDefault(); moved = false; } }, true);
+            box.addEventListener('click', (ev) => {
+                const btn = ev.target.closest('.ipos-sidebar-item');
+                if (btn && isDesktop()) btn.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
-            await loadSharedProofFromCache();
-            await loadDatabaseForActiveTenant();
-            updateDatabaseIdentityUI();
-            setPpobMode('pulsa');
-            refreshAllUI();
-            renderDbList();
+            try { initDesktopMenuScroll(); } catch (e) { console.error('Menu geser gagal:', e); }
+            // Daftar database dirender PERTAMA agar login selalu bisa dilakukan,
+            // walau ada langkah lain yang error (mis. data lama di browser PC ini kurang lengkap).
+            try { renderDbList(); } catch (e) { console.error('renderDbList gagal:', e); }
+            const step = async (name, fn) => {
+                try { await fn(); } catch (e) { console.error('Langkah awal gagal [' + name + ']:', e); }
+            };
+            await step('shared', loadSharedProofFromCache);
+            await step('load', loadDatabaseForActiveTenant);
+            await step('identity', updateDatabaseIdentityUI);
+            await step('ppob', () => setPpobMode('pulsa'));
+            await step('refresh', refreshAllUI);
+            await step('dblist', renderDbList);
         });
     </script>
 </body>
