@@ -4014,12 +4014,24 @@
             document.getElementById('sidebar-user-role').innerText = currentUser.role;
             document.getElementById('sidebar-user-loc').innerText = currentUser.location;
             document.getElementById('sidebar-user-avatar').innerText = currentUser.username.charAt(0);
+            try { applyRoleVisibility(); } catch (e) {}
             const posLoc = document.getElementById('pos-location');
             if (posLoc) posLoc.value = currentUser.location;
         }
 
         function isCurrentUserAdmin() {
             return currentUser && currentUser.role === 'ADMIN';
+        }
+        // Gerbang akses: dipakai di setiap fungsi sensitif (bukan hanya menyembunyikan tombol)
+        function requireAdmin(aksi = 'Fitur ini') {
+            if (isLoggedIn && isCurrentUserAdmin()) return true;
+            showToast(aksi + ' hanya boleh dilakukan oleh ADMIN.', 'error');
+            return false;
+        }
+        const ADMIN_ONLY_SETTINGS_TABS = ['users', 'supabase', 'backup'];
+        function applyRoleVisibility() {
+            const admin = isCurrentUserAdmin();
+            ADMIN_ONLY_SETTINGS_TABS.forEach(t => document.getElementById('stab-' + t)?.classList.toggle('hidden', !admin));
         }
 
         // =========================================================================
@@ -9719,17 +9731,15 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         // 12. PENGATURAN SISTEM, KELOLA USER, SUPABASE & BACKUP
         // =========================================================================
         function openSettingsModal(tab = 'general') {
-            if (tab === 'users' && !isCurrentUserAdmin()) {
-                showToast('Hanya ADMIN yang boleh mengelola user.', 'error');
-                return;
-            }
+            if (ADMIN_ONLY_SETTINGS_TABS.includes(tab) && !requireAdmin('Pengaturan ini')) tab = 'general';
+            applyRoleVisibility();
             document.getElementById('set-store-name').value = appState.settings.storeName || '';
             document.getElementById('set-store-address').value = appState.settings.storeAddress || '';
             document.getElementById('set-store-phone').value = appState.settings.storePhone || '';
             document.getElementById('set-store-website').value = appState.settings.storeWebsite || '';
             document.getElementById('set-store-footer').value = appState.settings.storeFooter || '';
             document.getElementById('set-sb-url').value = appState.settings.supabaseUrl || '';
-            document.getElementById('set-sb-key').value = appState.settings.supabaseKey || '';
+            document.getElementById('set-sb-key').value = isCurrentUserAdmin() ? (appState.settings.supabaseKey || '') : ''; // key tidak dimuat ke form untuk non-admin
             pendingBannerImage = undefined;
             const bf = document.getElementById('set-banner-file'); if (bf) bf.value = '';
             switchSettingsTab(tab);
@@ -9737,10 +9747,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         function switchSettingsTab(tab) {
-            if (tab === 'users' && !isCurrentUserAdmin()) {
-                showToast('Hanya ADMIN yang boleh mengelola user.', 'error');
-                return;
-            }
+            if (ADMIN_ONLY_SETTINGS_TABS.includes(tab) && !requireAdmin('Pengaturan ini')) return;
             ['general', 'users', 'supabase', 'backup'].forEach(t => {
                 document.getElementById(`settings-pane-${t}`)?.classList.add('hidden');
                 document.getElementById(`stab-${t}`)?.classList.remove('active');
@@ -9909,6 +9916,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         async function saveSupabaseConfig() {
+            if (!requireAdmin('Mengubah konfigurasi Supabase')) return;
             appState.settings.supabaseUrl = document.getElementById('set-sb-url').value.trim();
             appState.settings.supabaseKey = document.getElementById('set-sb-key').value.trim();
             initSupabaseClient();
@@ -9927,6 +9935,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         function downloadBackupJSON() {
+            if (!requireAdmin('Mengunduh backup')) return;
             const blob = new Blob([JSON.stringify(getSanitizedStateForExport(), null, 2)], { type: 'application/json' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
@@ -9937,6 +9946,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         let pendingImportedState = null;
 
         function handleImportJsonFileSelect(event) {
+            if (!requireAdmin('Memulihkan backup')) { event.target.value = ''; return; }
             const file = event.target.files?.[0];
             if (!file) return;
 
@@ -9950,6 +9960,15 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                         return;
                     }
 
+                    if (parsed.users !== undefined) {
+                        const okUsers = Array.isArray(parsed.users) && parsed.users.length > 0 &&
+                            parsed.users.every(u => u && typeof u.username === 'string' && u.username.trim() && typeof u.password === 'string');
+                        if (!okUsers || !parsed.users.some(u => u.role === 'ADMIN')) {
+                            showToast('Backup ditolak: daftar user rusak atau tidak memiliki akun ADMIN.', 'error');
+                            event.target.value = '';
+                            return;
+                        }
+                    }
                     pendingImportedState = parsed;
                     const itemCount = Array.isArray(parsed.items) ? parsed.items.length : 0;
                     const trxCount = Array.isArray(parsed.transactions) ? parsed.transactions.length : 0;
@@ -9983,6 +10002,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         async function confirmApplyImportedJson() {
+            if (!requireAdmin('Memulihkan backup')) return;
             if (!pendingImportedState) {
                 showToast('Pilih file backup JSON terlebih dahulu!', 'error');
                 return;
@@ -10018,6 +10038,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         function openTutupBukuConfirm() {
+            if (!requireAdmin('Tutup Buku')) return;
             document.getElementById('tutup-buku-confirm-box')?.classList.remove('hidden');
         }
 
@@ -10026,6 +10047,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         async function executeTutupBuku() {
+            if (!requireAdmin('Tutup Buku')) return;
             const nowIso = new Date().toISOString();
 
             // 1. Kosongkan seluruh riwayat transaksi penjualan, PPOB/BRILink, service HP, pembelian, PO, retur, perakitan & mutasi
