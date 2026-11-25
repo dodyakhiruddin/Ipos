@@ -764,7 +764,6 @@
                             </div>
                             <div class="flex flex-wrap gap-1.5 text-xs">
                                 <button type="button" onclick="switchMasterSubTab('items')" id="msub-items" class="ipos-tab active px-3 py-1 rounded-t font-bold">Daftar Barang & Harga</button>
-                                <button type="button" onclick="switchMasterSubTab('pricelist')" id="msub-pricelist" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-tags mr-1"></i>Daftar Harga</button>
                                 <button type="button" onclick="switchMasterSubTab('suppliers')" id="msub-suppliers" class="ipos-tab px-3 py-1 rounded-t font-bold">Supplier</button>
                                 <button type="button" onclick="switchMasterSubTab('customers')" id="msub-customers" class="ipos-tab px-3 py-1 rounded-t font-bold">Pelanggan</button>
                                 <button type="button" onclick="switchMasterSubTab('kartustok')" id="msub-kartustok" class="ipos-tab px-3 py-1 rounded-t font-bold">Kartu Stok</button>
@@ -794,38 +793,6 @@
                                             </tr>
                                         </thead>
                                         <tbody id="master-items-tbody"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- SUB: DAFTAR HARGA (Eceran / Grosir) -->
-                            <div id="mpane-pricelist" class="hidden space-y-2.5">
-                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <div class="inline-flex rounded overflow-hidden border border-slate-300">
-                                            <button type="button" id="plist-btn-eceran" onclick="setPriceListMode('eceran')" class="px-3 py-1.5 font-bold">Harga Eceran</button>
-                                            <button type="button" id="plist-btn-grosir" onclick="setPriceListMode('grosir')" class="px-3 py-1.5 font-bold border-l border-slate-300">Harga Grosir</button>
-                                        </div>
-                                        <select id="plist-cat" onchange="renderPriceListTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
-                                        <input type="text" id="plist-search" onkeyup="renderPriceListTable()" placeholder="Cari kode / nama barang..." class="bg-white border border-slate-300 rounded px-3 py-1.5 w-56">
-                                    </div>
-                                    <button type="button" onclick="openPrintChoice('pricelist')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold shadow"><i class="fas fa-print mr-1"></i> Cetak Daftar Harga</button>
-                                </div>
-                                <div class="text-[11px] text-slate-500"><i class="fas fa-info-circle text-sky-600 mr-1"></i> Klik kolom harga untuk mengubah langsung; tersimpan otomatis. Harga grosir yang kosong mengikuti harga eceran.</div>
-                                <div class="overflow-x-auto border border-slate-300 rounded max-h-[58vh]">
-                                    <table class="w-full table-grid border-collapse">
-                                        <thead>
-                                            <tr>
-                                                <th class="w-28 text-left">Kode</th>
-                                                <th class="text-left">Nama Barang</th>
-                                                <th class="w-32 text-left">Kategori</th>
-                                                <th class="w-16 text-center">Sat</th>
-                                                <th class="w-28 text-right">HPP</th>
-                                                <th class="w-36 text-right" id="plist-th-price">Harga Eceran</th>
-                                                <th class="w-24 text-right">Margin</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="plist-tbody"></tbody>
                                     </table>
                                 </div>
                             </div>
@@ -4451,7 +4418,6 @@
             renderDynamicWalletsUI();
             populateCategoryDropdowns();
             renderMasterItemsTable();
-            if (!document.getElementById('mpane-pricelist')?.classList.contains('hidden')) renderPriceListTable();
             renderMasterSuppliersTable();
             renderMasterCustomersTable();
             renderStockLedgerTable();
@@ -4747,109 +4713,12 @@
         // 4. MASTER DATA (BARANG, SUPPLIER, PELANGGAN)
         // =========================================================================
         function switchMasterSubTab(sub) {
-            ['items', 'pricelist', 'suppliers', 'customers', 'kartustok'].forEach(s => {
+            ['items', 'suppliers', 'customers', 'kartustok'].forEach(s => {
                 document.getElementById(`mpane-${s}`)?.classList.add('hidden');
                 document.getElementById(`msub-${s}`)?.classList.remove('active');
             });
             document.getElementById(`mpane-${sub}`)?.classList.remove('hidden');
             document.getElementById(`msub-${sub}`)?.classList.add('active');
-            if (sub === 'pricelist') renderPriceListTable();
-        }
-
-        // ===================== DAFTAR HARGA (ECERAN / GROSIR) =====================
-        let priceListMode = 'eceran';
-
-        function itemPriceFor(it, mode) {
-            return mode === 'grosir' ? (Number(it.wholesalePrice) || Number(it.price) || 0) : (Number(it.price) || 0);
-        }
-
-        function setPriceListMode(mode) {
-            priceListMode = mode === 'grosir' ? 'grosir' : 'eceran';
-            renderPriceListTable();
-        }
-
-        function getPriceListItems() {
-            const q = (document.getElementById('plist-search')?.value || '').toLowerCase();
-            const cat = document.getElementById('plist-cat')?.value || '';
-            return appState.items.filter(it =>
-                (!cat || it.category === cat) &&
-                ((it.code || '').toLowerCase().includes(q) || (it.name || '').toLowerCase().includes(q))
-            );
-        }
-
-        function renderPriceListTable() {
-            const tbody = document.getElementById('plist-tbody');
-            if (!tbody) return;
-            const sel = document.getElementById('plist-cat');
-            if (sel) {
-                const cur = sel.value;
-                const cats = [...new Set(appState.items.map(i => i.category).filter(Boolean))].sort();
-                sel.innerHTML = '<option value="">Semua Kategori</option>' + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-                sel.value = cats.includes(cur) ? cur : '';
-            }
-            const on = 'bg-orange-500 text-white', off = 'bg-white text-slate-700';
-            const be = document.getElementById('plist-btn-eceran'), bg = document.getElementById('plist-btn-grosir');
-            if (be) be.className = `px-3 py-1.5 font-bold ${priceListMode === 'eceran' ? on : off}`;
-            if (bg) bg.className = `px-3 py-1.5 font-bold border-l border-slate-300 ${priceListMode === 'grosir' ? on : off}`;
-            const th = document.getElementById('plist-th-price');
-            if (th) th.textContent = priceListMode === 'grosir' ? 'Harga Grosir' : 'Harga Eceran';
-            tbody.innerHTML = getPriceListItems().map(it => {
-                const idx = appState.items.indexOf(it);
-                const price = itemPriceFor(it, priceListMode);
-                const cost = Number(it.cost) || 0;
-                const margin = price - cost;
-                return `
-                    <tr>
-                        <td class="font-mono font-bold text-sky-900">${esc(it.code)}</td>
-                        <td class="font-semibold">${esc(it.name)}</td>
-                        <td>${esc(it.category)}</td>
-                        <td class="text-center">${esc(it.unit)}</td>
-                        <td class="text-right font-mono">${formatRp(cost)}</td>
-                        <td class="text-right"><input type="number" min="0" step="1" value="${price}" onchange="updateItemPriceFromList(${idx}, this)" class="w-28 text-right font-mono font-bold border border-slate-300 rounded px-1.5 py-0.5 ${priceListMode === 'grosir' ? 'text-emerald-700' : 'text-blue-800'}"></td>
-                        <td class="text-right font-mono ${margin < 0 ? 'text-red-600 font-bold' : 'text-slate-600'}">${formatRp(margin)}</td>
-                    </tr>`;
-            }).join('') || '<tr><td colspan="7" class="text-center text-slate-500 py-4">Tidak ada barang.</td></tr>';
-        }
-
-        async function updateItemPriceFromList(idx, input) {
-            const it = appState.items[idx];
-            if (!it) return;
-            const val = Math.round(Number(input.value));
-            if (!isFinite(val) || val < 0) { showToast('Harga tidak valid.', 'error'); renderPriceListTable(); return; }
-            if (priceListMode === 'grosir') it.wholesalePrice = val; else it.price = val;
-            await saveAppState();
-            renderPriceListTable();
-            showToast(`Harga ${priceListMode} "${it.name}" diperbarui.`, 'success');
-        }
-
-        function buildPriceListHtml() {
-            const st = appState.settings;
-            const title = priceListMode === 'grosir' ? 'DAFTAR HARGA GROSIR' : 'DAFTAR HARGA ECERAN';
-            const rows = getPriceListItems().map((it, n) => `
-                <tr>
-                    <td style="border:1px solid #94a3b8;padding:3px 6px;text-align:center">${n + 1}</td>
-                    <td style="border:1px solid #94a3b8;padding:3px 6px;font-family:monospace">${esc(it.code)}</td>
-                    <td style="border:1px solid #94a3b8;padding:3px 6px">${esc(it.name)}</td>
-                    <td style="border:1px solid #94a3b8;padding:3px 6px;text-align:center">${esc(it.unit)}</td>
-                    <td style="border:1px solid #94a3b8;padding:3px 6px;text-align:right;font-weight:bold">Rp ${formatRp(itemPriceFor(it, priceListMode))}</td>
-                </tr>`).join('');
-            return `
-                <div style="text-align:center;margin-bottom:10px">
-                    <div style="font-size:16px;font-weight:bold">${esc(st.storeName || '')}</div>
-                    <div style="font-size:11px">${esc(st.storeAddress || '')}${st.storePhone ? ' &bull; Telp/WA: ' + esc(st.storePhone) : ''}</div>
-                    <div style="font-size:14px;font-weight:bold;margin-top:6px;border-top:2px solid #0f172a;border-bottom:2px solid #0f172a;padding:2px 0">${title}</div>
-                    <div style="font-size:10px;margin-top:2px">Per tanggal ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
-                </div>
-                <table style="width:100%;border-collapse:collapse;font-size:11px">
-                    <thead><tr style="background:#e2e8f0">
-                        <th style="border:1px solid #94a3b8;padding:3px 6px;width:30px">No</th>
-                        <th style="border:1px solid #94a3b8;padding:3px 6px;width:90px">Kode</th>
-                        <th style="border:1px solid #94a3b8;padding:3px 6px;text-align:left">Nama Barang</th>
-                        <th style="border:1px solid #94a3b8;padding:3px 6px;width:50px">Sat</th>
-                        <th style="border:1px solid #94a3b8;padding:3px 6px;width:110px;text-align:right">Harga</th>
-                    </tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>`;
         }
 
         function renderMasterItemsTable() {
@@ -6435,8 +6304,8 @@
             const paper = PAPER_SIZES[paperKey] || PAPER_SIZES.A4;
             const isReceipt = printContext === 'receipt';
             const src = document.getElementById(isReceipt ? 'receipt-print-area' : 'doc-print-sheet');
-            if (!src && printContext !== 'pricelist') return;
-            const content = printContext === 'pricelist' ? buildPriceListHtml() : src.innerHTML;
+            if (!src) return;
+            const content = src.innerHTML;
             const win = window.open('', '_blank', 'width=900,height=800');
             if (!win) {
                 showToast('Pop-up diblokir browser! Izinkan pop-up untuk mencetak.', 'error');
@@ -6573,15 +6442,6 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 btTwoCol('TOTAL', 'Rp ' + formatRp(trx.total), cols).forEach(t => L.push({ t, b: true }));
                 L.push(dash);
                 if (st.storeFooter) push(st.storeFooter, { a: 'c' });
-            } else if (printContext === 'pricelist') {
-                push(st.storeName || '', { a: 'c', b: true });
-                push(priceListMode === 'grosir' ? 'DAFTAR HARGA GROSIR' : 'DAFTAR HARGA ECERAN', { a: 'c', b: true });
-                push(new Date().toLocaleDateString('id-ID'), { a: 'c' });
-                L.push(dash);
-                getPriceListItems().forEach(it => {
-                    btTwoCol(it.name, formatRp(itemPriceFor(it, priceListMode)), cols).forEach(t => L.push({ t }));
-                });
-                L.push(dash);
             } else {
                 const el = document.getElementById(printContext === 'receipt' ? 'receipt-print-area' : 'doc-print-sheet');
                 btWrap(el ? el.innerText : '', cols).forEach(t => L.push({ t }));
