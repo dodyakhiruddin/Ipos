@@ -869,7 +869,6 @@
                                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-3 text-xs">
                                     <div class="space-y-2">
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            <label class="block"><span class="block font-bold mb-0.5">Judul</span><input type="text" id="pl-title" oninput="plSetField('title', this.value)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
                                             <label class="block"><span class="block font-bold mb-0.5">Catatan bawah</span><input type="text" id="pl-note" oninput="plSetField('note', this.value)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
                                             <div><span class="block font-bold mb-0.5">Logo E-Wallet</span><input type="file" accept="image/*" onchange="plLogo(this, 'logoEw')" class="w-full"><button type="button" onclick="plClearLogo('logoEw')" class="text-red-600 underline text-[11px]">Hapus logo</button></div>
                                             <div><span class="block font-bold mb-0.5">Logo BRILink</span><input type="file" accept="image/*" onchange="plLogo(this, 'logoBri')" class="w-full"><button type="button" onclick="plClearLogo('logoBri')" class="text-red-600 underline text-[11px]">Hapus logo</button></div>
@@ -4952,7 +4951,7 @@
             return `<div id="pl-poster" style="width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column">
                 <div style="background:#0f3d7a;color:#fff;text-align:center;padding:26px 20px 18px;border-bottom:8px solid #fbbf24">
                     <div style="font-size:44px;font-weight:900;letter-spacing:1px">${esc(st.storeName || 'TOKO')}</div>
-                    <div style="font-size:30px;font-weight:800;color:#fbbf24;margin-top:4px">${esc(c.title || 'DAFTAR HARGA')}</div>
+                    <div style="font-size:30px;font-weight:800;color:#fbbf24;margin-top:4px">DAFTAR HARGA VOUCHER</div>
                     <div style="font-size:14px;margin-top:4px">Berlaku per ${plToday()}</div>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;background:#f1f5f9">
@@ -4974,8 +4973,7 @@
         }
         function renderPriceList() {
             const c = plCfg();
-            const t = document.getElementById('pl-title'), nt = document.getElementById('pl-note');
-            if (t && document.activeElement !== t) t.value = c.title || '';
+            const nt = document.getElementById('pl-note');
             if (nt && document.activeElement !== nt) nt.value = c.note || '';
             const q = (document.getElementById('pl-search').value || '').toLowerCase(), sel = new Set(c.sel);
             const list = plVItems().filter(i => !q || String(i.name).toLowerCase().includes(q) || String(i.code).toLowerCase().includes(q));
@@ -5061,9 +5059,9 @@
                 akuntansi: mk(switchAccSubTab, [['Ringkasan', 'ringkasan'], ['Alur Kas', 'kas'], ['Laba Rugi', 'labarugi'], ['Biaya Operasional', 'biaya'], ['Neraca', 'neraca'], ['Saldo Awal', 'saldoawal']]),
                 laporan: mk(switchReportSubTab, [['Master Data', 'master'], ['Pembelian', 'pembelian'], ['Penjualan', 'penjualan'], ['Hutang Usaha', 'hutang'], ['Piutang Usaha', 'piutang'], ['Rugi/Laba', 'labarugi'], ['Kas', 'kas']])
             };
-            // Hanya tampil di desktop (lebar >= 1024px); di HP/tablet tampilan tetap seperti semula
+            // Hanya tampil di desktop (layar >= 640px DAN perangkat bermouse); di HP/tablet (termasuk mode situs desktop) tampilan tetap seperti semula
             const st = document.createElement('style');
-            st.textContent = '.sub-arrow{display:none}#sub-flyout{display:none}@media (min-width:1024px){.sub-arrow{display:inline-block}#sub-flyout.open{display:block}}'
+            st.textContent = '.sub-arrow{display:none!important}#sub-flyout{display:none!important}@media (min-width:640px) and (hover:hover) and (pointer:fine){.sub-arrow{display:inline-block!important}#sub-flyout.open{display:block!important}}'
                 + '#sub-flyout{position:fixed;z-index:60;min-width:240px;max-height:80vh;overflow:auto;background:#fff;border:1px solid #9aa7b8;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:12.5px;color:#1e293b}'
                 + '#sub-flyout .sf-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:6px 14px 6px 10px}#sub-flyout .sf-item:hover{background:#dbeafe}'
                 + '#sub-flyout .sf-foot{display:flex;justify-content:flex-end;padding:6px 8px;border-top:1px solid #cbd5e1;background:#f1f5f9}';
@@ -5072,7 +5070,9 @@
             fly.id = 'sub-flyout';
             document.body.appendChild(fly);
             const close = () => fly.classList.remove('open');
+            const isDesk = () => window.matchMedia('(min-width:640px) and (hover:hover) and (pointer:fine)').matches;
             const open = (tab, btn) => {
+                if (!isDesk()) return;
                 fly.innerHTML = SUB[tab].map(([l], i) => `<button type="button" class="sf-item" data-i="${i}"><i class="far fa-file-alt" style="color:#e0a030"></i><span>${esc(l)}</span></button>`).join('')
                     + '<div class="sf-foot"><button type="button" class="ipos-btn px-4 py-1 rounded text-xs font-bold sf-close"><i class="fas fa-times mr-1"></i> Tutup</button></div>';
                 fly.dataset.tab = tab;
