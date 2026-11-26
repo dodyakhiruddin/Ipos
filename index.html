@@ -865,7 +865,7 @@
                                 <div id="opname-history" class="space-y-1 text-xs"></div>
                             </div>
                             <div id="mpane-daftarharga" class="hidden space-y-2.5">
-                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Pilih item voucher (kategori berawalan <b>V</b>). Daftar harga <b>eceran</b> dibuat sebagai gambar A4 per provider (PNG/JPG/cetak); awalan "V." otomatis dihapus. Kolom kecil di samping item = nama bagian tabel (HARIAN, BULANAN, dst.; kosong = otomatis dari jumlah hari), harga <b>grosir</b> berupa teks untuk WhatsApp. Setiap harga diubah di Daftar Barang, buka tab ini lagi lalu cetak ulang.</div>
+                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Pilih item voucher (kategori berawalan <b>V</b>). Daftar harga <b>eceran</b> dibuat sebagai 1 gambar A4 (PNG/JPG/cetak), 2 provider per baris; awalan "V." otomatis dihapus. Item tiap provider otomatis diurutkan berdasarkan jumlah hari; harga <b>grosir</b> berupa teks untuk WhatsApp. Setiap harga diubah di Daftar Barang, buka tab ini lagi lalu cetak ulang.</div>
                                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-3 text-xs">
                                     <div class="space-y-2">
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -4891,9 +4891,8 @@
         // =========================================================================
         function plCfg() {
             const st = appState.settings;
-            if (!st.priceList) st.priceList = { sel: [], title: 'DAFTAR HARGA VOUCHER & DATA', note: 'Harga dapat berubah sewaktu-waktu.', logoEw: '', logoBri: '' };
+            if (!st.priceList) st.priceList = { sel: [], title: 'DAFTAR HARGA VOUCHER', note: 'Harga dapat berubah sewaktu-waktu.', logoEw: '', logoBri: '' };
             const c = st.priceList;
-            if (c.title === 'DAFTAR HARGA VOUCHER') c.title = 'DAFTAR HARGA VOUCHER & DATA';
             if (!Array.isArray(c.logosEw)) c.logosEw = c.logoEw ? [c.logoEw] : [];
             if (!c.sec) c.sec = {};
             return c;
@@ -4999,7 +4998,7 @@
                 items.forEach(i => { const k = c.sec[i.code] ? c.sec[i.code].toUpperCase() : plAutoSec(i); if (!map.has(k)) map.set(k, []); map.get(k).push(i); });
                 let sections = [...map.entries()].map(([name, its]) => ({ name, items: its.map(i => ({ n: plItemName(i, pn), price: i.price })) }));
                 if (!anyManual && sections.length < 2) sections = [{ name: '', items: sections.flatMap(x => x.items) }];
-                return { name: pn.toUpperCase(), theme: plTheme(pn, idx), sections };
+                return { name: pn.toUpperCase(), theme: plTheme(pn, idx), sections: [{ name: '', items: items.map(i => ({ n: plItemName(i, pn), price: i.price })) }] };
             });
             const rank = n => { const r = [/AXIS/, /INDOSAT|IM3|ISAT/, /SIMPATI|TELKOMSEL|TSEL/, /SMART/, /THREE|THEE|^TRI$/, /^XL/].findIndex(x => x.test(n)); return r < 0 ? 99 : r; };
             return provs.sort((a, b) => rank(a.name) - rank(b.name) || a.name.localeCompare(b.name));
@@ -5016,81 +5015,24 @@
             box.remove();
             return hs;
         }
-        // Varian warna kartu provider (urutan mengikuti gambar contoh; diulang bila lebih dari 6)
-        const PL_VARIANTS = [
-            { hbg: '#0f2d5c', hfg: '#ffffff', sbg: '#f26a1b', bd: '#0f2d5c' }, // THREE
-            { hbg: '#ffffff', hfg: '#0f2d5c', sbg: '#f26a1b', bd: '#1e3a8a' }, // AXIS
-            { hbg: '#f26a1b', hfg: '#ffffff', sbg: '#1e4b8f', bd: '#f26a1b' }, // SMART
-            { hbg: '#ffffff', hfg: '#111827', sbg: '#1e4b8f', bd: '#f26a1b' }, // INDOSAT
-            { hbg: '#e04a14', hfg: '#ffffff', sbg: '#1e4b8f', bd: '#f26a1b' }, // TELKOMSEL
-            { hbg: '#ffffff', hfg: '#0f2d5c', sbg: '#f26a1b', bd: '#1e3a8a' }  // XL
-        ];
-        // Susunan: kartu provider per baris (3 kolom), 6 provider = 2 baris x 3 kolom. Isi tiap kartu daftar ke bawah.
+        // Template daftar harga: gaya header navy + kotak provider biru muda, 2 provider per baris, urut hari
         function plBodyHtml(provs, sz, ex) {
             const nm = sz, pr = sz + 1, pad = Math.max(1.5, sz * 0.22) + (ex || 0);
-            const rowH = i => `<div data-r="1" style="display:flex;align-items:flex-end;padding:${pad}px 8px;overflow:hidden"><span style="font-size:${nm}px;font-weight:700;color:#111827;line-height:1.15;text-transform:uppercase;white-space:nowrap;flex:none">${esc(i.n)}</span><span style="flex:1;min-width:6px;border-bottom:1px dashed #94a3b8;margin:0 5px 3px"></span><span style="font-size:${pr}px;font-weight:900;color:#9f1239;white-space:nowrap;line-height:1.15;flex:none">${formatNum(i.price)}</span></div>`;
-            const block = (p, idx) => {
-                const v = PL_VARIANTS[idx % PL_VARIANTS.length];
-                const barH = t => `<div style="background:${v.sbg};color:#fff;text-align:center;font-weight:800;font-size:${nm}px;padding:${pad}px 4px;text-transform:uppercase">${esc(t)}</div>`;
-                const lines = [];
-                p.sections.forEach(x => x.items.forEach(i => lines.push({ sec: x.name, i })));
-                const colHtml = arr => { let prev = null, h = ''; arr.forEach(l => { if (l.sec && l.sec !== prev) h += barH(l.sec); prev = l.sec; h += rowH(l.i); }); return h; };
-                const cost = arr => { let prev = null, c = 0; arr.forEach(l => { if (l.sec && l.sec !== prev) c++; prev = l.sec; c++; }); return c; };
+            const rowH = i => `<div data-r="1" style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:${pad}px 4px;border-bottom:1px dotted #94a3b8;overflow:hidden"><span style="font-size:${nm}px;font-weight:600;color:#1e293b;line-height:1.15;white-space:nowrap;flex:none">${esc(i.n)}</span><span style="font-size:${pr}px;font-weight:900;color:#b91c1c;white-space:nowrap;line-height:1.15;flex:none">${formatNum(i.price)}</span></div>`;
+            const block = p => {
+                const its = p.sections.flatMap(x => x.items);
                 let body;
-                if (lines.length > 10) {
-                    // kartu panjang: isi dibagi 2 kolom seimbang (bagian yang terpotong mengulang judul bagiannya)
-                    let bk = 1, bv = 1e9;
-                    for (let k = 1; k < lines.length; k++) { const m = Math.max(cost(lines.slice(0, k)), cost(lines.slice(k))); if (m < bv) { bv = m; bk = k; } }
-                    body = `<div style="display:grid;grid-template-columns:1fr 1fr"><div style="border-right:1px solid #cbd5e1;min-width:0">${colHtml(lines.slice(0, bk))}</div><div style="min-width:0">${colHtml(lines.slice(bk))}</div></div>`;
-                } else body = colHtml(lines);
-                return `<div style="border:3px solid ${v.bd};border-radius:12px;overflow:hidden;background:#fff">
-                <div style="background:${v.hbg};color:${v.hfg};text-align:center;font-weight:900;font-size:${nm + 8}px;padding:${pad + 3}px 6px;letter-spacing:.5px;text-transform:uppercase">${esc(p.name)}</div>${body}
-            </div>`;
+                if (its.length > 10) {
+                    const h = Math.ceil(its.length / 2);
+                    body = `<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:12px"><div style="min-width:0">${its.slice(0, h).map(rowH).join('')}</div><div style="min-width:0">${its.slice(h).map(rowH).join('')}</div></div>`;
+                } else body = its.map(rowH).join('');
+                return `<div><div style="background:#e0ecff;color:#0f3d7a;font-weight:800;font-size:${nm + 2}px;padding:${pad + 1}px 8px;border-left:6px solid #0f3d7a;text-transform:uppercase">${esc(p.name)}</div>${body}</div>`;
             };
             const cols = Math.min(2, provs.length), rows = [];
             for (let i = 0; i < provs.length; i += cols) rows.push(provs.slice(i, i + cols));
-            let n = 0;
-            return rows.map(r => `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:12px;align-items:start;padding-top:12px">${r.map(p => block(p, n++)).join('')}</div>`).join('');
+            return rows.map(r => `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:14px;align-items:start;padding-top:10px">${r.map(block).join('')}</div>`).join('');
         }
-        function plHeaderHtml(cp) {
-            const c = plCfg(), st = appState.settings;
-            const raw = String(st.storeName || 'TOKO').toUpperCase();
-            const fs = Math.max(30, Math.min(cp ? 52 : 84, Math.floor(700 / (Math.max(4, raw.length) * 0.68))));
-            const shadow = [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 3], [3, 3], [4, 4]].map(([x, y]) => `${x}px ${y}px 0 #f26a1b`).join(',');
-            const words = String(c.title || 'DAFTAR HARGA VOUCHER & DATA').trim().split(/\s+/);
-            const w1 = esc(words.slice(0, 2).join(' ')), w2 = esc(words.slice(2).join(' '));
-            const tab = c.logoBri
-                ? `<div style="width:${cp ? 150 : 200}px;height:${cp ? 38 : 51}px;background:#fff url(${c.logoBri}) center/contain no-repeat"></div>`
-                : `<div style="font-size:${cp ? 20 : 26}px;font-weight:900;line-height:1.05;color:#0f2d5c">AgenBRI<span style="color:#f26a1b">Link</span></div><div style="font-size:9px;font-weight:700;color:#0f2d5c">Layanan Transaksi Kanangan Tanpa Kantor</div>`.replace('Kanangan', 'Keuangan');
-            return `<div style="position:relative;text-align:center;padding-bottom:8px">
-                <div style="position:absolute;left:0;top:0;width:0;height:0;border-top:${cp ? 90 : 150}px solid #f26a1b;border-right:${cp ? 90 : 150}px solid transparent"></div>
-                <div style="position:absolute;left:0;top:0;width:0;height:0;border-top:${cp ? 75 : 125}px solid #0f2d5c;border-right:${cp ? 75 : 125}px solid transparent"></div>
-                <div style="position:absolute;right:0;top:0;width:0;height:0;border-top:${cp ? 90 : 150}px solid #f26a1b;border-left:${cp ? 90 : 150}px solid transparent"></div>
-                <div style="position:absolute;right:0;top:0;width:0;height:0;border-top:${cp ? 75 : 125}px solid #0f2d5c;border-left:${cp ? 75 : 125}px solid transparent"></div>
-                <div style="position:relative;display:inline-block;background:#fff;border:3px solid #f26a1b;border-top:0;border-radius:0 0 22px 22px;padding:6px 26px">${tab}</div>
-                <div style="position:relative;margin-top:6px;font-size:${fs}px;font-weight:900;line-height:1.1;color:#0f2d5c;text-shadow:${shadow};letter-spacing:2px;padding:0 20px">${esc(raw)}</div>
-                <div style="position:relative;margin:${cp ? 5 : 10}px auto 0;width:${cp ? 560 : 650}px;background:#f26a1b;border-radius:6px;padding:${cp ? 3 : 5}px 0;font-size:${cp ? 20 : 28}px;font-weight:900;color:#fff;line-height:1.2">${w1}${w2 ? ` <span style="color:#0f2d5c">${w2}</span>` : ''}</div>
-                <div style="position:relative;font-size:11px;color:#475569;margin-top:4px">Berlaku per ${plToday()}</div>
-            </div>`;
-        }
-        function plFooterHtml(cp) {
-            const c = plCfg(), st = appState.settings;
-            const ewl = (c.logosEw || []).filter(Boolean).slice(0, 6);
-            const ewDef = [['DANA', '#118eea'], ['OVO', '#4c2a86'], ['GoPay', '#00aa13']];
-            const n = ewl.length || ewDef.length;
-            const f = Math.min(1, 730 / (n * 80 + 250 + n * 12));
-            const k = cp ? 0.7 : 1, W = 80 * f * k, H = 64 * f * k, BW = 250 * f * k;
-            const slot = (d, w, hh) => `<div style="width:${w}px;height:${hh}px;flex:none;background:#fff url(${d}) center/contain no-repeat"></div>`;
-            const pill = (t, bg, w) => `<div style="width:${w}px;height:${H}px;flex:none;background:${bg};color:#fff;font-weight:800;font-size:${w > 200 ? 20 : 13}px;border-radius:6px;display:flex;align-items:center;justify-content:center">${esc(t)}</div>`;
-            const ew = ewl.length ? ewl.map(d => slot(d, W, H)) : ewDef.map(([t, bg]) => pill(t, bg, W));
-            const bri = c.logoBri ? slot(c.logoBri, BW, H) : pill('AgenBRILink', '#00529c', BW);
-            const contact = `${esc(st.storeAddress || '')}${st.storePhone ? (st.storeAddress ? ' | ' : '') + 'Telp/WA: ' + esc(st.storePhone) : ''}`;
-            return `<div>
-                <div style="background:#fff;border-top:6px solid #f26a1b;border-bottom:3px solid #1e4b8f;padding:${cp ? 5 : 8}px 20px;display:flex;justify-content:center;align-items:center;gap:12px">${ew.join('')}${bri}</div>
-                <div style="background:#0f2d5c;color:#fff;text-align:center;padding:6px 20px">${contact ? `<div style="font-size:11px;opacity:.9">${contact}</div>` : ''}<div style="font-size:17px;font-weight:800;line-height:1.3">${esc(c.note || '')}</div></div>
-            </div>`;
-        }
-        // Muat = tinggi <= sisa halaman DAN tidak ada nama item yang terpotong/menyempit
+        // Muat = tinggi <= sisa halaman DAN tidak ada nama item yang terpotong
         function plFits(provs, sz, avail, ex) {
             const box = document.createElement('div');
             box.style.cssText = 'position:fixed;left:-10000px;top:0;width:766px;font-family:Arial,Helvetica,sans-serif';
@@ -5103,28 +5045,37 @@
             return { h, ok: h <= avail && !wide };
         }
         function plPageHtmls() {
-            const cp = plSelected().length > 40;
-            const header = plHeaderHtml(cp), footer = plFooterHtml(cp);
-            const fh = plMeasure([header, footer], 794);
-            const avail = 1123 - fh[0] - fh[1] - 8;
+            const c = plCfg(), st = appState.settings, store = esc(st.storeName || 'TOKO');
+            const cp = plSelected().length > 40; // banyak item: header/footer diperkecil
+            const k = cp ? 0.7 : 1;
+            const slot = (d, w, hh) => `<div style="width:${w}px;height:${hh}px;flex:none;background:#fff url(${d}) center/contain no-repeat"></div>`;
+            const pill = (t, bg, w) => `<div style="width:${w}px;height:${64 * k}px;flex:none;background:${bg};color:#fff;font-weight:800;font-size:${w > 200 * k ? 20 * k : 13}px;border-radius:6px;display:flex;align-items:center;justify-content:center">${esc(t)}</div>`;
+            const ewl = (c.logosEw || []).filter(Boolean).slice(0, 6);
+            const ew = ewl.length ? ewl.map(d => slot(d, 80 * k, 64 * k)) : [['DANA', '#118eea'], ['OVO', '#4c2a86'], ['GoPay', '#00aa13']].map(([t, bg]) => pill(t, bg, 80 * k));
+            const bri = c.logoBri ? slot(c.logoBri, 250 * k, 64 * k) : pill('AgenBRILink', '#00529c', 250 * k);
+            const header = `<div style="background:#0f3d7a;color:#fff;text-align:center;padding:${cp ? 10 : 16}px 20px;border-bottom:6px solid #fbbf24"><div style="font-size:${cp ? 34 : 44}px;font-weight:900;letter-spacing:1px;line-height:1.1">${store}</div><div style="font-size:${cp ? 18 : 22}px;font-weight:800;color:#fbbf24;margin-top:3px">${esc(c.title || 'DAFTAR HARGA VOUCHER')}</div><div style="font-size:12px;margin-top:2px">Berlaku per ${plToday()}</div></div>`;
+            const band = `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:${cp ? 5 : 8}px 20px;background:#f1f5f9"><div><div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:2px">MELAYANI E-WALLET</div><div style="display:flex;flex-wrap:wrap;gap:5px;width:${Math.ceil(3 * 80 * k + 2 * 5 + 2)}px">${ew.join('')}</div></div><div style="text-align:right"><div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:2px">TRANSFER &amp; TARIK TUNAI</div>${bri}</div></div>`;
+            const footer = `<div style="background:#0f3d7a;color:#fff;text-align:center;padding:7px 20px;font-size:12px"><div>${esc(st.storeAddress || '')}${st.storePhone ? ' | Telp/WA: ' + esc(st.storePhone) : ''}</div><div style="color:#fbbf24;font-weight:700;margin-top:1px">${esc(c.note || '')}</div></div>`;
+            const fh = plMeasure([header, band, footer], 794);
+            const avail = 1123 - fh[0] - fh[1] - fh[2] - 8;
             const provs = plProviders();
             let body = '<div style="text-align:center;color:#94a3b8;padding:60px 0;font-size:22px">Belum ada item dipilih</div>';
             plOverflow = false;
             if (provs.length) {
-                // cari huruf terbesar yang masih muat penuh 1 halaman
+                // huruf terbesar yang muat 1 halaman penuh tanpa terpotong
                 let lo = 5, hi = 26, best = 5;
-                for (let k = 0; k < 14; k++) {
+                for (let q = 0; q < 14; q++) {
                     const mid = (lo + hi) / 2;
                     if (plFits(provs, mid, avail, 0).ok) { best = mid; lo = mid; } else hi = mid;
                 }
                 best = Math.floor(best * 10) / 10;
                 plOverflow = !plFits(provs, best, avail, 0).ok;
-                // sisa tinggi halaman diisi dengan jarak antar baris agar halaman A4 terisi penuh
+                // sisa tinggi diisi jarak antar baris agar halaman A4 terisi penuh
                 let elo = 0, ehi = 16, ex = 0;
-                if (!plOverflow) for (let k = 0; k < 10; k++) { const m = (elo + ehi) / 2; if (plFits(provs, best, avail, m).ok) { ex = m; elo = m; } else ehi = m; }
+                if (!plOverflow) for (let q = 0; q < 10; q++) { const m = (elo + ehi) / 2; if (plFits(provs, best, avail, m).ok) { ex = m; elo = m; } else ehi = m; }
                 body = plBodyHtml(provs, best, ex);
             }
-            return [`<div class="pl-page" style="width:794px;height:1123px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 35%,#ffffff 0,#eaf1fc 100%);font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;overflow:hidden">${header}<div style="flex:1;padding:0 14px 4px;overflow:hidden">${body}</div>${footer}</div>`];
+            return [`<div class="pl-page" style="width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;overflow:hidden">${header}${band}<div style="flex:1;padding:0 14px 4px;overflow:hidden">${body}</div>${footer}</div>`];
         }
         function plRenderPreview() {
             const el = document.getElementById('pl-preview');
@@ -5138,10 +5089,10 @@
             const nt = document.getElementById('pl-note');
             if (nt && document.activeElement !== nt) nt.value = c.note || '';
             const tt = document.getElementById('pl-title');
-            if (tt && document.activeElement !== tt) tt.value = (c.title === undefined ? 'DAFTAR HARGA VOUCHER & DATA' : c.title);
+            if (tt && document.activeElement !== tt) tt.value = (c.title === undefined ? 'DAFTAR HARGA VOUCHER' : c.title);
             const q = (document.getElementById('pl-search').value || '').toLowerCase(), sel = new Set(c.sel);
             const list = plVItems().filter(i => !q || String(i.name).toLowerCase().includes(q) || String(i.code).toLowerCase().includes(q));
-            document.getElementById('pl-list').innerHTML = list.map(i => { const on = sel.has(i.code); return `<div class="flex items-center gap-2 px-2 py-1 hover:bg-sky-50"><label class="flex items-center gap-2 flex-1 cursor-pointer"><input type="checkbox" ${on ? 'checked' : ''} onchange="plToggle('${escJs(i.code)}', this.checked); renderPriceList()"><span class="flex-1">${esc(plStripV(i.name))} <span class="text-slate-400">(${esc(plStripV(i.category))})</span></span></label>${on ? `<input type="text" value="${esc(c.sec[i.code] || '')}" placeholder="${esc(plAutoSec(i) || 'bagian')}" oninput="plSetSec('${escJs(i.code)}', this.value)" class="w-24 border border-slate-300 rounded px-1 py-0.5 text-[11px]" title="Nama bagian di tabel (kosong = otomatis)">` : ''}<span class="font-mono">${formatNum(i.price)}</span><span class="font-mono text-slate-500 w-16 text-right">${formatNum(i.wholesalePrice)}</span></div>`; }).join('') || '<div class="p-3 text-slate-400 text-center">Tidak ada item kategori berawalan V.</div>';
+            document.getElementById('pl-list').innerHTML = list.map(i => { const on = sel.has(i.code); return `<div class="flex items-center gap-2 px-2 py-1 hover:bg-sky-50"><label class="flex items-center gap-2 flex-1 cursor-pointer"><input type="checkbox" ${on ? 'checked' : ''} onchange="plToggle('${escJs(i.code)}', this.checked); renderPriceList()"><span class="flex-1">${esc(plStripV(i.name))} <span class="text-slate-400">(${esc(plStripV(i.category))})</span></span></label><span class="font-mono">${formatNum(i.price)}</span><span class="font-mono text-slate-500 w-16 text-right">${formatNum(i.wholesalePrice)}</span></div>`; }).join('') || '<div class="p-3 text-slate-400 text-center">Tidak ada item kategori berawalan V.</div>';
             plCount(); plRenderThumbs(); plRenderPreview(); plRefreshWa();
         }
         function plRefreshWa() {
