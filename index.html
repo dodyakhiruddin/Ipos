@@ -4992,7 +4992,8 @@
             const c = plCfg(), by = {};
             plSelected().forEach(i => { const pn = plStripV(i.category) || 'LAINNYA'; (by[pn] = by[pn] || []).push(i); });
             const provs = Object.entries(by).map(([pn, items], idx) => {
-                items.sort((a, b) => plDays(a) - plDays(b) || (Number(a.price) || 0) - (Number(b.price) || 0));
+                const dd = x => plDays(x) || 9999;
+                items.sort((a, b) => dd(a) - dd(b) || (Number(a.price) || 0) - (Number(b.price) || 0));
                 const anyManual = items.some(i => c.sec[i.code]);
                 const map = new Map();
                 items.forEach(i => { const k = c.sec[i.code] ? c.sec[i.code].toUpperCase() : plAutoSec(i); if (!map.has(k)) map.set(k, []); map.get(k).push(i); });
@@ -5000,7 +5001,7 @@
                 if (!anyManual && sections.length < 2) sections = [{ name: '', items: sections.flatMap(x => x.items) }];
                 return { name: pn.toUpperCase(), theme: plTheme(pn, idx), sections };
             });
-            const rank = n => { const r = [/THREE|^TRI$/, /AXIS/, /SMART/, /INDOSAT|IM3/, /TELKOMSEL|TSEL|SIMPATI/, /^XL/].findIndex(x => x.test(n)); return r < 0 ? 99 : r; };
+            const rank = n => { const r = [/AXIS/, /INDOSAT|IM3|ISAT/, /SIMPATI|TELKOMSEL|TSEL/, /SMART/, /THREE|THEE|^TRI$/, /^XL/].findIndex(x => x.test(n)); return r < 0 ? 99 : r; };
             return provs.sort((a, b) => rank(a.name) - rank(b.name) || a.name.localeCompare(b.name));
         }
 
@@ -5027,54 +5028,65 @@
         // Susunan: kartu provider per baris (3 kolom), 6 provider = 2 baris x 3 kolom. Isi tiap kartu daftar ke bawah.
         function plBodyHtml(provs, sz, ex) {
             const nm = sz, pr = sz + 1, pad = Math.max(1.5, sz * 0.22) + (ex || 0);
+            const rowH = i => `<div data-r="1" style="display:flex;align-items:flex-end;padding:${pad}px 8px;overflow:hidden"><span style="font-size:${nm}px;font-weight:700;color:#111827;line-height:1.15;text-transform:uppercase;white-space:nowrap;flex:none">${esc(i.n)}</span><span style="flex:1;min-width:6px;border-bottom:1px dashed #94a3b8;margin:0 5px 3px"></span><span style="font-size:${pr}px;font-weight:900;color:#9f1239;white-space:nowrap;line-height:1.15;flex:none">${formatNum(i.price)}</span></div>`;
             const block = (p, idx) => {
                 const v = PL_VARIANTS[idx % PL_VARIANTS.length];
+                const barH = t => `<div style="background:${v.sbg};color:#fff;text-align:center;font-weight:800;font-size:${nm}px;padding:${pad}px 4px;text-transform:uppercase">${esc(t)}</div>`;
+                const lines = [];
+                p.sections.forEach(x => x.items.forEach(i => lines.push({ sec: x.name, i })));
+                const colHtml = arr => { let prev = null, h = ''; arr.forEach(l => { if (l.sec && l.sec !== prev) h += barH(l.sec); prev = l.sec; h += rowH(l.i); }); return h; };
+                const cost = arr => { let prev = null, c = 0; arr.forEach(l => { if (l.sec && l.sec !== prev) c++; prev = l.sec; c++; }); return c; };
+                let body;
+                if (lines.length > 10) {
+                    // kartu panjang: isi dibagi 2 kolom seimbang (bagian yang terpotong mengulang judul bagiannya)
+                    let bk = 1, bv = 1e9;
+                    for (let k = 1; k < lines.length; k++) { const m = Math.max(cost(lines.slice(0, k)), cost(lines.slice(k))); if (m < bv) { bv = m; bk = k; } }
+                    body = `<div style="display:grid;grid-template-columns:1fr 1fr"><div style="border-right:1px solid #cbd5e1;min-width:0">${colHtml(lines.slice(0, bk))}</div><div style="min-width:0">${colHtml(lines.slice(bk))}</div></div>`;
+                } else body = colHtml(lines);
                 return `<div style="border:3px solid ${v.bd};border-radius:12px;overflow:hidden;background:#fff">
-                <div style="background:${v.hbg};color:${v.hfg};text-align:center;font-weight:900;font-size:${nm + 8}px;padding:${pad + 3}px 6px;letter-spacing:.5px;text-transform:uppercase">${esc(p.name)}</div>
-                ${p.sections.map(x => `${x.name ? `<div style="background:${v.sbg};color:#fff;text-align:center;font-weight:800;font-size:${nm}px;padding:${pad}px 4px;text-transform:uppercase">${esc(x.name)}</div>` : ''}
-                    ${x.items.map(i => `<div data-r="1" style="display:flex;align-items:flex-end;padding:${pad}px 8px;overflow:hidden"><span style="font-size:${nm}px;font-weight:700;color:#111827;line-height:1.15;text-transform:uppercase;white-space:nowrap;flex:none">${esc(i.n)}</span><span style="flex:1;min-width:6px;border-bottom:1px dashed #94a3b8;margin:0 5px 3px"></span><span style="font-size:${pr}px;font-weight:900;color:#9f1239;white-space:nowrap;line-height:1.15;flex:none">${formatNum(i.price)}</span></div>`).join('')}`).join('')}
+                <div style="background:${v.hbg};color:${v.hfg};text-align:center;font-weight:900;font-size:${nm + 8}px;padding:${pad + 3}px 6px;letter-spacing:.5px;text-transform:uppercase">${esc(p.name)}</div>${body}
             </div>`;
             };
-            const cols = Math.min(3, provs.length), rows = [];
+            const cols = Math.min(2, provs.length), rows = [];
             for (let i = 0; i < provs.length; i += cols) rows.push(provs.slice(i, i + cols));
             let n = 0;
             return rows.map(r => `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:12px;align-items:start;padding-top:12px">${r.map(p => block(p, n++)).join('')}</div>`).join('');
         }
-        function plHeaderHtml() {
+        function plHeaderHtml(cp) {
             const c = plCfg(), st = appState.settings;
             const raw = String(st.storeName || 'TOKO').toUpperCase();
-            const fs = Math.max(30, Math.min(84, Math.floor(700 / (Math.max(4, raw.length) * 0.68))));
+            const fs = Math.max(30, Math.min(cp ? 52 : 84, Math.floor(700 / (Math.max(4, raw.length) * 0.68))));
             const shadow = [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 3], [3, 3], [4, 4]].map(([x, y]) => `${x}px ${y}px 0 #f26a1b`).join(',');
             const words = String(c.title || 'DAFTAR HARGA VOUCHER & DATA').trim().split(/\s+/);
             const w1 = esc(words.slice(0, 2).join(' ')), w2 = esc(words.slice(2).join(' '));
             const tab = c.logoBri
-                ? `<div style="width:200px;height:51px;background:#fff url(${c.logoBri}) center/contain no-repeat"></div>`
-                : `<div style="font-size:26px;font-weight:900;line-height:1.05;color:#0f2d5c">AgenBRI<span style="color:#f26a1b">Link</span></div><div style="font-size:9px;font-weight:700;color:#0f2d5c">Layanan Transaksi Kanangan Tanpa Kantor</div>`.replace('Kanangan', 'Keuangan');
+                ? `<div style="width:${cp ? 150 : 200}px;height:${cp ? 38 : 51}px;background:#fff url(${c.logoBri}) center/contain no-repeat"></div>`
+                : `<div style="font-size:${cp ? 20 : 26}px;font-weight:900;line-height:1.05;color:#0f2d5c">AgenBRI<span style="color:#f26a1b">Link</span></div><div style="font-size:9px;font-weight:700;color:#0f2d5c">Layanan Transaksi Kanangan Tanpa Kantor</div>`.replace('Kanangan', 'Keuangan');
             return `<div style="position:relative;text-align:center;padding-bottom:8px">
-                <div style="position:absolute;left:0;top:0;width:0;height:0;border-top:150px solid #f26a1b;border-right:150px solid transparent"></div>
-                <div style="position:absolute;left:0;top:0;width:0;height:0;border-top:125px solid #0f2d5c;border-right:125px solid transparent"></div>
-                <div style="position:absolute;right:0;top:0;width:0;height:0;border-top:150px solid #f26a1b;border-left:150px solid transparent"></div>
-                <div style="position:absolute;right:0;top:0;width:0;height:0;border-top:125px solid #0f2d5c;border-left:125px solid transparent"></div>
+                <div style="position:absolute;left:0;top:0;width:0;height:0;border-top:${cp ? 90 : 150}px solid #f26a1b;border-right:${cp ? 90 : 150}px solid transparent"></div>
+                <div style="position:absolute;left:0;top:0;width:0;height:0;border-top:${cp ? 75 : 125}px solid #0f2d5c;border-right:${cp ? 75 : 125}px solid transparent"></div>
+                <div style="position:absolute;right:0;top:0;width:0;height:0;border-top:${cp ? 90 : 150}px solid #f26a1b;border-left:${cp ? 90 : 150}px solid transparent"></div>
+                <div style="position:absolute;right:0;top:0;width:0;height:0;border-top:${cp ? 75 : 125}px solid #0f2d5c;border-left:${cp ? 75 : 125}px solid transparent"></div>
                 <div style="position:relative;display:inline-block;background:#fff;border:3px solid #f26a1b;border-top:0;border-radius:0 0 22px 22px;padding:6px 26px">${tab}</div>
                 <div style="position:relative;margin-top:6px;font-size:${fs}px;font-weight:900;line-height:1.1;color:#0f2d5c;text-shadow:${shadow};letter-spacing:2px;padding:0 20px">${esc(raw)}</div>
-                <div style="position:relative;margin:10px auto 0;width:650px;background:#f26a1b;border-radius:6px;padding:5px 0;font-size:28px;font-weight:900;color:#fff;line-height:1.2">${w1}${w2 ? ` <span style="color:#0f2d5c">${w2}</span>` : ''}</div>
+                <div style="position:relative;margin:${cp ? 5 : 10}px auto 0;width:${cp ? 560 : 650}px;background:#f26a1b;border-radius:6px;padding:${cp ? 3 : 5}px 0;font-size:${cp ? 20 : 28}px;font-weight:900;color:#fff;line-height:1.2">${w1}${w2 ? ` <span style="color:#0f2d5c">${w2}</span>` : ''}</div>
                 <div style="position:relative;font-size:11px;color:#475569;margin-top:4px">Berlaku per ${plToday()}</div>
             </div>`;
         }
-        function plFooterHtml() {
+        function plFooterHtml(cp) {
             const c = plCfg(), st = appState.settings;
             const ewl = (c.logosEw || []).filter(Boolean).slice(0, 6);
             const ewDef = [['DANA', '#118eea'], ['OVO', '#4c2a86'], ['GoPay', '#00aa13']];
             const n = ewl.length || ewDef.length;
             const f = Math.min(1, 730 / (n * 80 + 250 + n * 12));
-            const W = 80 * f, H = 64 * f, BW = 250 * f;
+            const k = cp ? 0.7 : 1, W = 80 * f * k, H = 64 * f * k, BW = 250 * f * k;
             const slot = (d, w, hh) => `<div style="width:${w}px;height:${hh}px;flex:none;background:#fff url(${d}) center/contain no-repeat"></div>`;
             const pill = (t, bg, w) => `<div style="width:${w}px;height:${H}px;flex:none;background:${bg};color:#fff;font-weight:800;font-size:${w > 200 ? 20 : 13}px;border-radius:6px;display:flex;align-items:center;justify-content:center">${esc(t)}</div>`;
             const ew = ewl.length ? ewl.map(d => slot(d, W, H)) : ewDef.map(([t, bg]) => pill(t, bg, W));
             const bri = c.logoBri ? slot(c.logoBri, BW, H) : pill('AgenBRILink', '#00529c', BW);
             const contact = `${esc(st.storeAddress || '')}${st.storePhone ? (st.storeAddress ? ' | ' : '') + 'Telp/WA: ' + esc(st.storePhone) : ''}`;
             return `<div>
-                <div style="background:#fff;border-top:6px solid #f26a1b;border-bottom:3px solid #1e4b8f;padding:8px 20px;display:flex;justify-content:center;align-items:center;gap:12px">${ew.join('')}${bri}</div>
+                <div style="background:#fff;border-top:6px solid #f26a1b;border-bottom:3px solid #1e4b8f;padding:${cp ? 5 : 8}px 20px;display:flex;justify-content:center;align-items:center;gap:12px">${ew.join('')}${bri}</div>
                 <div style="background:#0f2d5c;color:#fff;text-align:center;padding:6px 20px">${contact ? `<div style="font-size:11px;opacity:.9">${contact}</div>` : ''}<div style="font-size:17px;font-weight:800;line-height:1.3">${esc(c.note || '')}</div></div>
             </div>`;
         }
@@ -5091,7 +5103,8 @@
             return { h, ok: h <= avail && !wide };
         }
         function plPageHtmls() {
-            const header = plHeaderHtml(), footer = plFooterHtml();
+            const cp = plSelected().length > 40;
+            const header = plHeaderHtml(cp), footer = plFooterHtml(cp);
             const fh = plMeasure([header, footer], 794);
             const avail = 1123 - fh[0] - fh[1] - 8;
             const provs = plProviders();
@@ -5099,7 +5112,7 @@
             plOverflow = false;
             if (provs.length) {
                 // cari huruf terbesar yang masih muat penuh 1 halaman
-                let lo = 6, hi = 26, best = 6;
+                let lo = 5, hi = 26, best = 5;
                 for (let k = 0; k < 14; k++) {
                     const mid = (lo + hi) / 2;
                     if (plFits(provs, mid, avail, 0).ok) { best = mid; lo = mid; } else hi = mid;
@@ -5138,7 +5151,7 @@
             let t = `*HARGA GROSIR - ${st.storeName || 'TOKO'}*\nUpdate: ${plToday()}\n`;
             plProviders().forEach(p => {
                 const by = {}; plSelected().forEach(i => { if ((plStripV(i.category) || 'LAINNYA').toUpperCase() === p.name && Number(i.wholesalePrice) > 0) by[i.code] = i; });
-                const its = Object.values(by).sort((a, b) => plDays(a) - plDays(b) || (Number(a.wholesalePrice) || 0) - (Number(b.wholesalePrice) || 0));
+                const its = Object.values(by).sort((a, b) => (plDays(a) || 9999) - (plDays(b) || 9999) || (Number(a.wholesalePrice) || 0) - (Number(b.wholesalePrice) || 0));
                 if (its.length) t += `\n*${p.name}*\n` + its.map(i => `- ${plItemName(i, p.name)}: Rp ${formatNum(i.wholesalePrice)}`).join('\n') + '\n';
             });
             t += `\n${st.storePhone ? 'Order/Info: ' + st.storePhone + '\n' : ''}${c.note || ''}`;
