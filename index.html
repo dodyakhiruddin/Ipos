@@ -4937,15 +4937,15 @@
 
         function plPosterHtml() {
             const c = plCfg(), st = appState.settings, list = plSelected(), n = list.length;
-            const z = n <= 10 ? { nm: 26, pr: 30, pad: 14, cols: 1 } : n <= 24 ? { nm: 18, pr: 21, pad: 10, cols: 2 } : n <= 40 ? { nm: 15, pr: 17, pad: 7, cols: 2 } : { nm: 13, pr: 15, pad: 5, cols: 2 };
+            const z = n <= 12 ? { nm: 17, pr: 19, pad: 10, cols: 3 } : n <= 30 ? { nm: 15, pr: 17, pad: 8, cols: 3 } : { nm: 13, pr: 15, pad: 6, cols: 3 };
             const pill = (t, bg) => `<span style="display:inline-block;background:${bg};color:#fff;font-weight:800;font-size:15px;padding:6px 12px;border-radius:999px;margin:2px">${esc(t)}</span>`;
             const ew = c.logoEw ? `<img src="${c.logoEw}" style="max-height:70px;max-width:340px">` : ['DANA', 'OVO', 'GoPay', 'ShopeePay', 'LinkAja'].map((t, i) => pill(t, ['#118eea', '#4c2a86', '#00aa13', '#ee4d2d', '#e82529'][i])).join('');
             const bri = c.logoBri ? `<img src="${c.logoBri}" style="max-height:70px;max-width:300px">` : pill('BRILink', '#00529c') + pill('Agen Resmi', '#f58220');
             const groups = Object.entries(plGroups(list)).map(([cat, items]) => `
                 <div style="margin-top:14px">
-                    <div style="background:#e0ecff;color:#0f3d7a;font-weight:800;font-size:${z.nm}px;padding:5px 12px;border-left:8px solid #0f3d7a">${esc(cat)}</div>
-                    <div style="display:grid;grid-template-columns:repeat(${z.cols},1fr);column-gap:26px;padding:0 6px">
-                        ${items.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:${z.pad}px 4px;border-bottom:2px dotted #94a3b8"><span style="font-size:${z.nm}px;font-weight:600;color:#1e293b">${esc(i.name)}</span><span style="font-size:${z.pr}px;font-weight:900;color:#b91c1c;white-space:nowrap">${formatNum(i.price)}</span></div>`).join('')}
+                    <div style="background:#e0ecff;color:#0f3d7a;font-weight:800;font-size:${z.nm + 3}px;padding:5px 12px;border-left:8px solid #0f3d7a">${esc(cat)}</div>
+                    <div style="display:grid;grid-template-columns:repeat(${z.cols},1fr);column-gap:18px;padding:0 4px">
+                        ${items.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:${z.pad}px 4px;border-bottom:2px dotted #94a3b8"><span style="font-size:${z.nm}px;font-weight:600;color:#1e293b;min-width:0;line-height:1.2">${esc(i.name)}</span><span style="font-size:${z.pr}px;font-weight:900;color:#b91c1c;white-space:nowrap">${formatNum(i.price)}</span></div>`).join('')}
                     </div>
                 </div>`).join('') || '<div style="text-align:center;color:#94a3b8;padding:60px 0;font-size:22px">Belum ada item dipilih</div>';
             return `<div id="pl-poster" style="width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column">
@@ -5029,7 +5029,7 @@
             } catch (e) { showToast('Gagal mencetak: ' + e.message, 'error'); }
         }
 
-        // ---------- Tombol Tutup di kanan bawah halaman menu & popup ----------
+        // ---------- Tombol Tutup: bilah tetap di kanan bawah area kerja (selalu terlihat) ----------
         function closeCurrentTab() {
             const sec = [...document.querySelectorAll('main section[id^="view-"]')].find(x => !x.classList.contains('hidden'));
             if (!sec) return;
@@ -5038,8 +5038,23 @@
             closeMdiTab({ stopPropagation() {} }, id);
         }
         function initCloseButtons() {
-            const row = id => `<div class="flex justify-end pt-1 pb-2" data-close-row><button type="button" onclick="${id ? `closeModal('${id}')` : 'closeCurrentTab()'}" class="ipos-btn px-4 py-1.5 rounded text-xs font-bold"><i class="fas fa-times mr-1"></i> Tutup</button></div>`;
-            document.querySelectorAll('main section[id^="view-"]:not(#view-dashboard)').forEach(sec => { if (!sec.querySelector(':scope > [data-close-row]')) sec.insertAdjacentHTML('beforeend', row('')); });
+            const main = document.querySelector('main');
+            const ws = main && main.querySelector('.ipos-workspace');
+            if (!main || !ws || document.getElementById('close-bar')) return;
+            const bar = document.createElement('div');
+            bar.id = 'close-bar';
+            bar.className = 'shrink-0 flex justify-end px-3 py-1.5 border-t border-slate-300 bg-slate-100';
+            bar.style.display = 'none';
+            bar.innerHTML = '<button type="button" class="ipos-btn px-5 py-1.5 rounded text-xs font-bold"><i class="fas fa-times mr-1"></i> Tutup</button>';
+            bar.firstChild.onclick = closeCurrentTab;
+            ws.after(bar);
+            const sync = () => {
+                const sec = [...ws.querySelectorAll('section[id^="view-"]')].find(x => !x.classList.contains('hidden'));
+                bar.style.display = sec && sec.id !== 'view-dashboard' ? 'flex' : 'none';
+            };
+            new MutationObserver(sync).observe(ws, { attributes: true, attributeFilter: ['class'], subtree: true });
+            sync();
+            const row = id => `<div class="flex justify-end pt-1 pb-2" data-close-row><button type="button" onclick="closeModal('${id}')" class="ipos-btn px-4 py-1.5 rounded text-xs font-bold"><i class="fas fa-times mr-1"></i> Tutup</button></div>`;
             ['settings-modal', 'item-picker-modal'].forEach(id => {
                 const panel = document.getElementById(id)?.firstElementChild;
                 if (panel && !panel.querySelector('[data-close-row]')) panel.insertAdjacentHTML('beforeend', `<div class="px-4 pb-3">${row(id)}</div>`);
@@ -5048,6 +5063,10 @@
         document.addEventListener('DOMContentLoaded', initCloseButtons);
 
         // ---------- Sub menu dropdown (panah kecil, khusus desktop) ----------
+        function isDesktopDevice() {
+            // Desktop = layar fisik >= 1024px dan bukan perangkat sentuh utama (HP/tablet, termasuk "situs desktop")
+            return screen.width >= 1024 && !(navigator.maxTouchPoints > 0 && window.matchMedia('(pointer:coarse)').matches);
+        }
         function initSidebarSubmenus() {
             const mk = (fn, arr) => arr.map(([l, k]) => [l, () => fn(k)]);
             const SUB = {
@@ -5059,10 +5078,8 @@
                 akuntansi: mk(switchAccSubTab, [['Ringkasan', 'ringkasan'], ['Alur Kas', 'kas'], ['Laba Rugi', 'labarugi'], ['Biaya Operasional', 'biaya'], ['Neraca', 'neraca'], ['Saldo Awal', 'saldoawal']]),
                 laporan: mk(switchReportSubTab, [['Master Data', 'master'], ['Pembelian', 'pembelian'], ['Penjualan', 'penjualan'], ['Hutang Usaha', 'hutang'], ['Piutang Usaha', 'piutang'], ['Rugi/Laba', 'labarugi'], ['Kas', 'kas']])
             };
-            // Hanya tampil di desktop (layar >= 640px DAN perangkat bermouse); di HP/tablet (termasuk mode situs desktop) tampilan tetap seperti semula
             const st = document.createElement('style');
-            st.textContent = '.sub-arrow{display:none!important}#sub-flyout{display:none!important}@media (min-width:640px) and (hover:hover) and (pointer:fine){.sub-arrow{display:inline-block!important}#sub-flyout.open{display:block!important}}'
-                + '#sub-flyout{position:fixed;z-index:60;min-width:240px;max-height:80vh;overflow:auto;background:#fff;border:1px solid #9aa7b8;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:12.5px;color:#1e293b}'
+            st.textContent = '#sub-flyout{display:none;position:fixed;z-index:60;min-width:240px;max-height:80vh;overflow:auto;background:#fff;border:1px solid #9aa7b8;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:12.5px;color:#1e293b}#sub-flyout.open{display:block}'
                 + '#sub-flyout .sf-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:6px 14px 6px 10px}#sub-flyout .sf-item:hover{background:#dbeafe}'
                 + '#sub-flyout .sf-foot{display:flex;justify-content:flex-end;padding:6px 8px;border-top:1px solid #cbd5e1;background:#f1f5f9}';
             document.head.appendChild(st);
@@ -5070,21 +5087,20 @@
             fly.id = 'sub-flyout';
             document.body.appendChild(fly);
             const close = () => fly.classList.remove('open');
-            const isDesk = () => window.matchMedia('(min-width:640px) and (hover:hover) and (pointer:fine)').matches;
             const open = (tab, btn) => {
-                if (!isDesk()) return;
                 fly.innerHTML = SUB[tab].map(([l], i) => `<button type="button" class="sf-item" data-i="${i}"><i class="far fa-file-alt" style="color:#e0a030"></i><span>${esc(l)}</span></button>`).join('')
                     + '<div class="sf-foot"><button type="button" class="ipos-btn px-4 py-1 rounded text-xs font-bold sf-close"><i class="fas fa-times mr-1"></i> Tutup</button></div>';
                 fly.dataset.tab = tab;
                 fly.classList.add('open');
                 const r = btn.getBoundingClientRect();
-                fly.style.left = Math.round(r.left + 12) + 'px';
-                fly.style.top = Math.round(Math.min(r.bottom, window.innerHeight - fly.offsetHeight - 8)) + 'px';
+                fly.style.left = Math.round(Math.max(4, Math.min(r.left + 12, window.innerWidth - fly.offsetWidth - 8))) + 'px';
+                fly.style.top = Math.round(Math.max(4, Math.min(r.bottom, window.innerHeight - fly.offsetHeight - 8))) + 'px';
                 fly.querySelectorAll('.sf-item').forEach(b => b.onclick = () => { const i = Number(b.dataset.i); close(); switchTab(tab); SUB[tab][i][1](); });
                 fly.querySelector('.sf-close').onclick = close;
             };
             document.addEventListener('click', ev => { if (fly.classList.contains('open') && !fly.contains(ev.target)) close(); });
             document.addEventListener('keydown', ev => { if (ev.key === 'Escape') close(); });
+            const arrows = [];
             Object.keys(SUB).forEach(tab => {
                 const btn = document.getElementById('nav-' + tab);
                 if (!btn) return;
@@ -5092,12 +5108,20 @@
                 arrow.className = 'sub-arrow ml-auto px-1.5 rounded hover:bg-white/20';
                 arrow.title = 'Sub menu';
                 arrow.innerHTML = '<i class="fas fa-caret-down"></i>';
-                btn.appendChild(arrow);
                 arrow.onclick = ev => {
                     ev.stopPropagation();
                     if (fly.classList.contains('open') && fly.dataset.tab === tab) close(); else open(tab, btn);
                 };
+                arrows.push({ btn, arrow });
             });
+            // Panah hanya DIPASANG di desktop; di HP/tablet tidak ada sama sekali di halaman
+            const sync = () => {
+                const d = isDesktopDevice();
+                arrows.forEach(({ btn, arrow }) => { if (d && !arrow.isConnected) btn.appendChild(arrow); else if (!d && arrow.isConnected) arrow.remove(); });
+                if (!d) close();
+            };
+            sync();
+            window.addEventListener('resize', sync);
         }
         document.addEventListener('DOMContentLoaded', initSidebarSubmenus);
 
