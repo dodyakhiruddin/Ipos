@@ -5031,14 +5031,7 @@
             } catch (e) { showToast('Gagal mencetak: ' + e.message, 'error'); }
         }
 
-        // ---------- Sub menu sidebar (panah kecil, hanya desktop) & tombol Tutup kanan bawah ----------
-        function closeCurrentTab() {
-            const sec = [...document.querySelectorAll('main section[id^="view-"]')].find(x => !x.classList.contains('hidden'));
-            if (!sec) return;
-            const id = sec.id.replace('view-', '');
-            if (id === 'dashboard') return;
-            closeMdiTab({ stopPropagation() {} }, id);
-        }
+        // ---------- Sub menu dropdown (panah kecil, khusus desktop) ----------
         function initSidebarSubmenus() {
             const mk = (fn, arr) => arr.map(([l, k]) => [l, () => fn(k)]);
             const SUB = {
@@ -5050,37 +5043,42 @@
                 akuntansi: mk(switchAccSubTab, [['Ringkasan', 'ringkasan'], ['Alur Kas', 'kas'], ['Laba Rugi', 'labarugi'], ['Biaya Operasional', 'biaya'], ['Neraca', 'neraca'], ['Saldo Awal', 'saldoawal']]),
                 laporan: mk(switchReportSubTab, [['Master Data', 'master'], ['Pembelian', 'pembelian'], ['Penjualan', 'penjualan'], ['Hutang Usaha', 'hutang'], ['Piutang Usaha', 'piutang'], ['Rugi/Laba', 'labarugi'], ['Kas', 'kas']])
             };
+            // Hanya tampil di desktop (lebar >= 1024px); di HP/tablet tampilan tetap seperti semula
             const st = document.createElement('style');
-            st.textContent = '@media (max-width:639px){.sub-arrow,.sub-panel{display:none!important}}.sub-panel button{display:block;width:100%;text-align:left;padding:5px 12px 5px 44px;font-size:11px;color:#cbd5e1}.sub-panel button:hover{background:rgba(255,255,255,.12);color:#fff}';
+            st.textContent = '.sub-arrow{display:none}#sub-flyout{display:none}@media (min-width:1024px){.sub-arrow{display:inline-block}#sub-flyout.open{display:block}}'
+                + '#sub-flyout{position:fixed;z-index:60;min-width:240px;max-height:80vh;overflow:auto;background:#fff;border:1px solid #9aa7b8;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:12.5px;color:#1e293b}'
+                + '#sub-flyout .sf-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:6px 14px 6px 10px}#sub-flyout .sf-item:hover{background:#dbeafe}'
+                + '#sub-flyout .sf-foot{display:flex;justify-content:flex-end;padding:6px 8px;border-top:1px solid #cbd5e1;background:#f1f5f9}';
             document.head.appendChild(st);
+            const fly = document.createElement('div');
+            fly.id = 'sub-flyout';
+            document.body.appendChild(fly);
+            const close = () => fly.classList.remove('open');
+            const open = (tab, btn) => {
+                fly.innerHTML = SUB[tab].map(([l], i) => `<button type="button" class="sf-item" data-i="${i}"><i class="far fa-file-alt" style="color:#e0a030"></i><span>${esc(l)}</span></button>`).join('')
+                    + '<div class="sf-foot"><button type="button" class="ipos-btn px-4 py-1 rounded text-xs font-bold sf-close"><i class="fas fa-times mr-1"></i> Tutup</button></div>';
+                fly.dataset.tab = tab;
+                fly.classList.add('open');
+                const r = btn.getBoundingClientRect();
+                fly.style.left = Math.round(r.left + 12) + 'px';
+                fly.style.top = Math.round(Math.min(r.bottom, window.innerHeight - fly.offsetHeight - 8)) + 'px';
+                fly.querySelectorAll('.sf-item').forEach(b => b.onclick = () => { const i = Number(b.dataset.i); close(); switchTab(tab); SUB[tab][i][1](); });
+                fly.querySelector('.sf-close').onclick = close;
+            };
+            document.addEventListener('click', ev => { if (fly.classList.contains('open') && !fly.contains(ev.target)) close(); });
+            document.addEventListener('keydown', ev => { if (ev.key === 'Escape') close(); });
             Object.keys(SUB).forEach(tab => {
                 const btn = document.getElementById('nav-' + tab);
                 if (!btn) return;
                 const arrow = document.createElement('span');
-                arrow.className = 'sub-arrow ml-auto px-1.5 py-0.5 rounded text-[10px] hover:bg-white/20';
+                arrow.className = 'sub-arrow ml-auto px-1.5 rounded hover:bg-white/20';
                 arrow.title = 'Sub menu';
-                arrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                arrow.innerHTML = '<i class="fas fa-caret-down"></i>';
                 btn.appendChild(arrow);
-                const panel = document.createElement('div');
-                panel.className = 'sub-panel hidden';
-                SUB[tab].forEach(([label, fn]) => {
-                    const b = document.createElement('button');
-                    b.type = 'button'; b.textContent = label;
-                    b.onclick = () => { switchTab(tab); fn(); };
-                    panel.appendChild(b);
-                });
-                btn.after(panel);
                 arrow.onclick = ev => {
                     ev.stopPropagation();
-                    const open = panel.classList.toggle('hidden') === false;
-                    arrow.firstChild.className = open ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+                    if (fly.classList.contains('open') && fly.dataset.tab === tab) close(); else open(tab, btn);
                 };
-            });
-            const closeRow = id => `<div class="flex justify-end pt-1 pb-2" data-close-row="${id}"><button type="button" onclick="${id ? `closeModal('${id}')` : 'closeCurrentTab()'}" class="ipos-btn px-4 py-1.5 rounded text-xs font-bold"><i class="fas fa-times mr-1"></i> Tutup</button></div>`;
-            document.querySelectorAll('main section[id^="view-"]:not(#view-dashboard)').forEach(sec => sec.insertAdjacentHTML('beforeend', closeRow('')));
-            ['settings-modal', 'item-picker-modal'].forEach(id => {
-                const panel = document.getElementById(id)?.firstElementChild;
-                if (panel) panel.insertAdjacentHTML('beforeend', `<div class="px-4 pb-3">${closeRow(id)}</div>`);
             });
         }
         document.addEventListener('DOMContentLoaded', initSidebarSubmenus);
