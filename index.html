@@ -773,6 +773,7 @@
                                 <button type="button" onclick="switchMasterSubTab('customers')" id="msub-customers" class="ipos-tab px-3 py-1 rounded-t font-bold">Pelanggan</button>
                                 <button type="button" onclick="switchMasterSubTab('kartustok')" id="msub-kartustok" class="ipos-tab px-3 py-1 rounded-t font-bold">Kartu Stok</button>
                                 <button type="button" onclick="switchMasterSubTab('opname')" id="msub-opname" class="ipos-tab px-3 py-1 rounded-t font-bold">Stok Opname</button>
+                                <button type="button" onclick="switchMasterSubTab('daftarharga')" id="msub-daftarharga" class="ipos-tab px-3 py-1 rounded-t font-bold">Daftar Harga</button>
                             </div>
                         </div>
 
@@ -862,6 +863,42 @@
                                 <div id="opname-summary" class="text-xs font-bold"></div>
                                 <div class="font-bold text-xs mt-2">Riwayat Stok Opname</div>
                                 <div id="opname-history" class="space-y-1 text-xs"></div>
+                            </div>
+                            <div id="mpane-daftarharga" class="hidden space-y-2.5">
+                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Pilih item voucher (kategori berawalan <b>V</b>) yang ingin dimasukkan. Daftar harga <b>eceran</b> dibuat sebagai gambar A4 (PNG/JPG/cetak), harga <b>grosir</b> berupa teks untuk WhatsApp. Setiap harga diubah di Daftar Barang, buka tab ini lagi lalu cetak ulang.</div>
+                                <div class="grid grid-cols-1 xl:grid-cols-2 gap-3 text-xs">
+                                    <div class="space-y-2">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <label class="block"><span class="block font-bold mb-0.5">Judul</span><input type="text" id="pl-title" oninput="plSetField('title', this.value)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
+                                            <label class="block"><span class="block font-bold mb-0.5">Catatan bawah</span><input type="text" id="pl-note" oninput="plSetField('note', this.value)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
+                                            <div><span class="block font-bold mb-0.5">Logo E-Wallet</span><input type="file" accept="image/*" onchange="plLogo(this, 'logoEw')" class="w-full"><button type="button" onclick="plClearLogo('logoEw')" class="text-red-600 underline text-[11px]">Hapus logo</button></div>
+                                            <div><span class="block font-bold mb-0.5">Logo BRILink</span><input type="file" accept="image/*" onchange="plLogo(this, 'logoBri')" class="w-full"><button type="button" onclick="plClearLogo('logoBri')" class="text-red-600 underline text-[11px]">Hapus logo</button></div>
+                                        </div>
+                                        <div class="flex flex-wrap gap-2 items-center">
+                                            <input type="text" id="pl-search" oninput="renderPriceList()" placeholder="Cari item voucher..." class="bg-white border border-slate-300 rounded px-2.5 py-1.5 w-48">
+                                            <button type="button" onclick="plSelectAll(true)" class="ipos-btn px-2.5 py-1.5 rounded font-bold">Pilih Semua</button>
+                                            <button type="button" onclick="plSelectAll(false)" class="ipos-btn px-2.5 py-1.5 rounded font-bold">Kosongkan</button>
+                                            <span id="pl-count" class="font-bold text-slate-600"></span>
+                                        </div>
+                                        <div id="pl-list" class="border border-slate-300 rounded bg-white max-h-[46vh] overflow-auto divide-y divide-slate-100"></div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div class="flex flex-wrap gap-2">
+                                            <button type="button" onclick="plExport('png')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-image mr-1"></i> Unduh PNG</button>
+                                            <button type="button" onclick="plExport('jpg')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-image mr-1"></i> Unduh JPG</button>
+                                            <button type="button" onclick="plPrint()" class="ipos-btn px-3 py-1.5 rounded font-bold"><i class="fas fa-print mr-1"></i> Cetak A4</button>
+                                        </div>
+                                        <div id="pl-warn" class="hidden text-red-700 font-bold"></div>
+                                        <div class="border border-slate-300 rounded bg-slate-200 p-2 overflow-auto max-h-[60vh]"><div id="pl-preview" style="zoom:0.55;width:794px"></div></div>
+                                        <div class="font-bold mt-2">Teks Harga Grosir (WhatsApp)</div>
+                                        <textarea id="pl-wa" rows="9" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono text-[11px]"></textarea>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button type="button" onclick="plCopyWa()" class="ipos-btn px-3 py-1.5 rounded font-bold"><i class="fas fa-copy mr-1"></i> Salin Teks</button>
+                                            <button type="button" onclick="plSendWa()" class="ipos-btn-success px-3 py-1.5 rounded font-bold"><i class="fab fa-whatsapp mr-1"></i> Kirim via WhatsApp</button>
+                                            <button type="button" onclick="plRefreshWa()" class="ipos-btn px-3 py-1.5 rounded font-bold">Buat Ulang Teks</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div id="mpane-kartustok" class="hidden space-y-2.5">
                                 <div class="flex flex-wrap gap-3 items-end">
@@ -4845,6 +4882,155 @@
             showToast(`Stok opname ${id} tersimpan (${rows.length} barang).`, 'success');
         }
 
+
+        // =========================================================================
+        // DAFTAR HARGA VOUCHER (eceran = gambar A4, grosir = teks WhatsApp)
+        // =========================================================================
+        function plCfg() {
+            const st = appState.settings;
+            if (!st.priceList) st.priceList = { sel: [], title: 'DAFTAR HARGA VOUCHER', note: 'Harga dapat berubah sewaktu-waktu.', logoEw: '', logoBri: '' };
+            return st.priceList;
+        }
+        let plSaveT = null;
+        function plPersist() { clearTimeout(plSaveT); plSaveT = setTimeout(() => saveAppState(), 700); }
+        function plVItems() { return (appState.items || []).filter(i => /^v/i.test(String(i.category || '').trim())); }
+        function plSelected() {
+            const sel = new Set(plCfg().sel);
+            return plVItems().filter(i => sel.has(i.code)).sort((a, b) => String(a.category).localeCompare(String(b.category)) || (Number(a.price) || 0) - (Number(b.price) || 0));
+        }
+        function plToday() { return new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }); }
+        function plGroups(list) {
+            const g = {};
+            list.forEach(i => { (g[i.category] = g[i.category] || []).push(i); });
+            return g;
+        }
+        function plSetField(k, v) { plCfg()[k] = v; plPersist(); plRenderPreview(); plRefreshWa(); }
+        function plToggle(code, on) {
+            const c = plCfg(), set = new Set(c.sel);
+            if (on) set.add(code); else set.delete(code);
+            c.sel = [...set]; plPersist(); plRenderPreview(); plRefreshWa(); plCount();
+        }
+        function plSelectAll(on) {
+            const q = (document.getElementById('pl-search').value || '').toLowerCase();
+            const c = plCfg(), set = new Set(c.sel);
+            plVItems().filter(i => !q || String(i.name).toLowerCase().includes(q) || String(i.code).toLowerCase().includes(q)).forEach(i => on ? set.add(i.code) : set.delete(i.code));
+            c.sel = [...set]; plPersist(); renderPriceList();
+        }
+        function plCount() { const el = document.getElementById('pl-count'); if (el) el.textContent = `Terpilih: ${plSelected().length} dari ${plVItems().length}`; }
+        function plLogo(inp, key) {
+            const f = inp.files && inp.files[0];
+            if (!f) return;
+            const fr = new FileReader();
+            fr.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const r = Math.min(1, 420 / img.width), cv = document.createElement('canvas');
+                    cv.width = Math.round(img.width * r); cv.height = Math.round(img.height * r);
+                    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                    plCfg()[key] = cv.toDataURL('image/png'); plPersist(); plRenderPreview();
+                };
+                img.src = fr.result;
+            };
+            fr.readAsDataURL(f);
+            inp.value = '';
+        }
+        function plClearLogo(key) { plCfg()[key] = ''; plPersist(); plRenderPreview(); }
+
+        function plPosterHtml() {
+            const c = plCfg(), st = appState.settings, list = plSelected(), n = list.length;
+            const z = n <= 10 ? { nm: 26, pr: 30, pad: 14, cols: 1 } : n <= 24 ? { nm: 18, pr: 21, pad: 10, cols: 2 } : n <= 40 ? { nm: 15, pr: 17, pad: 7, cols: 2 } : { nm: 13, pr: 15, pad: 5, cols: 2 };
+            const pill = (t, bg) => `<span style="display:inline-block;background:${bg};color:#fff;font-weight:800;font-size:15px;padding:6px 12px;border-radius:999px;margin:2px">${esc(t)}</span>`;
+            const ew = c.logoEw ? `<img src="${c.logoEw}" style="max-height:70px;max-width:340px">` : ['DANA', 'OVO', 'GoPay', 'ShopeePay', 'LinkAja'].map((t, i) => pill(t, ['#118eea', '#4c2a86', '#00aa13', '#ee4d2d', '#e82529'][i])).join('');
+            const bri = c.logoBri ? `<img src="${c.logoBri}" style="max-height:70px;max-width:300px">` : pill('BRILink', '#00529c') + pill('Agen Resmi', '#f58220');
+            const groups = Object.entries(plGroups(list)).map(([cat, items]) => `
+                <div style="margin-top:14px">
+                    <div style="background:#e0ecff;color:#0f3d7a;font-weight:800;font-size:${z.nm}px;padding:5px 12px;border-left:8px solid #0f3d7a">${esc(cat)}</div>
+                    <div style="display:grid;grid-template-columns:repeat(${z.cols},1fr);column-gap:26px;padding:0 6px">
+                        ${items.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:${z.pad}px 4px;border-bottom:2px dotted #94a3b8"><span style="font-size:${z.nm}px;font-weight:600;color:#1e293b">${esc(i.name)}</span><span style="font-size:${z.pr}px;font-weight:900;color:#b91c1c;white-space:nowrap">${formatNum(i.price)}</span></div>`).join('')}
+                    </div>
+                </div>`).join('') || '<div style="text-align:center;color:#94a3b8;padding:60px 0;font-size:22px">Belum ada item dipilih</div>';
+            return `<div id="pl-poster" style="width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column">
+                <div style="background:#0f3d7a;color:#fff;text-align:center;padding:26px 20px 18px;border-bottom:8px solid #fbbf24">
+                    <div style="font-size:44px;font-weight:900;letter-spacing:1px">${esc(st.storeName || 'TOKO')}</div>
+                    <div style="font-size:30px;font-weight:800;color:#fbbf24;margin-top:4px">${esc(c.title || 'DAFTAR HARGA')}</div>
+                    <div style="font-size:14px;margin-top:4px">Berlaku per ${plToday()}</div>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;background:#f1f5f9">
+                    <div style="text-align:left"><div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:2px">MELAYANI E-WALLET</div>${ew}</div>
+                    <div style="text-align:right"><div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:2px">TRANSFER &amp; TARIK TUNAI</div>${bri}</div>
+                </div>
+                <div style="flex:1;padding:4px 20px 10px">${groups}</div>
+                <div style="background:#0f3d7a;color:#fff;text-align:center;padding:10px 20px;font-size:13px">
+                    <div>${esc(st.storeAddress || '')}${st.storePhone ? ' | Telp/WA: ' + esc(st.storePhone) : ''}</div>
+                    <div style="color:#fbbf24;font-weight:700;margin-top:2px">${esc(c.note || '')}</div>
+                </div></div>`;
+        }
+        function plRenderPreview() {
+            const el = document.getElementById('pl-preview');
+            if (!el) return;
+            el.innerHTML = plPosterHtml();
+            const h = document.getElementById('pl-poster').offsetHeight, w = document.getElementById('pl-warn');
+            if (w) { w.classList.toggle('hidden', h <= 1130); w.textContent = h > 1130 ? 'Item terlalu banyak untuk 1 lembar A4, kurangi item agar muat.' : ''; }
+        }
+        function renderPriceList() {
+            const c = plCfg();
+            const t = document.getElementById('pl-title'), nt = document.getElementById('pl-note');
+            if (t && document.activeElement !== t) t.value = c.title || '';
+            if (nt && document.activeElement !== nt) nt.value = c.note || '';
+            const q = (document.getElementById('pl-search').value || '').toLowerCase(), sel = new Set(c.sel);
+            const list = plVItems().filter(i => !q || String(i.name).toLowerCase().includes(q) || String(i.code).toLowerCase().includes(q));
+            document.getElementById('pl-list').innerHTML = list.map(i => `<label class="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-sky-50"><input type="checkbox" ${sel.has(i.code) ? 'checked' : ''} onchange="plToggle('${escJs(i.code)}', this.checked)"><span class="flex-1">${esc(i.name)} <span class="text-slate-400">(${esc(i.category)})</span></span><span class="font-mono">${formatNum(i.price)}</span><span class="font-mono text-slate-500 w-20 text-right">${formatNum(i.wholesalePrice)}</span></label>`).join('') || '<div class="p-3 text-slate-400 text-center">Tidak ada item kategori berawalan V.</div>';
+            plCount(); plRenderPreview(); plRefreshWa();
+        }
+        function plRefreshWa() {
+            const el = document.getElementById('pl-wa');
+            if (!el) return;
+            const st = appState.settings, c = plCfg();
+            const g = plGroups(plSelected().filter(i => Number(i.wholesalePrice) > 0));
+            let t = `*HARGA GROSIR - ${st.storeName || 'TOKO'}*\nUpdate: ${plToday()}\n`;
+            Object.entries(g).forEach(([cat, items]) => { t += `\n*${cat}*\n` + items.map(i => `- ${i.name}: Rp ${formatNum(i.wholesalePrice)}`).join('\n') + '\n'; });
+            t += `\n${st.storePhone ? 'Order/Info: ' + st.storePhone + '\n' : ''}${c.note || ''}`;
+            el.value = t.trim();
+        }
+        async function plCopyWa() {
+            try { await navigator.clipboard.writeText(document.getElementById('pl-wa').value); showToast('Teks grosir disalin.', 'success'); }
+            catch (e) { document.getElementById('pl-wa').select(); document.execCommand('copy'); showToast('Teks grosir disalin.', 'success'); }
+        }
+        function plSendWa() {
+            const w = window.open('https://wa.me/?text=' + encodeURIComponent(document.getElementById('pl-wa').value), '_blank', 'noopener');
+            if (!w) showToast('Pop-up diblokir browser! Izinkan pop-up untuk membuka WhatsApp.', 'error');
+        }
+        async function plCanvas() {
+            if (typeof html2canvas === 'undefined') throw new Error('html2canvas belum termuat');
+            if (!plSelected().length) throw new Error('Pilih minimal satu item.');
+            const box = document.createElement('div');
+            box.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px';
+            box.innerHTML = plPosterHtml();
+            document.body.appendChild(box);
+            try { return await html2canvas(box.firstElementChild, { scale: 2.5, backgroundColor: '#ffffff' }); }
+            finally { box.remove(); }
+        }
+        async function plExport(type) {
+            try {
+                const cv = await plCanvas();
+                const blob = await new Promise(res => cv.toBlob(res, type === 'png' ? 'image/png' : 'image/jpeg', 0.95));
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `daftar-harga-${getTodayIsoDate()}.${type}`;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+            } catch (e) { showToast('Gagal membuat gambar: ' + e.message, 'error'); }
+        }
+        async function plPrint() {
+            try {
+                const cv = await plCanvas();
+                const w = window.open('', '_blank');
+                if (!w) { showToast('Pop-up diblokir browser! Izinkan pop-up untuk mencetak.', 'error'); return; }
+                w.document.write(`<!doctype html><html><head><title>Daftar Harga</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}img{display:block;width:210mm;max-height:297mm;object-fit:contain}</style></head><body><img src="${cv.toDataURL('image/jpeg', 0.95)}"><script>window.addEventListener('load',function(){setTimeout(function(){window.print();},400);});<\/script></body></html>`);
+                w.document.close();
+            } catch (e) { showToast('Gagal mencetak: ' + e.message, 'error'); }
+        }
+
         // ---------- Sub menu sidebar (panah kecil, hanya desktop) & tombol Tutup kanan bawah ----------
         function closeCurrentTab() {
             const sec = [...document.querySelectorAll('main section[id^="view-"]')].find(x => !x.classList.contains('hidden'));
@@ -4856,7 +5042,7 @@
         function initSidebarSubmenus() {
             const mk = (fn, arr) => arr.map(([l, k]) => [l, () => fn(k)]);
             const SUB = {
-                masterdata: mk(switchMasterSubTab, [['Daftar Barang & Harga', 'items'], ['Supplier', 'suppliers'], ['Pelanggan', 'customers'], ['Kartu Stok', 'kartustok'], ['Stok Opname', 'opname']]),
+                masterdata: mk(switchMasterSubTab, [['Daftar Barang & Harga', 'items'], ['Supplier', 'suppliers'], ['Pelanggan', 'customers'], ['Kartu Stok', 'kartustok'], ['Stok Opname', 'opname'], ['Daftar Harga', 'daftarharga']]),
                 pembelian: mk(switchPurchaseSubTab, [['Pesanan (PO)', 'po'], ['Pembelian', 'pembelian'], ['Retur Pembelian', 'retur'], ['Cashback', 'cashback']]),
                 kasir: mk(switchSalesSubTab, [['Pesanan (SO)', 'so'], ['Penjualan', 'jual'], ['Retur Penjualan', 'retur'], ['Kasir Cepat', 'kasir']]),
                 ppob: mk(setPpobMode, [['Pulsa & Paket Data', 'pulsa'], ['Transfer Bank', 'transfer'], ['Tarik Tunai', 'tarik'], ['E-Wallet & Token PLN', 'ewallet']]),
@@ -5285,13 +5471,14 @@
         // 4. MASTER DATA (BARANG, SUPPLIER, PELANGGAN)
         // =========================================================================
         function switchMasterSubTab(sub) {
-            ['items', 'suppliers', 'customers', 'kartustok', 'opname'].forEach(s => {
+            ['items', 'suppliers', 'customers', 'kartustok', 'opname', 'daftarharga'].forEach(s => {
                 document.getElementById(`mpane-${s}`)?.classList.add('hidden');
                 document.getElementById(`msub-${s}`)?.classList.remove('active');
             });
             document.getElementById(`mpane-${sub}`)?.classList.remove('hidden');
             document.getElementById(`msub-${sub}`)?.classList.add('active');
             if (sub === 'opname') renderStockOpname();
+            if (sub === 'daftarharga') renderPriceList();
         }
 
         function renderMasterItemsTable() {
