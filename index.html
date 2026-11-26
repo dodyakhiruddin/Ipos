@@ -866,9 +866,10 @@
                                 <div id="opname-history" class="space-y-1 text-xs"></div>
                             </div>
                             <div id="mpane-opnamecetak" class="hidden space-y-2.5">
-                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Lembar hitung stok khusus <b>kategori voucher (awalan V)</b>. Kolom: <b>Kode Voucher</b>, <b>Stok Sistem</b> (otomatis) dan <b>Stok Fisik</b> (dikosongkan untuk ditulis tangan). Kertas A4 dibagi 2: tiap lembar berisi 2 laporan identik (potong di garis putus-putus). Menu <b>Stok Opname</b> di sebelah kiri tetap dipakai untuk menyimpan hasil hitungan.</div>
+                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Lembar hitung stok khusus <b>kategori voucher (awalan V)</b>. Kolom: <b>Kode Voucher</b>, <b>Stok Sistem</b> (otomatis), <b>Stok Fisik</b> dan <b>Selisih</b> (dikosongkan untuk ditulis tangan). Kertas A4 dibagi 2 dengan garis putus-putus, tetapi tiap cetak hanya <b>1 laporan</b> (tanggal hari ini). Hari berikutnya masukkan lagi kertas sisa dan pilih posisi <b>Bawah</b>. Menu <b>Stok Opname</b> di sebelah kiri tetap dipakai untuk menyimpan hasil hitungan.</div>
                                 <div class="flex flex-wrap gap-2 items-end text-xs">
                                     <label class="block"><span class="block font-bold mb-0.5">Tanggal cetak</span><input type="date" id="ov-date" onchange="renderOpnameCetak()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
+                                    <label class="block"><span class="block font-bold mb-0.5">Posisi di kertas</span><select id="ov-pos" onchange="renderOpnameCetak()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"><option value="atas">Atas (hari pertama)</option><option value="bawah">Bawah (hari berikutnya)</option></select></label>
                                     <label class="block"><span class="block font-bold mb-0.5">Kategori</span><select id="ov-cat" onchange="renderOpnameCetak()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select></label>
                                     <label class="flex items-center gap-1.5 pb-1.5 font-semibold"><input type="checkbox" id="ov-hide0" onchange="renderOpnameCetak()"> Sembunyikan stok sistem 0</label>
                                     <button type="button" onclick="ovExport('png')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-image mr-1"></i> Unduh PNG</button>
@@ -5194,55 +5195,60 @@
         }
         function ovPageHtmls() {
             const items = ovItems(), st = appState.settings, dateStr = ovDateStr();
-            const HALF = 561, FS = 9.5, RH = 15, GAP = 10, SIS = 38, FIS = 52;
+            const pos = (document.getElementById('ov-pos') || {}).value === 'bawah' ? 'bawah' : 'atas';
+            const HALF = 561, FS = 8, RH = 13, GAP = 10, SIS = 34, FIS = 42, SEL = 38;
             const maxLen = items.reduce((m, i) => Math.max(m, String(i.code || '').length), 8);
             const codeW = Math.ceil(maxLen * FS * 0.62) + 8;
             let cols = 1;
-            for (let c = 4; c >= 1; c--) { if (codeW + SIS + FIS <= (766 - GAP * (c - 1)) / c) { cols = c; break; } }
-            const rows = Math.floor((HALF - 20 - 44 - 34 - 16) / RH);
+            for (let c = 4; c >= 1; c--) { if (codeW + SIS + FIS + SEL <= (766 - GAP * (c - 1)) / c) { cols = c; break; } }
+            const rows = Math.floor((HALF - 20 - 40 - 28 - 14) / RH);
             const per = cols * rows;
             const pages = Math.max(1, Math.ceil(items.length / per));
             ovMeta = { total: items.length, pages, cols };
-            const cell = 'border:1px solid #94a3b8;padding:0 3px;white-space:nowrap;overflow:hidden;line-height:13px;height:' + RH + 'px;box-sizing:border-box';
+            const cell = 'border:1px dashed #94a3b8;padding:0 2px;white-space:nowrap;overflow:hidden;line-height:11px;height:' + RH + 'px;box-sizing:border-box';
             const group = (arr) => {
                 let prev = null;
                 const trs = arr.map(i => {
                     const prov = plStripV(i.category), top = prev !== null && prov !== prev ? 'border-top:2px solid #0f3d7a;' : '';
                     prev = prov;
-                    return `<tr><td style="${cell};${top}font-weight:700">${esc(i.code)}</td><td style="${cell};${top}text-align:right;font-family:monospace">${formatNum(Number(i.stock) || 0)}</td><td style="${cell};${top}"></td></tr>`;
+                    return `<tr><td style="${cell};${top}font-weight:700">${esc(i.code)}</td><td style="${cell};${top}text-align:right;font-family:monospace">${formatNum(Number(i.stock) || 0)}</td><td style="${cell};${top}"></td><td style="${cell};${top}"></td></tr>`;
                 }).join('');
-                const th = 'background:#0f3d7a;color:#fff;font-size:8.5px;font-weight:800;padding:0 3px;height:16px;border:1px solid #0f3d7a;box-sizing:border-box';
-                return `<table style="border-collapse:collapse;table-layout:fixed;width:100%;font-size:${FS}px;color:#111827"><colgroup><col><col style="width:${SIS}px"><col style="width:${FIS}px"></colgroup><thead><tr><th style="${th};text-align:left">KODE VOUCHER</th><th style="${th};text-align:right">SISTEM</th><th style="${th};text-align:center">FISIK</th></tr></thead><tbody>${trs}</tbody></table>`;
+                const th = 'background:#0f3d7a;color:#fff;font-size:7px;font-weight:800;padding:0 2px;height:14px;border:1px solid #0f3d7a;box-sizing:border-box';
+                return `<table style="border-collapse:collapse;table-layout:fixed;width:100%;font-size:${FS}px;color:#111827"><colgroup><col><col style="width:${SIS}px"><col style="width:${FIS}px"><col style="width:${SEL}px"></colgroup><thead><tr><th style="${th};text-align:left">KODE VOUCHER</th><th style="${th};text-align:right">SISTEM</th><th style="${th};text-align:center">FISIK</th><th style="${th};text-align:center">SELISIH</th></tr></thead><tbody>${trs}</tbody></table>`;
             };
             const out = [];
             for (let p = 0; p < pages; p++) {
                 const pageItems = items.slice(p * per, (p + 1) * per);
                 const gs = [];
                 for (let g = 0; g < cols; g++) { const a = pageItems.slice(g * rows, (g + 1) * rows); if (a.length) gs.push(group(a)); }
-                const body = gs.length ? `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:${GAP}px;align-items:start">${gs.join('')}${''}</div>` : '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:14px">Tidak ada item voucher.</div>';
-                const half = (h, last) => `<div style="height:${h}px;box-sizing:border-box;padding:10px 14px;${last ? '' : 'border-bottom:1px dashed #64748b;'}overflow:hidden">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-end;height:44px;border-bottom:2px solid #0f3d7a;padding-bottom:3px;margin-bottom:4px;box-sizing:border-box">
-                        <div><div style="font-size:15px;font-weight:900;color:#0f3d7a;line-height:1.1">STOK OPNAME VOUCHER</div><div style="font-size:11px;font-weight:700;color:#475569">${esc(st.storeName || 'TOKO')}</div></div>
-                        <div style="text-align:right;font-size:11px;line-height:1.3"><div><b>Tanggal:</b> ${esc(dateStr)}</div><div style="color:#475569">Hal ${p + 1}/${pages} | ${items.length} item</div></div>
+                const body = gs.length ? `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:${GAP}px;align-items:start">${gs.join('')}</div>` : '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:12px">Tidak ada item voucher.</div>';
+                const report = h => `<div style="height:${h}px;box-sizing:border-box;padding:10px 14px;overflow:hidden">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-end;height:40px;border-bottom:2px solid #0f3d7a;padding-bottom:3px;margin-bottom:4px;box-sizing:border-box">
+                        <div><div style="font-size:13px;font-weight:900;color:#0f3d7a;line-height:1.1">STOK OPNAME VOUCHER</div><div style="font-size:10px;font-weight:700;color:#475569">${esc(st.storeName || 'TOKO')}</div></div>
+                        <div style="text-align:right;font-size:10px;line-height:1.3"><div><b>Tanggal:</b> ${esc(dateStr)}</div><div style="color:#475569">Hal ${p + 1}/${pages} | ${items.length} item</div></div>
                     </div>${body}
-                    <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:6px;color:#334155"><span>Dihitung oleh: ____________________</span><span>Diperiksa oleh: ____________________</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:9px;margin-top:5px;color:#334155"><span>Dihitung oleh: ____________________</span><span>Diperiksa oleh: ____________________</span></div>
                 </div>`;
-                out.push(`<div class="ov-page" style="width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden">${half(HALF, false)}${half(1123 - HALF, true)}</div>`);
+                const blank = h => `<div style="height:${h}px"></div>`;
+                // A4 dibagi 2, tetapi hanya 1 laporan yang dicetak (atas / bawah); setengah lainnya kosong untuk hari berikutnya
+                const top = pos === 'atas' ? report(HALF) : blank(HALF);
+                const bot = pos === 'bawah' ? report(1123 - HALF) : blank(1123 - HALF);
+                out.push(`<div class="ov-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden">${top}${bot}<div style="position:absolute;left:0;right:0;top:${HALF}px;border-top:1px dashed #64748b"></div></div>`);
             }
             return out;
         }
-        function renderOpnameCetak() {
+        function renderOpnameCetak(resetDate) {
             const sel = document.getElementById('ov-cat');
             if (!sel) return;
             const cur = sel.value;
             const cats = [...new Set(plVItems().map(i => String(i.category || '').trim()))].sort((a, b) => ovRank(a) - ovRank(b) || a.localeCompare(b));
             sel.innerHTML = '<option value="">Semua Kategori Voucher (V)</option>' + cats.map(c => `<option value="${esc(c)}" ${c === cur ? 'selected' : ''}>${esc(c)}</option>`).join('');
             const d = document.getElementById('ov-date');
-            if (d && !d.value) d.value = getTodayIsoDate();
+            if (d && (resetDate || !d.value)) d.value = getTodayIsoDate();
             const el = document.getElementById('ov-preview');
             el.innerHTML = ovPageHtmls().map(h => `<div style="box-shadow:0 1px 6px rgba(0,0,0,.35);margin-bottom:12px">${h}</div>`).join('');
             const info = document.getElementById('ov-info');
-            if (info) info.textContent = `${ovMeta.total} item voucher | ${ovMeta.pages} lembar A4 (tiap lembar = 2 laporan) | ${ovMeta.cols} kolom per laporan`;
+            if (info) info.textContent = `${ovMeta.total} item voucher | ${ovMeta.pages} lembar A4 (1 laporan per lembar, ${(document.getElementById('ov-pos') || {}).value === 'bawah' ? 'bawah' : 'atas'}) | ${ovMeta.cols} kolom`;
         }
         async function ovCanvases() {
             if (typeof html2canvas === 'undefined') throw new Error('html2canvas belum termuat');
@@ -5772,7 +5778,7 @@
             document.getElementById(`mpane-${sub}`)?.classList.remove('hidden');
             document.getElementById(`msub-${sub}`)?.classList.add('active');
             if (sub === 'opname') renderStockOpname();
-            if (sub === 'opnamecetak') renderOpnameCetak();
+            if (sub === 'opnamecetak') renderOpnameCetak(true);
             if (sub === 'daftarharga') renderPriceList();
         }
 
