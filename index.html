@@ -1808,6 +1808,7 @@
                             <button onclick="switchAccSubTab('labarugi')" id="acc-tab-labarugi" class="ipos-tab px-3 py-1 rounded-t font-bold">Laba Rugi</button>
                             <button onclick="switchAccSubTab('biaya')" id="acc-tab-biaya" class="ipos-tab px-3 py-1 rounded-t font-bold">Biaya Operasional</button>
                             <button onclick="switchAccSubTab('neraca')" id="acc-tab-neraca" class="ipos-tab px-3 py-1 rounded-t font-bold">Neraca</button>
+                            <button onclick="switchAccSubTab('saldoawal')" id="acc-tab-saldoawal" class="ipos-tab px-3 py-1 rounded-t font-bold">Saldo Awal</button>
                         </div>
                         <select id="acc-period" onchange="renderAccounting()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
                             <option value="HARI_INI">Hari Ini</option>
@@ -4739,6 +4740,61 @@
             refreshAllUI();
             if (tabId === 'kasir' && subOpt) switchSalesSubTab(subOpt);
         }
+
+
+        // ---------- Sub menu sidebar (panah kecil, hanya desktop) & tombol Tutup kanan bawah ----------
+        function closeCurrentTab() {
+            const sec = [...document.querySelectorAll('main section[id^="view-"]')].find(x => !x.classList.contains('hidden'));
+            if (!sec) return;
+            const id = sec.id.replace('view-', '');
+            if (id === 'dashboard') return;
+            closeMdiTab({ stopPropagation() {} }, id);
+        }
+        function initSidebarSubmenus() {
+            const mk = (fn, arr) => arr.map(([l, k]) => [l, () => fn(k)]);
+            const SUB = {
+                masterdata: mk(switchMasterSubTab, [['Daftar Barang & Harga', 'items'], ['Supplier', 'suppliers'], ['Pelanggan', 'customers'], ['Kartu Stok', 'kartustok']]),
+                pembelian: mk(switchPurchaseSubTab, [['Pesanan (PO)', 'po'], ['Pembelian', 'pembelian'], ['Retur Pembelian', 'retur'], ['Cashback', 'cashback']]),
+                kasir: mk(switchSalesSubTab, [['Pesanan (SO)', 'so'], ['Penjualan', 'jual'], ['Retur Penjualan', 'retur'], ['Kasir Cepat', 'kasir']]),
+                ppob: mk(setPpobMode, [['Pulsa & Paket Data', 'pulsa'], ['Transfer Bank', 'transfer'], ['Tarik Tunai', 'tarik'], ['E-Wallet & Token PLN', 'ewallet']]),
+                utangpiutang: mk(switchUpSubTab, [['Daftar Piutang', 'piutang'], ['Daftar Utang', 'utang']]),
+                akuntansi: mk(switchAccSubTab, [['Ringkasan', 'ringkasan'], ['Alur Kas', 'kas'], ['Laba Rugi', 'labarugi'], ['Biaya Operasional', 'biaya'], ['Neraca', 'neraca'], ['Saldo Awal', 'saldoawal']]),
+                laporan: mk(switchReportSubTab, [['Master Data', 'master'], ['Pembelian', 'pembelian'], ['Penjualan', 'penjualan'], ['Hutang Usaha', 'hutang'], ['Piutang Usaha', 'piutang'], ['Rugi/Laba', 'labarugi'], ['Kas', 'kas']])
+            };
+            const st = document.createElement('style');
+            st.textContent = '@media (max-width:639px){.sub-arrow,.sub-panel{display:none!important}}.sub-panel button{display:block;width:100%;text-align:left;padding:5px 12px 5px 44px;font-size:11px;color:#cbd5e1}.sub-panel button:hover{background:rgba(255,255,255,.12);color:#fff}';
+            document.head.appendChild(st);
+            Object.keys(SUB).forEach(tab => {
+                const btn = document.getElementById('nav-' + tab);
+                if (!btn) return;
+                const arrow = document.createElement('span');
+                arrow.className = 'sub-arrow ml-auto px-1.5 py-0.5 rounded text-[10px] hover:bg-white/20';
+                arrow.title = 'Sub menu';
+                arrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                btn.appendChild(arrow);
+                const panel = document.createElement('div');
+                panel.className = 'sub-panel hidden';
+                SUB[tab].forEach(([label, fn]) => {
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.textContent = label;
+                    b.onclick = () => { switchTab(tab); fn(); };
+                    panel.appendChild(b);
+                });
+                btn.after(panel);
+                arrow.onclick = ev => {
+                    ev.stopPropagation();
+                    const open = panel.classList.toggle('hidden') === false;
+                    arrow.firstChild.className = open ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+                };
+            });
+            const closeRow = id => `<div class="flex justify-end pt-1 pb-2" data-close-row="${id}"><button type="button" onclick="${id ? `closeModal('${id}')` : 'closeCurrentTab()'}" class="ipos-btn px-4 py-1.5 rounded text-xs font-bold"><i class="fas fa-times mr-1"></i> Tutup</button></div>`;
+            document.querySelectorAll('main section[id^="view-"]:not(#view-dashboard)').forEach(sec => sec.insertAdjacentHTML('beforeend', closeRow('')));
+            ['settings-modal', 'item-picker-modal'].forEach(id => {
+                const panel = document.getElementById(id)?.firstElementChild;
+                if (panel) panel.insertAdjacentHTML('beforeend', `<div class="px-4 pb-3">${closeRow(id)}</div>`);
+            });
+        }
+        document.addEventListener('DOMContentLoaded', initSidebarSubmenus);
 
         function closeMdiTab(e, tabId) {
             e.stopPropagation();
@@ -9596,7 +9652,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         function renderAccounting() {
             const body = document.getElementById('acc-body');
             if (!body) return;
-            ['ringkasan', 'kas', 'labarugi', 'biaya', 'neraca'].forEach(k => document.getElementById('acc-tab-' + k)?.classList.toggle('active', k === accSub));
+            ['ringkasan', 'kas', 'labarugi', 'biaya', 'neraca', 'saldoawal'].forEach(k => document.getElementById('acc-tab-' + k)?.classList.toggle('active', k === accSub));
             const wl = appState.walletList || [];
             const totalKas = wl.reduce((a, w) => a + (Number(appState.wallets[w.id]) || 0), 0);
             const stok = Number(getTotalPhysicalStockAssetValue()) || 0;
@@ -9661,7 +9717,42 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                     ${accPanel('KEWAJIBAN & MODAL', accRow('Utang Supplier', formatRp(utg)) + accRow('Modal Bersih (Harta - Utang)', formatRp(harta - utg), red(harta - utg)) + accRow('TOTAL KEWAJIBAN + MODAL', formatRp(harta), '', true))}
                 </div><div class="text-[11px] text-slate-500">Neraca sederhana: Harta = Utang + Modal. Modal bersih sudah mencakup modal awal dan akumulasi laba yang masih di usaha.</div>`;
             }
+            if (accSub === 'saldoawal') {
+                const ob = appState.openingBalances || { date: '', wallets: {} };
+                const { mv } = collectCashMovements();
+                let tEst = 0, tOpen = 0;
+                const rows = wl.map(w => {
+                    const mm = mv.filter(m => m.wid === w.id && m.src !== 'OPEN');
+                    const i = mm.reduce((a, m) => a + m.inn, 0), o = mm.reduce((a, m) => a + m.out, 0);
+                    const cur = Number(appState.wallets[w.id]) || 0, est = cur - i + o, open = Number(ob.wallets && ob.wallets[w.id]) || 0;
+                    tEst += est; tOpen += open;
+                    return `<tr><td>${esc(w.name)}</td><td class="text-right font-mono">${formatRp(cur)}</td><td class="text-right font-mono text-emerald-700">${formatRp(i)}</td><td class="text-right font-mono text-red-700">${formatRp(o)}</td><td class="text-right font-mono font-bold text-sky-800" data-est="${est}">${formatRp(est)}</td><td class="text-right"><input type="text" inputmode="decimal" data-money data-ob="${esc(w.id)}" value="${formatNum(open)}" class="w-32 text-right border border-slate-300 rounded px-1.5 py-0.5 font-mono"></td></tr>`;
+                }).join('');
+                h = accPanel('Perkiraan & Pencatatan Saldo Awal Dompet', `
+                    <div class="text-[11px] text-slate-600 mb-2">Perkiraan saldo awal = saldo sekarang - kas masuk + kas keluar (semua mutasi tercatat sejak aplikasi dipakai). Klik <b>Isi dengan Perkiraan</b>, koreksi bila perlu, lalu simpan. Menyimpan saldo awal <b>tidak mengubah</b> saldo dompet sekarang.</div>
+                    <div class="flex flex-wrap items-center gap-2 mb-2"><label class="font-bold">Tanggal saldo awal</label><input type="date" id="ob-date" value="${esc((ob.date || getTodayIsoDate()).slice(0, 10))}" class="border border-slate-300 rounded px-2 py-1"></div>
+                    <div class="overflow-auto border border-slate-300 rounded"><table class="w-full table-grid border-collapse"><thead><tr><th class="text-left">Dompet</th><th class="text-right">Saldo Sekarang</th><th class="text-right">Total Masuk</th><th class="text-right">Total Keluar</th><th class="text-right">Perkiraan Saldo Awal</th><th class="text-right">Saldo Awal Tercatat</th></tr></thead><tbody>${rows}
+                    <tr class="font-extrabold"><td colspan="4" class="text-right">TOTAL</td><td class="text-right font-mono">${formatRp(tEst)}</td><td class="text-right font-mono">${formatRp(tOpen)}</td></tr></tbody></table></div>
+                    <div class="flex flex-wrap justify-end gap-2 mt-2"><button onclick="fillOpeningEstimate()" class="ipos-btn px-3 py-1.5 rounded font-bold"><i class="fas fa-magic mr-1"></i> Isi dengan Perkiraan</button><button onclick="saveOpeningBalances()" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-save mr-1"></i> Simpan Saldo Awal</button></div>
+                    <div class="text-[11px] text-slate-500 mt-2">Piutang/utang awal: catat lewat menu Utang &amp; Piutang &gt; Catat Manual dengan pilihan "tidak mengubah saldo dompet".</div>`);
+            }
             body.innerHTML = h;
+        }
+
+        function fillOpeningEstimate() {
+            document.querySelectorAll('#acc-body [data-ob]').forEach(inp => {
+                const est = inp.closest('tr').querySelector('[data-est]');
+                if (est) inp.value = Number(est.dataset.est) || 0;
+            });
+            showToast('Perkiraan saldo awal diisi. Periksa lalu klik Simpan.', 'info');
+        }
+        async function saveOpeningBalances() {
+            if (!requireAdmin('Menyimpan saldo awal')) return;
+            const w = {};
+            document.querySelectorAll('#acc-body [data-ob]').forEach(inp => { w[inp.dataset.ob] = Number(inp.value) || 0; });
+            appState.openingBalances = { date: document.getElementById('ob-date').value || getTodayIsoDate(), wallets: w };
+            await saveAppState();
+            showToast('Saldo awal tersimpan.', 'success');
         }
 
         async function saveExpense() {
@@ -10081,6 +10172,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 if (d.type === 'PIUTANG') add(d.date, d.initWallet, d.id, `Pemberian piutang ke ${d.party || ''}`, 0, d.totalAmount, 'DEBT');
                 else add(d.date, d.initWallet, d.id, `Terima pinjaman/utang dari ${d.party || ''}`, d.totalAmount, 0, 'DEBT');
             });
+            const ob0 = appState.openingBalances;
+            if (ob0 && ob0.wallets) Object.keys(ob0.wallets).forEach(wid => { const a = Number(ob0.wallets[wid]) || 0; if (a) add(ob0.date || '2000-01-01', wid, 'SALDO-AWAL', 'Saldo awal', a > 0 ? a : 0, a < 0 ? -a : 0, 'OPEN'); });
             (appState.expenses || []).forEach(x => add(x.date, x.wallet, x.id, `Biaya ${x.category || ''}: ${x.desc || ''}`, 0, x.amount, 'BIAYA'));
             return { wl, mv, nameToId };
         }
