@@ -865,13 +865,19 @@
                                 <div id="opname-history" class="space-y-1 text-xs"></div>
                             </div>
                             <div id="mpane-daftarharga" class="hidden space-y-2.5">
-                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Pilih item voucher (kategori berawalan <b>V</b>) yang ingin dimasukkan. Daftar harga <b>eceran</b> dibuat sebagai gambar A4 (PNG/JPG/cetak), harga <b>grosir</b> berupa teks untuk WhatsApp. Setiap harga diubah di Daftar Barang, buka tab ini lagi lalu cetak ulang.</div>
+                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Pilih item voucher (kategori berawalan <b>V</b>). Daftar harga <b>eceran</b> dibuat sebagai gambar A4 per provider (PNG/JPG/cetak); awalan "V." otomatis dihapus. Kolom kecil di samping item = nama bagian tabel (HARIAN, BULANAN, dst.; kosong = otomatis dari jumlah hari), harga <b>grosir</b> berupa teks untuk WhatsApp. Setiap harga diubah di Daftar Barang, buka tab ini lagi lalu cetak ulang.</div>
                                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-3 text-xs">
                                     <div class="space-y-2">
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <label class="block"><span class="block font-bold mb-0.5">Catatan bawah</span><input type="text" id="pl-note" oninput="plSetField('note', this.value)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
-                                            <div><span class="block font-bold mb-0.5">Logo E-Wallet</span><input type="file" accept="image/*" onchange="plLogo(this, 'logoEw')" class="w-full"><button type="button" onclick="plClearLogo('logoEw')" class="text-red-600 underline text-[11px]">Hapus logo</button></div>
-                                            <div><span class="block font-bold mb-0.5">Logo BRILink</span><input type="file" accept="image/*" onchange="plLogo(this, 'logoBri')" class="w-full"><button type="button" onclick="plClearLogo('logoBri')" class="text-red-600 underline text-[11px]">Hapus logo</button></div>
+                                            <div class="sm:col-span-2 bg-slate-50 border border-slate-200 rounded p-2">
+                                                <div class="font-bold mb-1">Logo di bagian bawah gambar <span class="font-normal text-slate-500">(ukuran tampil seragam: e-wallet 120 x 60 px, BRILink 250 x 60 px)</span></div>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    <div><span class="block font-bold mb-0.5">Logo E-Wallet (maks. 4, pilih sekaligus)</span><input type="file" accept="image/*" multiple onchange="plLogo(this, 'logoEw')" class="w-full"><div id="pl-ew-thumbs" class="flex flex-wrap gap-1 mt-1"></div><button type="button" onclick="plClearLogo('logoEw')" class="text-red-600 underline text-[11px]">Hapus semua logo e-wallet</button></div>
+                                                    <div><span class="block font-bold mb-0.5">Logo BRILink</span><input type="file" accept="image/*" onchange="plLogo(this, 'logoBri')" class="w-full"><div id="pl-bri-thumb" class="mt-1"></div><button type="button" onclick="plClearLogo('logoBri')" class="text-red-600 underline text-[11px]">Hapus logo BRILink</button></div>
+                                                </div>
+                                                <div class="text-[11px] text-slate-500 mt-1">Agar simetris, pakai 2 atau 4 logo e-wallet (dibagi kiri-kanan, BRILink di tengah). Logo otomatis dipas ke ukuran seragam.</div>
+                                            </div>
                                         </div>
                                         <div class="flex flex-wrap gap-2 items-center">
                                             <input type="text" id="pl-search" oninput="renderPriceList()" placeholder="Cari item voucher..." class="bg-white border border-slate-300 rounded px-2.5 py-1.5 w-48">
@@ -4888,7 +4894,10 @@
         function plCfg() {
             const st = appState.settings;
             if (!st.priceList) st.priceList = { sel: [], title: 'DAFTAR HARGA VOUCHER', note: 'Harga dapat berubah sewaktu-waktu.', logoEw: '', logoBri: '' };
-            return st.priceList;
+            const c = st.priceList;
+            if (!Array.isArray(c.logosEw)) c.logosEw = c.logoEw ? [c.logoEw] : [];
+            if (!c.sec) c.sec = {};
+            return c;
         }
         let plSaveT = null;
         function plPersist() { clearTimeout(plSaveT); plSaveT = setTimeout(() => saveAppState(), 700); }
@@ -4916,53 +4925,113 @@
             c.sel = [...set]; plPersist(); renderPriceList();
         }
         function plCount() { const el = document.getElementById('pl-count'); if (el) el.textContent = `Terpilih: ${plSelected().length} dari ${plVItems().length}`; }
-        function plLogo(inp, key) {
-            const f = inp.files && inp.files[0];
-            if (!f) return;
-            const fr = new FileReader();
-            fr.onload = () => {
-                const img = new Image();
-                img.onload = () => {
-                    const r = Math.min(1, 420 / img.width), cv = document.createElement('canvas');
-                    cv.width = Math.round(img.width * r); cv.height = Math.round(img.height * r);
-                    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-                    plCfg()[key] = cv.toDataURL('image/png'); plPersist(); plRenderPreview();
+        const PL_EW_MAX = 4;
+        function plFitLogo(file, w, h) {
+            return new Promise(res => {
+                const fr = new FileReader();
+                fr.onload = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+                        const r = Math.min(w / img.width, h / img.height), dw = img.width * r, dh = img.height * r;
+                        cv.getContext('2d').drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+                        res(cv.toDataURL('image/png'));
+                    };
+                    img.onerror = () => res('');
+                    img.src = fr.result;
                 };
-                img.src = fr.result;
-            };
-            fr.readAsDataURL(f);
-            inp.value = '';
+                fr.onerror = () => res('');
+                fr.readAsDataURL(file);
+            });
         }
-        function plClearLogo(key) { plCfg()[key] = ''; plPersist(); plRenderPreview(); }
+        async function plLogo(inp, key) {
+            const files = [...(inp.files || [])];
+            if (!files.length) return;
+            const c = plCfg();
+            if (key === 'logoEw') {
+                for (const f of files) {
+                    if (c.logosEw.length >= PL_EW_MAX) { showToast(`Maksimal ${PL_EW_MAX} logo e-wallet.`, 'info'); break; }
+                    const d = await plFitLogo(f, 240, 120); if (d) c.logosEw.push(d);
+                }
+            } else { const d = await plFitLogo(files[0], 500, 120); if (d) c.logoBri = d; }
+            inp.value = ''; plPersist(); plRenderThumbs(); plRenderPreview();
+        }
+        function plRemoveEw(i) { plCfg().logosEw.splice(i, 1); plPersist(); plRenderThumbs(); plRenderPreview(); }
+        function plClearLogo(key) { const c = plCfg(); if (key === 'logoBri') c.logoBri = ''; else { c.logosEw = []; c.logoEw = ''; } plPersist(); plRenderThumbs(); plRenderPreview(); }
+        function plRenderThumbs() {
+            const c = plCfg(), t = document.getElementById('pl-ew-thumbs'), b = document.getElementById('pl-bri-thumb');
+            if (t) t.innerHTML = c.logosEw.map((d, i) => `<span class="relative inline-block border border-slate-300 bg-white"><img src="${d}" style="width:60px;height:30px"><button type="button" onclick="plRemoveEw(${i})" class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px] leading-none">x</button></span>`).join('');
+            if (b) b.innerHTML = c.logoBri ? `<img src="${c.logoBri}" style="width:125px;height:30px" class="border border-slate-300 bg-white">` : '';
+        }
+        function plSetSec(code, v) { const c = plCfg(); v = String(v || '').trim(); if (v) c.sec[code] = v; else delete c.sec[code]; plPersist(); plRenderPreview(); }
+
+        // ----- Nama tampil: hapus awalan "V." dan nama provider di depan item -----
+        const PL_OPS = ['THREE', 'TRI', 'AXIS', 'SMART', 'SMARTFREN', 'INDOSAT', 'IM3', 'TELKOMSEL', 'TSEL', 'XL', 'BYU', 'AXIATA'];
+        const PL_ORDER = ['THREE', 'AXIS', 'SMART', 'INDOSAT', 'TELKOMSEL', 'XL'];
+        function plStripV(t) { return String(t || '').replace(/^\s*V\s*(?:[.\-:]\s*|\s+)/i, '').trim(); }
+        function plItemName(i, prov) {
+            let n = plStripV(i.name);
+            const m = n.match(/^([A-Za-z0-9]+)\s+(.+)$/);
+            if (m) { const w = m[1].toUpperCase(); if (w === String(prov).toUpperCase() || PL_OPS.includes(w)) n = m[2]; }
+            return n.trim() || plStripV(i.name);
+        }
+        function plDays(i) { const m = String(i.name || '').match(/(\d+)\s*(?:HARI|HR|H)\b/i); return m ? Number(m[1]) : 0; }
+        function plAutoSec(i) { const d = plDays(i); return !d ? '' : d <= 6 ? 'HARIAN' : d <= 14 ? 'MINGGUAN' : 'BULANAN'; }
+        function plTheme(pn, idx) {
+            const u = pn.toUpperCase();
+            if (/THREE|\bTRI\b/.test(u)) return { bg: '#000000', fg: '#ffffff' };
+            if (/AXIS/.test(u)) return { bg: '#7030a0', fg: '#ffffff' };
+            if (/SMART/.test(u)) return { bg: '#632523', fg: '#ffffff' };
+            if (/INDOSAT|IM3/.test(u)) return { bg: '#ffff00', fg: '#000000' };
+            if (/TELKOMSEL|TSEL|SIMPATI|AS\b/.test(u)) return { bg: '#c4d79b', fg: '#000000' };
+            if (/\bXL\b|^XL/.test(u)) return { bg: '#ffffff', fg: '#000000' };
+            const pal = [{ bg: '#1f4e79', fg: '#fff' }, { bg: '#c00000', fg: '#fff' }, { bg: '#375623', fg: '#fff' }, { bg: '#f4b183', fg: '#000' }];
+            return pal[idx % pal.length];
+        }
+        function plProviders() {
+            const c = plCfg(), by = {};
+            plSelected().forEach(i => { const pn = plStripV(i.category) || 'LAINNYA'; (by[pn] = by[pn] || []).push(i); });
+            const provs = Object.entries(by).map(([pn, items], idx) => {
+                items.sort((a, b) => plDays(a) - plDays(b) || (Number(a.price) || 0) - (Number(b.price) || 0));
+                const anyManual = items.some(i => c.sec[i.code]);
+                const map = new Map();
+                items.forEach(i => { const k = c.sec[i.code] ? c.sec[i.code].toUpperCase() : plAutoSec(i); if (!map.has(k)) map.set(k, []); map.get(k).push(i); });
+                let sections = [...map.entries()].map(([name, its]) => ({ name, items: its.map(i => ({ n: plItemName(i, pn), price: i.price })) }));
+                if (!anyManual && sections.length < 2) sections = [{ name: '', items: sections.flatMap(x => x.items) }];
+                return { name: pn.toUpperCase(), theme: plTheme(pn, idx), sections };
+            });
+            const rank = n => { const k = PL_ORDER.findIndex(o => n.includes(o)); return k < 0 ? 99 : k; };
+            return provs.sort((a, b) => rank(a.name) - rank(b.name) || a.name.localeCompare(b.name));
+        }
 
         function plPosterHtml() {
-            const c = plCfg(), st = appState.settings, list = plSelected(), n = list.length;
-            const z = n <= 12 ? { nm: 17, pr: 19, pad: 10, cols: 3 } : n <= 30 ? { nm: 15, pr: 17, pad: 8, cols: 3 } : { nm: 13, pr: 15, pad: 6, cols: 3 };
-            const pill = (t, bg) => `<span style="display:inline-block;background:${bg};color:#fff;font-weight:800;font-size:15px;padding:6px 12px;border-radius:999px;margin:2px">${esc(t)}</span>`;
-            const ew = c.logoEw ? `<img src="${c.logoEw}" style="max-height:70px;max-width:340px">` : ['DANA', 'OVO', 'GoPay', 'ShopeePay', 'LinkAja'].map((t, i) => pill(t, ['#118eea', '#4c2a86', '#00aa13', '#ee4d2d', '#e82529'][i])).join('');
-            const bri = c.logoBri ? `<img src="${c.logoBri}" style="max-height:70px;max-width:300px">` : pill('BRILink', '#00529c') + pill('Agen Resmi', '#f58220');
-            const groups = Object.entries(plGroups(list)).map(([cat, items]) => `
-                <div style="margin-top:14px">
-                    <div style="background:#e0ecff;color:#0f3d7a;font-weight:800;font-size:${z.nm + 3}px;padding:5px 12px;border-left:8px solid #0f3d7a">${esc(cat)}</div>
-                    <div style="display:grid;grid-template-columns:repeat(${z.cols},1fr);column-gap:18px;padding:0 4px">
-                        ${items.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:${z.pad}px 4px;border-bottom:2px dotted #94a3b8"><span style="font-size:${z.nm}px;font-weight:600;color:#1e293b;min-width:0;line-height:1.2">${esc(i.name)}</span><span style="font-size:${z.pr}px;font-weight:900;color:#b91c1c;white-space:nowrap">${formatNum(i.price)}</span></div>`).join('')}
-                    </div>
-                </div>`).join('') || '<div style="text-align:center;color:#94a3b8;padding:60px 0;font-size:22px">Belum ada item dipilih</div>';
-            return `<div id="pl-poster" style="width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column">
-                <div style="background:#0f3d7a;color:#fff;text-align:center;padding:26px 20px 18px;border-bottom:8px solid #fbbf24">
-                    <div style="font-size:44px;font-weight:900;letter-spacing:1px">${esc(st.storeName || 'TOKO')}</div>
-                    <div style="font-size:30px;font-weight:800;color:#fbbf24;margin-top:4px">DAFTAR HARGA VOUCHER</div>
-                    <div style="font-size:14px;margin-top:4px">Berlaku per ${plToday()}</div>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;background:#f1f5f9">
-                    <div style="text-align:left"><div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:2px">MELAYANI E-WALLET</div>${ew}</div>
-                    <div style="text-align:right"><div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:2px">TRANSFER &amp; TARIK TUNAI</div>${bri}</div>
-                </div>
-                <div style="flex:1;padding:4px 20px 10px">${groups}</div>
-                <div style="background:#0f3d7a;color:#fff;text-align:center;padding:10px 20px;font-size:13px">
-                    <div>${esc(st.storeAddress || '')}${st.storePhone ? ' | Telp/WA: ' + esc(st.storePhone) : ''}</div>
-                    <div style="color:#fbbf24;font-weight:700;margin-top:2px">${esc(c.note || '')}</div>
-                </div></div>`;
+            const c = plCfg(), st = appState.settings, provs = plProviders();
+            const rowsOf = p => 1 + p.sections.reduce((a, x) => a + (x.name ? 1 : 0) + x.items.length, 0);
+            const chunks = []; for (let i = 0; i < provs.length; i += 3) chunks.push(provs.slice(i, i + 3));
+            const R = chunks.reduce((a, ch) => a + Math.max(...ch.map(rowsOf)), 0) || 1;
+            const avail = 1123 - 24 - 190 - Math.max(0, chunks.length - 1) * 34;
+            const h = Math.max(15, Math.min(30, Math.floor(avail / R))), f = Math.max(9, Math.round(h * 0.5));
+            const table = p => {
+                const ln = p.theme.fg === '#ffffff' || p.theme.fg === '#fff' ? 'rgba(255,255,255,.85)' : 'rgba(0,0,0,.7)';
+                const head = (t, bg) => `<div style="background:${bg};color:#000;font-weight:800;text-align:center;height:${h}px;line-height:${h}px;font-size:${f + 1}px;border-bottom:1px solid #000;text-transform:uppercase">${esc(t)}</div>`;
+                return `<div style="border:2px solid #000;background:#fff;align-self:start">${head(p.name, '#ffff00')}
+                    ${p.sections.map(x => (x.name ? head(x.name, '#ffffff') : '') + x.items.map(i => `<div style="display:flex;height:${h}px;line-height:${h}px;background:${p.theme.bg};color:${p.theme.fg};border-bottom:1px solid ${ln};font-size:${f}px;font-weight:600"><div style="flex:1;min-width:0;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase">${esc(i.n)}</div><div style="width:62px;text-align:right;padding:0 6px;border-left:1px solid ${ln};font-weight:700">${formatNum(i.price)}</div></div>`).join('')).join('')}</div>`;
+            };
+            const body = chunks.map((ch, k) => `${k ? '<div style="display:grid;grid-template-columns:repeat(3,1fr);column-gap:8px;margin:14px 0"><div style="height:12px;background:#0b2a63"></div><div style="height:12px;background:#0b2a63"></div><div style="height:12px;background:#0b2a63"></div></div>' : ''}<div style="display:grid;grid-template-columns:repeat(3,1fr);column-gap:8px;align-items:start">${ch.map(table).join('')}</div>`).join('')
+                || '<div style="text-align:center;color:#94a3b8;padding:60px 0;font-size:22px">Belum ada item dipilih</div>';
+            const slot = (inner, w) => `<div style="width:${w}px;height:60px;flex:none">${inner}</div>`;
+            const pill = (t, bg, w) => slot(`<div style="width:100%;height:100%;background:${bg};color:#fff;font-weight:800;font-size:${w > 200 ? 20 : 15}px;border-radius:6px;display:flex;align-items:center;justify-content:center">${esc(t)}</div>`, w);
+            const ew = c.logosEw.length ? c.logosEw.map(d => slot(`<img src="${d}" style="width:120px;height:60px;display:block">`, 120))
+                : [['DANA', '#118eea'], ['OVO', '#4c2a86'], ['GoPay', '#00aa13'], ['ShopeePay', '#ee4d2d']].map(([t, bg]) => pill(t, bg, 120));
+            const bri = c.logoBri ? slot(`<img src="${c.logoBri}" style="width:250px;height:60px;display:block">`, 250) : pill('AgenBRILink', '#00529c', 250);
+            const half = Math.ceil(ew.length / 2);
+            return `<div id="pl-poster" style="width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;padding:12px">
+                <div style="flex:1">${body}</div>
+                <div style="text-align:right;font-size:11px;color:#475569;margin:8px 2px 4px">Update ${plToday()}${c.note ? ' | ' + esc(c.note) : ''}</div>
+                <div style="background:#ffc000;text-align:center;padding:8px 10px;font-family:'Times New Roman',Georgia,serif;font-weight:900;font-size:46px;letter-spacing:3px;color:#000;text-transform:uppercase">${esc(st.storeName || 'TOKO')}</div>
+                <div style="display:flex;justify-content:center;align-items:center;gap:8px;padding:10px 0 4px">${ew.slice(0, half).join('')}${bri}${ew.slice(half).join('')}</div>
+                ${(st.storeAddress || st.storePhone) ? `<div style="text-align:center;font-size:11px;color:#334155;margin-top:2px">${esc(st.storeAddress || '')}${st.storePhone ? ' | Telp/WA: ' + esc(st.storePhone) : ''}</div>` : ''}
+            </div>`;
         }
         function plRenderPreview() {
             const el = document.getElementById('pl-preview');
@@ -4977,16 +5046,19 @@
             if (nt && document.activeElement !== nt) nt.value = c.note || '';
             const q = (document.getElementById('pl-search').value || '').toLowerCase(), sel = new Set(c.sel);
             const list = plVItems().filter(i => !q || String(i.name).toLowerCase().includes(q) || String(i.code).toLowerCase().includes(q));
-            document.getElementById('pl-list').innerHTML = list.map(i => `<label class="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-sky-50"><input type="checkbox" ${sel.has(i.code) ? 'checked' : ''} onchange="plToggle('${escJs(i.code)}', this.checked)"><span class="flex-1">${esc(i.name)} <span class="text-slate-400">(${esc(i.category)})</span></span><span class="font-mono">${formatNum(i.price)}</span><span class="font-mono text-slate-500 w-20 text-right">${formatNum(i.wholesalePrice)}</span></label>`).join('') || '<div class="p-3 text-slate-400 text-center">Tidak ada item kategori berawalan V.</div>';
-            plCount(); plRenderPreview(); plRefreshWa();
+            document.getElementById('pl-list').innerHTML = list.map(i => { const on = sel.has(i.code); return `<div class="flex items-center gap-2 px-2 py-1 hover:bg-sky-50"><label class="flex items-center gap-2 flex-1 cursor-pointer"><input type="checkbox" ${on ? 'checked' : ''} onchange="plToggle('${escJs(i.code)}', this.checked); renderPriceList()"><span class="flex-1">${esc(plStripV(i.name))} <span class="text-slate-400">(${esc(plStripV(i.category))})</span></span></label>${on ? `<input type="text" value="${esc(c.sec[i.code] || '')}" placeholder="${esc(plAutoSec(i) || 'bagian')}" oninput="plSetSec('${escJs(i.code)}', this.value)" class="w-24 border border-slate-300 rounded px-1 py-0.5 text-[11px]" title="Nama bagian di tabel (kosong = otomatis)">` : ''}<span class="font-mono">${formatNum(i.price)}</span><span class="font-mono text-slate-500 w-16 text-right">${formatNum(i.wholesalePrice)}</span></div>`; }).join('') || '<div class="p-3 text-slate-400 text-center">Tidak ada item kategori berawalan V.</div>';
+            plCount(); plRenderThumbs(); plRenderPreview(); plRefreshWa();
         }
         function plRefreshWa() {
             const el = document.getElementById('pl-wa');
             if (!el) return;
             const st = appState.settings, c = plCfg();
-            const g = plGroups(plSelected().filter(i => Number(i.wholesalePrice) > 0));
             let t = `*HARGA GROSIR - ${st.storeName || 'TOKO'}*\nUpdate: ${plToday()}\n`;
-            Object.entries(g).forEach(([cat, items]) => { t += `\n*${cat}*\n` + items.map(i => `- ${i.name}: Rp ${formatNum(i.wholesalePrice)}`).join('\n') + '\n'; });
+            plProviders().forEach(p => {
+                const by = {}; plSelected().forEach(i => { if ((plStripV(i.category) || 'LAINNYA').toUpperCase() === p.name && Number(i.wholesalePrice) > 0) by[i.code] = i; });
+                const its = Object.values(by).sort((a, b) => plDays(a) - plDays(b) || (Number(a.wholesalePrice) || 0) - (Number(b.wholesalePrice) || 0));
+                if (its.length) t += `\n*${p.name}*\n` + its.map(i => `- ${plItemName(i, p.name)}: Rp ${formatNum(i.wholesalePrice)}`).join('\n') + '\n';
+            });
             t += `\n${st.storePhone ? 'Order/Info: ' + st.storePhone + '\n' : ''}${c.note || ''}`;
             el.value = t.trim();
         }
