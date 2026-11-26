@@ -5031,6 +5031,24 @@
             } catch (e) { showToast('Gagal mencetak: ' + e.message, 'error'); }
         }
 
+        // ---------- Tombol Tutup di kanan bawah halaman menu & popup ----------
+        function closeCurrentTab() {
+            const sec = [...document.querySelectorAll('main section[id^="view-"]')].find(x => !x.classList.contains('hidden'));
+            if (!sec) return;
+            const id = sec.id.replace('view-', '');
+            if (id === 'dashboard') return;
+            closeMdiTab({ stopPropagation() {} }, id);
+        }
+        function initCloseButtons() {
+            const row = id => `<div class="flex justify-end pt-1 pb-2" data-close-row><button type="button" onclick="${id ? `closeModal('${id}')` : 'closeCurrentTab()'}" class="ipos-btn px-4 py-1.5 rounded text-xs font-bold"><i class="fas fa-times mr-1"></i> Tutup</button></div>`;
+            document.querySelectorAll('main section[id^="view-"]:not(#view-dashboard)').forEach(sec => { if (!sec.querySelector(':scope > [data-close-row]')) sec.insertAdjacentHTML('beforeend', row('')); });
+            ['settings-modal', 'item-picker-modal'].forEach(id => {
+                const panel = document.getElementById(id)?.firstElementChild;
+                if (panel && !panel.querySelector('[data-close-row]')) panel.insertAdjacentHTML('beforeend', `<div class="px-4 pb-3">${row(id)}</div>`);
+            });
+        }
+        document.addEventListener('DOMContentLoaded', initCloseButtons);
+
         // ---------- Sub menu dropdown (panah kecil, khusus desktop) ----------
         function initSidebarSubmenus() {
             const mk = (fn, arr) => arr.map(([l, k]) => [l, () => fn(k)]);
