@@ -869,6 +869,7 @@
                                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-3 text-xs">
                                     <div class="space-y-2">
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <label class="block"><span class="block font-bold mb-0.5">Judul banner</span><input type="text" id="pl-title" oninput="plSetField('title', this.value)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
                                             <label class="block"><span class="block font-bold mb-0.5">Catatan bawah</span><input type="text" id="pl-note" oninput="plSetField('note', this.value)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
                                             <div class="sm:col-span-2 bg-slate-50 border border-slate-200 rounded p-2">
                                                 <div class="font-bold mb-1">Logo E-Wallet <span class="font-normal text-slate-500">(tampil seragam 80 x 64 px, maks. 6 logo)</span></div>
@@ -4890,8 +4891,9 @@
         // =========================================================================
         function plCfg() {
             const st = appState.settings;
-            if (!st.priceList) st.priceList = { sel: [], title: 'DAFTAR HARGA VOUCHER', note: 'Harga dapat berubah sewaktu-waktu.', logoEw: '', logoBri: '' };
+            if (!st.priceList) st.priceList = { sel: [], title: 'DAFTAR HARGA VOUCHER & DATA', note: 'Harga dapat berubah sewaktu-waktu.', logoEw: '', logoBri: '' };
             const c = st.priceList;
+            if (c.title === 'DAFTAR HARGA VOUCHER') c.title = 'DAFTAR HARGA VOUCHER & DATA';
             if (!Array.isArray(c.logosEw)) c.logosEw = c.logoEw ? [c.logoEw] : [];
             if (!c.sec) c.sec = {};
             return c;
@@ -4998,54 +5000,132 @@
                 if (!anyManual && sections.length < 2) sections = [{ name: '', items: sections.flatMap(x => x.items) }];
                 return { name: pn.toUpperCase(), theme: plTheme(pn, idx), sections };
             });
-            return provs.sort((a, b) => a.name.localeCompare(b.name));
+            const rank = n => { const r = [/THREE|^TRI$/, /AXIS/, /SMART/, /INDOSAT|IM3/, /TELKOMSEL|TSEL|SIMPATI/, /^XL/].findIndex(x => x.test(n)); return r < 0 ? 99 : r; };
+            return provs.sort((a, b) => rank(a.name) - rank(b.name) || a.name.localeCompare(b.name));
         }
 
-        function plPosterHtml() {
-            const c = plCfg(), st = appState.settings, provs = plProviders();
-            const n = provs.reduce((a, p) => a + p.sections.reduce((b, x) => b + x.items.length, 0), 0);
-            const z = n <= 12 ? { nm: 17, pr: 19, pad: 10 } : n <= 30 ? { nm: 15, pr: 17, pad: 8 } : { nm: 13, pr: 15, pad: 6 };
-            const groups = provs.map(p => `
-                <div style="margin-top:14px">
-                    <div style="background:#e0ecff;color:#0f3d7a;font-weight:800;font-size:${z.nm + 3}px;padding:5px 12px;border-left:8px solid #0f3d7a">${esc(p.name)}</div>
-                    ${p.sections.map(x => `${x.name ? `<div style="margin:8px 6px 0"><span style="display:inline-block;font-weight:800;font-size:${z.nm}px;color:#92400e;border-bottom:2px solid #fbbf24;padding:0 4px">${esc(x.name)}</span></div>` : ''}
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);column-gap:18px;padding:0 4px">
-                        ${x.items.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:${z.pad}px 4px;border-bottom:2px dotted #94a3b8"><span style="font-size:${z.nm}px;font-weight:600;color:#1e293b;min-width:0;line-height:1.2">${esc(i.n)}</span><span style="font-size:${z.pr}px;font-weight:900;color:#b91c1c;white-space:nowrap">${formatNum(i.price)}</span></div>`).join('')}
-                    </div>`).join('')}
-                </div>`).join('') || '<div style="text-align:center;color:#94a3b8;padding:60px 0;font-size:22px">Belum ada item dipilih</div>';
-            // Baris logo: e-wallet (kiri, selebar BRILink) dan BRILink (kanan), ukuran seragam
-            const slot = (d, w, hh) => `<div style="width:${w}px;height:${hh}px;flex:none;background:#fff url(${d}) center/contain no-repeat"></div>`;
-            const pill = (t, bg, w) => `<div style="width:${w}px;height:64px;flex:none;background:${bg};color:#fff;font-weight:800;font-size:${w > 200 ? 20 : 13}px;border-radius:6px;display:flex;align-items:center;justify-content:center">${esc(t)}</div>`;
+        // ---------- Daftar harga: 1 halaman A4 utuh (794 x 1123 px = 210 x 297 mm), semua provider ----------
+        let plOverflow = false;
+        function plMeasure(htmls, width) {
+            const box = document.createElement('div');
+            box.style.cssText = `position:fixed;left:-10000px;top:0;width:${width}px;font-family:Arial,Helvetica,sans-serif`;
+            box.innerHTML = htmls.map(h => `<div>${h}</div>`).join('');
+            document.body.appendChild(box);
+            const hs = [...box.children].map(e => e.offsetHeight);
+            box.remove();
+            return hs;
+        }
+        // Varian warna kartu provider (urutan mengikuti gambar contoh; diulang bila lebih dari 6)
+        const PL_VARIANTS = [
+            { hbg: '#0f2d5c', hfg: '#ffffff', sbg: '#f26a1b', bd: '#0f2d5c' }, // THREE
+            { hbg: '#ffffff', hfg: '#0f2d5c', sbg: '#f26a1b', bd: '#1e3a8a' }, // AXIS
+            { hbg: '#f26a1b', hfg: '#ffffff', sbg: '#1e4b8f', bd: '#f26a1b' }, // SMART
+            { hbg: '#ffffff', hfg: '#111827', sbg: '#1e4b8f', bd: '#f26a1b' }, // INDOSAT
+            { hbg: '#e04a14', hfg: '#ffffff', sbg: '#1e4b8f', bd: '#f26a1b' }, // TELKOMSEL
+            { hbg: '#ffffff', hfg: '#0f2d5c', sbg: '#f26a1b', bd: '#1e3a8a' }  // XL
+        ];
+        // Susunan: kartu provider per baris (3 kolom), 6 provider = 2 baris x 3 kolom. Isi tiap kartu daftar ke bawah.
+        function plBodyHtml(provs, sz, ex) {
+            const nm = sz, pr = sz + 1, pad = Math.max(1.5, sz * 0.22) + (ex || 0);
+            const block = (p, idx) => {
+                const v = PL_VARIANTS[idx % PL_VARIANTS.length];
+                return `<div style="border:3px solid ${v.bd};border-radius:12px;overflow:hidden;background:#fff">
+                <div style="background:${v.hbg};color:${v.hfg};text-align:center;font-weight:900;font-size:${nm + 8}px;padding:${pad + 3}px 6px;letter-spacing:.5px;text-transform:uppercase">${esc(p.name)}</div>
+                ${p.sections.map(x => `${x.name ? `<div style="background:${v.sbg};color:#fff;text-align:center;font-weight:800;font-size:${nm}px;padding:${pad}px 4px;text-transform:uppercase">${esc(x.name)}</div>` : ''}
+                    ${x.items.map(i => `<div data-r="1" style="display:flex;align-items:flex-end;padding:${pad}px 8px;overflow:hidden"><span style="font-size:${nm}px;font-weight:700;color:#111827;line-height:1.15;text-transform:uppercase;white-space:nowrap;flex:none">${esc(i.n)}</span><span style="flex:1;min-width:6px;border-bottom:1px dashed #94a3b8;margin:0 5px 3px"></span><span style="font-size:${pr}px;font-weight:900;color:#9f1239;white-space:nowrap;line-height:1.15;flex:none">${formatNum(i.price)}</span></div>`).join('')}`).join('')}
+            </div>`;
+            };
+            const cols = Math.min(3, provs.length), rows = [];
+            for (let i = 0; i < provs.length; i += cols) rows.push(provs.slice(i, i + cols));
+            let n = 0;
+            return rows.map(r => `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:12px;align-items:start;padding-top:12px">${r.map(p => block(p, n++)).join('')}</div>`).join('');
+        }
+        function plHeaderHtml() {
+            const c = plCfg(), st = appState.settings;
+            const raw = String(st.storeName || 'TOKO').toUpperCase();
+            const fs = Math.max(30, Math.min(84, Math.floor(700 / (Math.max(4, raw.length) * 0.68))));
+            const shadow = [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 3], [3, 3], [4, 4]].map(([x, y]) => `${x}px ${y}px 0 #f26a1b`).join(',');
+            const words = String(c.title || 'DAFTAR HARGA VOUCHER & DATA').trim().split(/\s+/);
+            const w1 = esc(words.slice(0, 2).join(' ')), w2 = esc(words.slice(2).join(' '));
+            const tab = c.logoBri
+                ? `<div style="width:200px;height:51px;background:#fff url(${c.logoBri}) center/contain no-repeat"></div>`
+                : `<div style="font-size:26px;font-weight:900;line-height:1.05;color:#0f2d5c">AgenBRI<span style="color:#f26a1b">Link</span></div><div style="font-size:9px;font-weight:700;color:#0f2d5c">Layanan Transaksi Kanangan Tanpa Kantor</div>`.replace('Kanangan', 'Keuangan');
+            return `<div style="position:relative;text-align:center;padding-bottom:8px">
+                <div style="position:absolute;left:0;top:0;width:0;height:0;border-top:150px solid #f26a1b;border-right:150px solid transparent"></div>
+                <div style="position:absolute;left:0;top:0;width:0;height:0;border-top:125px solid #0f2d5c;border-right:125px solid transparent"></div>
+                <div style="position:absolute;right:0;top:0;width:0;height:0;border-top:150px solid #f26a1b;border-left:150px solid transparent"></div>
+                <div style="position:absolute;right:0;top:0;width:0;height:0;border-top:125px solid #0f2d5c;border-left:125px solid transparent"></div>
+                <div style="position:relative;display:inline-block;background:#fff;border:3px solid #f26a1b;border-top:0;border-radius:0 0 22px 22px;padding:6px 26px">${tab}</div>
+                <div style="position:relative;margin-top:6px;font-size:${fs}px;font-weight:900;line-height:1.1;color:#0f2d5c;text-shadow:${shadow};letter-spacing:2px;padding:0 20px">${esc(raw)}</div>
+                <div style="position:relative;margin:10px auto 0;width:650px;background:#f26a1b;border-radius:6px;padding:5px 0;font-size:28px;font-weight:900;color:#fff;line-height:1.2">${w1}${w2 ? ` <span style="color:#0f2d5c">${w2}</span>` : ''}</div>
+                <div style="position:relative;font-size:11px;color:#475569;margin-top:4px">Berlaku per ${plToday()}</div>
+            </div>`;
+        }
+        function plFooterHtml() {
+            const c = plCfg(), st = appState.settings;
             const ewl = (c.logosEw || []).filter(Boolean).slice(0, 6);
-            const ew = ewl.length ? ewl.map(d => slot(d, 80, 64)) : [['DANA', '#118eea'], ['OVO', '#4c2a86'], ['GoPay', '#00aa13']].map(([t, bg]) => pill(t, bg, 80));
-            const bri = c.logoBri ? slot(c.logoBri, 250, 64) : pill('AgenBRILink', '#00529c', 250);
-            return `<div id="pl-poster" style="width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column">
-                <div style="background:#0f3d7a;color:#fff;text-align:center;padding:26px 20px 18px;border-bottom:8px solid #fbbf24">
-                    <div style="font-size:44px;font-weight:900;letter-spacing:1px">${esc(st.storeName || 'TOKO')}</div>
-                    <div style="font-size:30px;font-weight:800;color:#fbbf24;margin-top:4px">DAFTAR HARGA VOUCHER</div>
-                    <div style="font-size:14px;margin-top:4px">Berlaku per ${plToday()}</div>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;background:#f1f5f9">
-                    <div><div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:3px">MELAYANI E-WALLET</div><div style="display:flex;flex-wrap:wrap;gap:5px;width:250px">${ew.join('')}</div></div>
-                    <div style="text-align:right"><div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:3px">TRANSFER &amp; TARIK TUNAI</div>${bri}</div>
-                </div>
-                <div style="flex:1;padding:4px 20px 10px">${groups}</div>
-                <div style="background:#0f3d7a;color:#fff;text-align:center;padding:10px 20px;font-size:13px">
-                    <div>${esc(st.storeAddress || '')}${st.storePhone ? ' | Telp/WA: ' + esc(st.storePhone) : ''}</div>
-                    <div style="color:#fbbf24;font-weight:700;margin-top:2px">${esc(c.note || '')}</div>
-                </div></div>`;
+            const ewDef = [['DANA', '#118eea'], ['OVO', '#4c2a86'], ['GoPay', '#00aa13']];
+            const n = ewl.length || ewDef.length;
+            const f = Math.min(1, 730 / (n * 80 + 250 + n * 12));
+            const W = 80 * f, H = 64 * f, BW = 250 * f;
+            const slot = (d, w, hh) => `<div style="width:${w}px;height:${hh}px;flex:none;background:#fff url(${d}) center/contain no-repeat"></div>`;
+            const pill = (t, bg, w) => `<div style="width:${w}px;height:${H}px;flex:none;background:${bg};color:#fff;font-weight:800;font-size:${w > 200 ? 20 : 13}px;border-radius:6px;display:flex;align-items:center;justify-content:center">${esc(t)}</div>`;
+            const ew = ewl.length ? ewl.map(d => slot(d, W, H)) : ewDef.map(([t, bg]) => pill(t, bg, W));
+            const bri = c.logoBri ? slot(c.logoBri, BW, H) : pill('AgenBRILink', '#00529c', BW);
+            const contact = `${esc(st.storeAddress || '')}${st.storePhone ? (st.storeAddress ? ' | ' : '') + 'Telp/WA: ' + esc(st.storePhone) : ''}`;
+            return `<div>
+                <div style="background:#fff;border-top:6px solid #f26a1b;border-bottom:3px solid #1e4b8f;padding:8px 20px;display:flex;justify-content:center;align-items:center;gap:12px">${ew.join('')}${bri}</div>
+                <div style="background:#0f2d5c;color:#fff;text-align:center;padding:6px 20px">${contact ? `<div style="font-size:11px;opacity:.9">${contact}</div>` : ''}<div style="font-size:17px;font-weight:800;line-height:1.3">${esc(c.note || '')}</div></div>
+            </div>`;
+        }
+        // Muat = tinggi <= sisa halaman DAN tidak ada nama item yang terpotong/menyempit
+        function plFits(provs, sz, avail, ex) {
+            const box = document.createElement('div');
+            box.style.cssText = 'position:fixed;left:-10000px;top:0;width:766px;font-family:Arial,Helvetica,sans-serif';
+            box.innerHTML = plBodyHtml(provs, sz, ex);
+            document.body.appendChild(box);
+            const h = box.offsetHeight;
+            let wide = false;
+            box.querySelectorAll('[data-r]').forEach(r => { if (r.scrollWidth > r.clientWidth + 0.5) wide = true; });
+            box.remove();
+            return { h, ok: h <= avail && !wide };
+        }
+        function plPageHtmls() {
+            const header = plHeaderHtml(), footer = plFooterHtml();
+            const fh = plMeasure([header, footer], 794);
+            const avail = 1123 - fh[0] - fh[1] - 8;
+            const provs = plProviders();
+            let body = '<div style="text-align:center;color:#94a3b8;padding:60px 0;font-size:22px">Belum ada item dipilih</div>';
+            plOverflow = false;
+            if (provs.length) {
+                // cari huruf terbesar yang masih muat penuh 1 halaman
+                let lo = 6, hi = 26, best = 6;
+                for (let k = 0; k < 14; k++) {
+                    const mid = (lo + hi) / 2;
+                    if (plFits(provs, mid, avail, 0).ok) { best = mid; lo = mid; } else hi = mid;
+                }
+                best = Math.floor(best * 10) / 10;
+                plOverflow = !plFits(provs, best, avail, 0).ok;
+                // sisa tinggi halaman diisi dengan jarak antar baris agar halaman A4 terisi penuh
+                let elo = 0, ehi = 16, ex = 0;
+                if (!plOverflow) for (let k = 0; k < 10; k++) { const m = (elo + ehi) / 2; if (plFits(provs, best, avail, m).ok) { ex = m; elo = m; } else ehi = m; }
+                body = plBodyHtml(provs, best, ex);
+            }
+            return [`<div class="pl-page" style="width:794px;height:1123px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 35%,#ffffff 0,#eaf1fc 100%);font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;overflow:hidden">${header}<div style="flex:1;padding:0 14px 4px;overflow:hidden">${body}</div>${footer}</div>`];
         }
         function plRenderPreview() {
             const el = document.getElementById('pl-preview');
             if (!el) return;
-            el.innerHTML = plPosterHtml();
-            const h = document.getElementById('pl-poster').offsetHeight, w = document.getElementById('pl-warn');
-            if (w) { w.classList.toggle('hidden', h <= 1130); w.textContent = h > 1130 ? 'Gambar lebih panjang dari 1 lembar A4: PNG/JPG tetap utuh, tapi saat Cetak A4 akan diperkecil agar muat 1 halaman.' : ''; }
+            el.innerHTML = plPageHtmls().map(h => `<div style="box-shadow:0 1px 6px rgba(0,0,0,.35)">${h}</div>`).join('');
+            const w = document.getElementById('pl-warn');
+            if (w) { w.classList.toggle('hidden', !plOverflow); w.className = 'text-red-700 font-bold' + (plOverflow ? '' : ' hidden'); w.textContent = plOverflow ? 'Item terlalu banyak untuk 1 halaman A4 (huruf sudah paling kecil). Kurangi item yang dicentang.' : ''; }
         }
         function renderPriceList() {
             const c = plCfg();
             const nt = document.getElementById('pl-note');
             if (nt && document.activeElement !== nt) nt.value = c.note || '';
+            const tt = document.getElementById('pl-title');
+            if (tt && document.activeElement !== tt) tt.value = (c.title === undefined ? 'DAFTAR HARGA VOUCHER & DATA' : c.title);
             const q = (document.getElementById('pl-search').value || '').toLowerCase(), sel = new Set(c.sel);
             const list = plVItems().filter(i => !q || String(i.name).toLowerCase().includes(q) || String(i.code).toLowerCase().includes(q));
             document.getElementById('pl-list').innerHTML = list.map(i => { const on = sel.has(i.code); return `<div class="flex items-center gap-2 px-2 py-1 hover:bg-sky-50"><label class="flex items-center gap-2 flex-1 cursor-pointer"><input type="checkbox" ${on ? 'checked' : ''} onchange="plToggle('${escJs(i.code)}', this.checked); renderPriceList()"><span class="flex-1">${esc(plStripV(i.name))} <span class="text-slate-400">(${esc(plStripV(i.category))})</span></span></label>${on ? `<input type="text" value="${esc(c.sec[i.code] || '')}" placeholder="${esc(plAutoSec(i) || 'bagian')}" oninput="plSetSec('${escJs(i.code)}', this.value)" class="w-24 border border-slate-300 rounded px-1 py-0.5 text-[11px]" title="Nama bagian di tabel (kosong = otomatis)">` : ''}<span class="font-mono">${formatNum(i.price)}</span><span class="font-mono text-slate-500 w-16 text-right">${formatNum(i.wholesalePrice)}</span></div>`; }).join('') || '<div class="p-3 text-slate-400 text-center">Tidak ada item kategori berawalan V.</div>';
@@ -5072,33 +5152,41 @@
             const w = window.open('https://wa.me/?text=' + encodeURIComponent(document.getElementById('pl-wa').value), '_blank', 'noopener');
             if (!w) showToast('Pop-up diblokir browser! Izinkan pop-up untuk membuka WhatsApp.', 'error');
         }
-        async function plCanvas() {
+        async function plCanvases() {
             if (typeof html2canvas === 'undefined') throw new Error('html2canvas belum termuat');
             if (!plSelected().length) throw new Error('Pilih minimal satu item.');
-            const box = document.createElement('div');
-            box.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px';
-            box.innerHTML = plPosterHtml();
-            document.body.appendChild(box);
-            try { return await html2canvas(box.firstElementChild, { scale: 2.5, backgroundColor: '#ffffff' }); }
-            finally { box.remove(); }
+            const out = [];
+            for (const html of plPageHtmls()) {
+                const box = document.createElement('div');
+                box.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px';
+                box.innerHTML = html;
+                document.body.appendChild(box);
+                try { out.push(await html2canvas(box.firstElementChild, { scale: 3.125, backgroundColor: '#ffffff' })); }
+                finally { box.remove(); }
+            }
+            return out;
         }
         async function plExport(type) {
             try {
-                const cv = await plCanvas();
-                const blob = await new Promise(res => cv.toBlob(res, type === 'png' ? 'image/png' : 'image/jpeg', 0.95));
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `daftar-harga-${getTodayIsoDate()}.${type}`;
-                document.body.appendChild(a); a.click(); a.remove();
-                setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+                const cvs = await plCanvases();
+                for (let k = 0; k < cvs.length; k++) {
+                    const blob = await new Promise(res => cvs[k].toBlob(res, type === 'png' ? 'image/png' : 'image/jpeg', 0.95));
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `daftar-harga-${getTodayIsoDate()}${cvs.length > 1 ? '-hal' + (k + 1) : ''}.${type}`;
+                    document.body.appendChild(a); a.click(); a.remove();
+                    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+                    await new Promise(r => setTimeout(r, 400));
+                }
+                if (cvs.length > 1) showToast(`${cvs.length} halaman A4 diunduh.`, 'success');
             } catch (e) { showToast('Gagal membuat gambar: ' + e.message, 'error'); }
         }
         async function plPrint() {
             try {
-                const cv = await plCanvas();
+                const cvs = await plCanvases();
                 const w = window.open('', '_blank');
                 if (!w) { showToast('Pop-up diblokir browser! Izinkan pop-up untuk mencetak.', 'error'); return; }
-                w.document.write(`<!doctype html><html><head><title>Daftar Harga</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}img{display:block;width:210mm;max-height:297mm;object-fit:contain}</style></head><body><img src="${cv.toDataURL('image/jpeg', 0.95)}"><script>window.addEventListener('load',function(){setTimeout(function(){window.print();},400);});<\/script></body></html>`);
+                w.document.write(`<!doctype html><html><head><title>Daftar Harga</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}img{display:block;width:210mm;height:297mm;page-break-after:always}img:last-child{page-break-after:auto}</style></head><body>${cvs.map(cv => `<img src="${cv.toDataURL('image/jpeg', 0.95)}">`).join('')}<script>window.addEventListener('load',function(){setTimeout(function(){window.print();},500);});<\/script></body></html>`);
                 w.document.close();
             } catch (e) { showToast('Gagal mencetak: ' + e.message, 'error'); }
         }
