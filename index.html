@@ -773,6 +773,7 @@
                                 <button type="button" onclick="switchMasterSubTab('customers')" id="msub-customers" class="ipos-tab px-3 py-1 rounded-t font-bold">Pelanggan</button>
                                 <button type="button" onclick="switchMasterSubTab('kartustok')" id="msub-kartustok" class="ipos-tab px-3 py-1 rounded-t font-bold">Kartu Stok</button>
                                 <button type="button" onclick="switchMasterSubTab('opname')" id="msub-opname" class="ipos-tab px-3 py-1 rounded-t font-bold">Stok Opname</button>
+                                <button type="button" onclick="switchMasterSubTab('opnamecetak')" id="msub-opnamecetak" class="ipos-tab px-3 py-1 rounded-t font-bold">Cetak Opname Voucher</button>
                                 <button type="button" onclick="switchMasterSubTab('daftarharga')" id="msub-daftarharga" class="ipos-tab px-3 py-1 rounded-t font-bold">Daftar Harga</button>
                             </div>
                         </div>
@@ -863,6 +864,19 @@
                                 <div id="opname-summary" class="text-xs font-bold"></div>
                                 <div class="font-bold text-xs mt-2">Riwayat Stok Opname</div>
                                 <div id="opname-history" class="space-y-1 text-xs"></div>
+                            </div>
+                            <div id="mpane-opnamecetak" class="hidden space-y-2.5">
+                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Lembar hitung stok khusus <b>kategori voucher (awalan V)</b>. Kolom: <b>Kode Voucher</b>, <b>Stok Sistem</b> (otomatis) dan <b>Stok Fisik</b> (dikosongkan untuk ditulis tangan). Kertas A4 dibagi 2: tiap lembar berisi 2 laporan identik (potong di garis putus-putus). Menu <b>Stok Opname</b> di sebelah kiri tetap dipakai untuk menyimpan hasil hitungan.</div>
+                                <div class="flex flex-wrap gap-2 items-end text-xs">
+                                    <label class="block"><span class="block font-bold mb-0.5">Tanggal cetak</span><input type="date" id="ov-date" onchange="renderOpnameCetak()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
+                                    <label class="block"><span class="block font-bold mb-0.5">Kategori</span><select id="ov-cat" onchange="renderOpnameCetak()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select></label>
+                                    <label class="flex items-center gap-1.5 pb-1.5 font-semibold"><input type="checkbox" id="ov-hide0" onchange="renderOpnameCetak()"> Sembunyikan stok sistem 0</label>
+                                    <button type="button" onclick="ovExport('png')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-image mr-1"></i> Unduh PNG</button>
+                                    <button type="button" onclick="ovExport('jpg')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-image mr-1"></i> Unduh JPG</button>
+                                    <button type="button" onclick="ovPrint()" class="ipos-btn px-3 py-1.5 rounded font-bold"><i class="fas fa-print mr-1"></i> Cetak A4</button>
+                                </div>
+                                <div id="ov-info" class="text-xs font-bold text-slate-600"></div>
+                                <div class="border border-slate-300 rounded bg-slate-200 p-2 overflow-auto max-h-[62vh]"><div id="ov-preview" style="zoom:0.7;width:794px"></div></div>
                             </div>
                             <div id="mpane-daftarharga" class="hidden space-y-2.5">
                                 <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Pilih item voucher (kategori berawalan <b>V</b>). Daftar harga <b>eceran</b> dibuat sebagai 1 gambar A4 (PNG/JPG/cetak), 2 provider per baris; awalan "V." otomatis dihapus. Item tiap provider otomatis diurutkan berdasarkan jumlah hari; harga <b>grosir</b> berupa teks untuk WhatsApp. Setiap harga diubah di Daftar Barang, buka tab ini lagi lalu cetak ulang.</div>
@@ -5155,6 +5169,120 @@
             } catch (e) { showToast('Gagal mencetak: ' + e.message, 'error'); }
         }
 
+
+        // =========================================================================
+        // CETAK STOK OPNAME VOUCHER (A4 dibagi 2: 2 laporan identik dalam 1 kertas)
+        // Kolom: Kode voucher | Stok sistem (otomatis) | Stok fisik (diisi tangan)
+        // =========================================================================
+        let ovMeta = { total: 0, pages: 0, cols: 0 };
+        function ovRank(cat) {
+            const n = plStripV(cat).toUpperCase();
+            const r = [/AXIS/, /INDOSAT|IM3|ISAT/, /SIMPATI|TELKOMSEL|TSEL/, /SMART/, /THREE|THEE|^TRI$/, /^XL/].findIndex(x => x.test(n));
+            return r < 0 ? 99 : r;
+        }
+        function ovItems() {
+            const cat = (document.getElementById('ov-cat') || {}).value || '';
+            const hide0 = !!(document.getElementById('ov-hide0') || {}).checked;
+            return plVItems()
+                .filter(i => (!cat || String(i.category || '').trim() === cat) && (!hide0 || (Number(i.stock) || 0) !== 0))
+                .sort((a, b) => ovRank(a.category) - ovRank(b.category) || String(a.category).localeCompare(String(b.category)) || (plDays(a) || 9999) - (plDays(b) || 9999) || (Number(a.price) || 0) - (Number(b.price) || 0));
+        }
+        function ovDateStr() {
+            const v = (document.getElementById('ov-date') || {}).value || getTodayIsoDate();
+            const [y, m, d] = v.split('-').map(Number);
+            return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+        function ovPageHtmls() {
+            const items = ovItems(), st = appState.settings, dateStr = ovDateStr();
+            const HALF = 561, FS = 9.5, RH = 15, GAP = 10, SIS = 38, FIS = 52;
+            const maxLen = items.reduce((m, i) => Math.max(m, String(i.code || '').length), 8);
+            const codeW = Math.ceil(maxLen * FS * 0.62) + 8;
+            let cols = 1;
+            for (let c = 4; c >= 1; c--) { if (codeW + SIS + FIS <= (766 - GAP * (c - 1)) / c) { cols = c; break; } }
+            const rows = Math.floor((HALF - 20 - 44 - 34 - 16) / RH);
+            const per = cols * rows;
+            const pages = Math.max(1, Math.ceil(items.length / per));
+            ovMeta = { total: items.length, pages, cols };
+            const cell = 'border:1px solid #94a3b8;padding:0 3px;white-space:nowrap;overflow:hidden;line-height:13px;height:' + RH + 'px;box-sizing:border-box';
+            const group = (arr) => {
+                let prev = null;
+                const trs = arr.map(i => {
+                    const prov = plStripV(i.category), top = prev !== null && prov !== prev ? 'border-top:2px solid #0f3d7a;' : '';
+                    prev = prov;
+                    return `<tr><td style="${cell};${top}font-weight:700">${esc(i.code)}</td><td style="${cell};${top}text-align:right;font-family:monospace">${formatNum(Number(i.stock) || 0)}</td><td style="${cell};${top}"></td></tr>`;
+                }).join('');
+                const th = 'background:#0f3d7a;color:#fff;font-size:8.5px;font-weight:800;padding:0 3px;height:16px;border:1px solid #0f3d7a;box-sizing:border-box';
+                return `<table style="border-collapse:collapse;table-layout:fixed;width:100%;font-size:${FS}px;color:#111827"><colgroup><col><col style="width:${SIS}px"><col style="width:${FIS}px"></colgroup><thead><tr><th style="${th};text-align:left">KODE VOUCHER</th><th style="${th};text-align:right">SISTEM</th><th style="${th};text-align:center">FISIK</th></tr></thead><tbody>${trs}</tbody></table>`;
+            };
+            const out = [];
+            for (let p = 0; p < pages; p++) {
+                const pageItems = items.slice(p * per, (p + 1) * per);
+                const gs = [];
+                for (let g = 0; g < cols; g++) { const a = pageItems.slice(g * rows, (g + 1) * rows); if (a.length) gs.push(group(a)); }
+                const body = gs.length ? `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:${GAP}px;align-items:start">${gs.join('')}${''}</div>` : '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:14px">Tidak ada item voucher.</div>';
+                const half = (h, last) => `<div style="height:${h}px;box-sizing:border-box;padding:10px 14px;${last ? '' : 'border-bottom:1px dashed #64748b;'}overflow:hidden">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-end;height:44px;border-bottom:2px solid #0f3d7a;padding-bottom:3px;margin-bottom:4px;box-sizing:border-box">
+                        <div><div style="font-size:15px;font-weight:900;color:#0f3d7a;line-height:1.1">STOK OPNAME VOUCHER</div><div style="font-size:11px;font-weight:700;color:#475569">${esc(st.storeName || 'TOKO')}</div></div>
+                        <div style="text-align:right;font-size:11px;line-height:1.3"><div><b>Tanggal:</b> ${esc(dateStr)}</div><div style="color:#475569">Hal ${p + 1}/${pages} | ${items.length} item</div></div>
+                    </div>${body}
+                    <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:6px;color:#334155"><span>Dihitung oleh: ____________________</span><span>Diperiksa oleh: ____________________</span></div>
+                </div>`;
+                out.push(`<div class="ov-page" style="width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden">${half(HALF, false)}${half(1123 - HALF, true)}</div>`);
+            }
+            return out;
+        }
+        function renderOpnameCetak() {
+            const sel = document.getElementById('ov-cat');
+            if (!sel) return;
+            const cur = sel.value;
+            const cats = [...new Set(plVItems().map(i => String(i.category || '').trim()))].sort((a, b) => ovRank(a) - ovRank(b) || a.localeCompare(b));
+            sel.innerHTML = '<option value="">Semua Kategori Voucher (V)</option>' + cats.map(c => `<option value="${esc(c)}" ${c === cur ? 'selected' : ''}>${esc(c)}</option>`).join('');
+            const d = document.getElementById('ov-date');
+            if (d && !d.value) d.value = getTodayIsoDate();
+            const el = document.getElementById('ov-preview');
+            el.innerHTML = ovPageHtmls().map(h => `<div style="box-shadow:0 1px 6px rgba(0,0,0,.35);margin-bottom:12px">${h}</div>`).join('');
+            const info = document.getElementById('ov-info');
+            if (info) info.textContent = `${ovMeta.total} item voucher | ${ovMeta.pages} lembar A4 (tiap lembar = 2 laporan) | ${ovMeta.cols} kolom per laporan`;
+        }
+        async function ovCanvases() {
+            if (typeof html2canvas === 'undefined') throw new Error('html2canvas belum termuat');
+            if (!ovItems().length) throw new Error('Tidak ada item voucher untuk dicetak.');
+            const out = [];
+            for (const html of ovPageHtmls()) {
+                const box = document.createElement('div');
+                box.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px';
+                box.innerHTML = html;
+                document.body.appendChild(box);
+                try { out.push(await html2canvas(box.firstElementChild, { scale: 3.125, backgroundColor: '#ffffff' })); }
+                finally { box.remove(); }
+            }
+            return out;
+        }
+        async function ovExport(type) {
+            try {
+                const cvs = await ovCanvases();
+                for (let k = 0; k < cvs.length; k++) {
+                    const blob = await new Promise(res => cvs[k].toBlob(res, type === 'png' ? 'image/png' : 'image/jpeg', 0.95));
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `stok-opname-voucher-${(document.getElementById('ov-date').value || getTodayIsoDate())}${cvs.length > 1 ? '-hal' + (k + 1) : ''}.${type}`;
+                    document.body.appendChild(a); a.click(); a.remove();
+                    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+                    await new Promise(r => setTimeout(r, 400));
+                }
+                if (cvs.length > 1) showToast(`${cvs.length} lembar A4 diunduh.`, 'success');
+            } catch (e) { showToast('Gagal membuat gambar: ' + e.message, 'error'); }
+        }
+        async function ovPrint() {
+            try {
+                const cvs = await ovCanvases();
+                const w = window.open('', '_blank');
+                if (!w) { showToast('Pop-up diblokir browser! Izinkan pop-up untuk mencetak.', 'error'); return; }
+                w.document.write(`<!doctype html><html><head><title>Stok Opname Voucher</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}img{display:block;width:210mm;height:297mm;page-break-after:always}img:last-child{page-break-after:auto}</style></head><body>${cvs.map(cv => `<img src="${cv.toDataURL('image/jpeg', 0.95)}">`).join('')}<script>window.addEventListener('load',function(){setTimeout(function(){window.print();},500);});<\/script></body></html>`);
+                w.document.close();
+            } catch (e) { showToast('Gagal mencetak: ' + e.message, 'error'); }
+        }
+
         // ---------- Tombol Tutup: bilah tetap di kanan bawah area kerja (selalu terlihat) ----------
         function closeCurrentTab() {
             const sec = [...document.querySelectorAll('main section[id^="view-"]')].find(x => !x.classList.contains('hidden'));
@@ -5196,7 +5324,7 @@
         function initSidebarSubmenus() {
             const mk = (fn, arr) => arr.map(([l, k]) => [l, () => fn(k)]);
             const SUB = {
-                masterdata: mk(switchMasterSubTab, [['Daftar Barang & Harga', 'items'], ['Supplier', 'suppliers'], ['Pelanggan', 'customers'], ['Kartu Stok', 'kartustok'], ['Stok Opname', 'opname'], ['Daftar Harga', 'daftarharga']]),
+                masterdata: mk(switchMasterSubTab, [['Daftar Barang & Harga', 'items'], ['Supplier', 'suppliers'], ['Pelanggan', 'customers'], ['Kartu Stok', 'kartustok'], ['Stok Opname', 'opname'], ['Cetak Opname Voucher', 'opnamecetak'], ['Daftar Harga', 'daftarharga']]),
                 pembelian: mk(switchPurchaseSubTab, [['Pesanan (PO)', 'po'], ['Pembelian', 'pembelian'], ['Retur Pembelian', 'retur'], ['Cashback', 'cashback']]),
                 kasir: mk(switchSalesSubTab, [['Pesanan (SO)', 'so'], ['Penjualan', 'jual'], ['Retur Penjualan', 'retur'], ['Kasir Cepat', 'kasir']]),
                 ppob: mk(setPpobMode, [['Pulsa & Paket Data', 'pulsa'], ['Transfer Bank', 'transfer'], ['Tarik Tunai', 'tarik'], ['E-Wallet & Token PLN', 'ewallet']]),
@@ -5637,13 +5765,14 @@
         // 4. MASTER DATA (BARANG, SUPPLIER, PELANGGAN)
         // =========================================================================
         function switchMasterSubTab(sub) {
-            ['items', 'suppliers', 'customers', 'kartustok', 'opname', 'daftarharga'].forEach(s => {
+            ['items', 'suppliers', 'customers', 'kartustok', 'opname', 'opnamecetak', 'daftarharga'].forEach(s => {
                 document.getElementById(`mpane-${s}`)?.classList.add('hidden');
                 document.getElementById(`msub-${s}`)?.classList.remove('active');
             });
             document.getElementById(`mpane-${sub}`)?.classList.remove('hidden');
             document.getElementById(`msub-${sub}`)?.classList.add('active');
             if (sub === 'opname') renderStockOpname();
+            if (sub === 'opnamecetak') renderOpnameCetak();
             if (sub === 'daftarharga') renderPriceList();
         }
 
