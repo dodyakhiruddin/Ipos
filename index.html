@@ -772,6 +772,7 @@
                                 <button type="button" onclick="switchMasterSubTab('suppliers')" id="msub-suppliers" class="ipos-tab px-3 py-1 rounded-t font-bold">Supplier</button>
                                 <button type="button" onclick="switchMasterSubTab('customers')" id="msub-customers" class="ipos-tab px-3 py-1 rounded-t font-bold">Pelanggan</button>
                                 <button type="button" onclick="switchMasterSubTab('kartustok')" id="msub-kartustok" class="ipos-tab px-3 py-1 rounded-t font-bold">Kartu Stok</button>
+                                <button type="button" onclick="switchMasterSubTab('opname')" id="msub-opname" class="ipos-tab px-3 py-1 rounded-t font-bold">Stok Opname</button>
                             </div>
                         </div>
 
@@ -847,6 +848,21 @@
                             </div>
 
                             <!-- SUB 4: KARTU STOK -->
+                            <div id="mpane-opname" class="hidden space-y-2.5">
+                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Hitung stok fisik di rak, isi kolom <b>Stok Fisik</b>, lalu simpan. Stok sistem otomatis disesuaikan, tercatat di Kartu Stok, dan selisihnya masuk Laba Rugi (kurang = kerugian, lebih = keuntungan). Kolom yang dikosongkan tidak diubah.</div>
+                                <div class="flex flex-wrap gap-2 items-end text-xs">
+                                    <input type="text" id="opname-search" oninput="renderStockOpname()" placeholder="Cari kode / nama barang..." class="bg-white border border-slate-300 rounded px-2.5 py-1.5 w-52">
+                                    <select id="opname-cat" onchange="renderStockOpname()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                                    <input type="text" id="opname-note" placeholder="Catatan (mis. opname akhir bulan)" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 w-56">
+                                    <button type="button" onclick="opnameFillSystem()" class="ipos-btn px-3 py-1.5 rounded font-bold">Isi = Stok Sistem</button>
+                                    <button type="button" onclick="opnameClear()" class="ipos-btn px-3 py-1.5 rounded font-bold">Kosongkan</button>
+                                    <button type="button" onclick="saveStockOpname()" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-save mr-1"></i> Simpan Opname</button>
+                                </div>
+                                <div class="overflow-auto max-h-[50vh] border border-slate-300 rounded"><table class="w-full table-grid border-collapse text-xs"><thead><tr><th class="text-left">Kode</th><th class="text-left">Nama Barang</th><th class="text-left">Satuan</th><th class="text-right">Stok Sistem</th><th class="text-right">Stok Fisik</th><th class="text-right">Selisih</th><th class="text-right">Nilai Selisih</th></tr></thead><tbody id="opname-tbody"></tbody></table></div>
+                                <div id="opname-summary" class="text-xs font-bold"></div>
+                                <div class="font-bold text-xs mt-2">Riwayat Stok Opname</div>
+                                <div id="opname-history" class="space-y-1 text-xs"></div>
+                            </div>
                             <div id="mpane-kartustok" class="hidden space-y-2.5">
                                 <div class="flex flex-wrap gap-3 items-end">
                                     <label class="block">
@@ -4188,6 +4204,7 @@
                 ],
                 fundTransfers: [],
                 expenses: [],
+                stockOpnames: [],
                 purchaseOrders: [],
                 purchaseRecords: [],
                 purchaseReturns: [],
@@ -4300,7 +4317,7 @@
             } catch (e) {}
         }
 
-        const DATA_COLLECTIONS = ['walletDeletions','items','suppliers','customers','voucherProductions','serviceTickets','debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','transactions','stockLedger','expenses'];
+        const DATA_COLLECTIONS = ['walletDeletions','items','suppliers','customers','voucherProductions','serviceTickets','debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','transactions','stockLedger','expenses','stockOpnames'];
         function buildStateFromSaved(saved) {
             const d = createDefaultState(activeDatabaseName);
             DATA_COLLECTIONS.forEach(k => { if (!Array.isArray(saved[k])) d[k] = []; }); // koleksi hilang = kosong, BUKAN barang demo
@@ -4494,7 +4511,7 @@
             appState = buildStateFromSaved(st);
             appState.settings = appState.settings || {};
             appState.settings.supabaseUrl = keep.url; appState.settings.supabaseKey = keep.key;
-            ['debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','voucherProductions','stockLedger','serviceTickets','transactions','items','suppliers','customers','expenses']
+            ['debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','voucherProductions','stockLedger','serviceTickets','transactions','items','suppliers','customers','expenses','stockOpnames']
                 .forEach(k => { if (!Array.isArray(appState[k])) appState[k] = []; });
             try { ensureCategoriesIntegrity(); ensureWalletListIntegrity(); } catch (e) {}
             saveStateToIndexedDBForDb(activeDatabaseName, appState).catch(() => {});
@@ -4742,6 +4759,92 @@
         }
 
 
+
+        // =========================================================================
+        // STOK OPNAME (hitung fisik vs sistem)
+        // =========================================================================
+        const opnameDraft = {};
+        function renderStockOpname() {
+            const tb = document.getElementById('opname-tbody');
+            if (!tb) return;
+            const items = getPhysicalStockItems();
+            const catSel = document.getElementById('opname-cat');
+            const cats = [...new Set(items.map(i => i.category || '-'))].sort();
+            const curCat = catSel.value;
+            catSel.innerHTML = '<option value="">Semua Kategori</option>' + cats.map(c => `<option value="${esc(c)}" ${c === curCat ? 'selected' : ''}>${esc(c)}</option>`).join('');
+            const q = (document.getElementById('opname-search').value || '').toLowerCase();
+            const list = items.filter(i => (!curCat || (i.category || '-') === curCat) && ((i.code || '').toLowerCase().includes(q) || (i.name || '').toLowerCase().includes(q)));
+            tb.innerHTML = list.map(i => {
+                const sys = Number(i.stock) || 0, cost = Number(i.cost) || 0, d = opnameDraft[i.code];
+                const has = d !== undefined && d !== '';
+                const diff = has ? Number(d) - sys : 0;
+                return `<tr><td class="font-mono">${esc(i.code)}</td><td>${esc(i.name)}</td><td>${esc(i.unit || 'PCS')}</td><td class="text-right font-mono">${formatNum(sys)}</td>
+                    <td class="text-right"><input type="number" min="0" step="any" value="${has ? esc(d) : ''}" data-code="${esc(i.code)}" data-sys="${sys}" data-cost="${cost}" oninput="opnameSet(this)" class="w-24 text-right border border-slate-300 rounded px-1.5 py-0.5 font-mono"></td>
+                    <td class="text-right font-mono font-bold opn-diff ${diff < 0 ? 'text-red-700' : diff > 0 ? 'text-emerald-700' : ''}">${has ? formatNum(diff) : ''}</td>
+                    <td class="text-right font-mono opn-val ${diff < 0 ? 'text-red-700' : diff > 0 ? 'text-emerald-700' : ''}">${has ? formatNum(diff * cost) : ''}</td></tr>`;
+            }).join('') || '<tr><td colspan="7" class="text-center text-slate-400 py-3">Tidak ada barang.</td></tr>';
+            renderOpnameSummary();
+            const hist = appState.stockOpnames || [];
+            document.getElementById('opname-history').innerHTML = hist.slice(0, 20).map(o => `<details class="border border-slate-300 rounded bg-white"><summary class="px-2 py-1 cursor-pointer"><b class="font-mono">${esc(o.id)}</b> | ${rptFmtDay(o.date)} | ${o.items.length} barang | Nilai selisih <b class="font-mono ${o.totalValue < 0 ? 'text-red-700' : 'text-emerald-700'}">${formatNum(o.totalValue)}</b>${o.note ? ' | ' + esc(o.note) : ''}</summary>
+                <div class="px-2 pb-1">${o.items.map(x => `<div class="flex justify-between border-t border-slate-100 py-0.5"><span>${esc(x.code)} - ${esc(x.name)}</span><span class="font-mono">${formatNum(x.system)} → ${formatNum(x.physical)} (${x.diff > 0 ? '+' : ''}${formatNum(x.diff)})</span></div>`).join('')}</div></details>`).join('') || '<div class="text-slate-400">Belum ada riwayat opname.</div>';
+        }
+        function opnameCalc() {
+            let n = 0, val = 0;
+            getPhysicalStockItems().forEach(i => {
+                const d = opnameDraft[i.code];
+                if (d === undefined || d === '') return;
+                const diff = Number(d) - (Number(i.stock) || 0);
+                if (diff) { n++; val += diff * (Number(i.cost) || 0); }
+            });
+            return { n, val };
+        }
+        function renderOpnameSummary() {
+            const el = document.getElementById('opname-summary');
+            if (!el) return;
+            const { n, val } = opnameCalc();
+            el.innerHTML = `Barang berselisih: ${n} | Nilai selisih: <span class="font-mono ${val < 0 ? 'text-red-700' : 'text-emerald-700'}">${formatNum(val)}</span>`;
+        }
+        function opnameSet(inp) {
+            opnameDraft[inp.dataset.code] = inp.value;
+            const has = inp.value !== '';
+            const diff = has ? Number(inp.value) - Number(inp.dataset.sys) : 0;
+            const tr = inp.closest('tr'), col = diff < 0 ? 'text-red-700' : diff > 0 ? 'text-emerald-700' : '';
+            const a = tr.querySelector('.opn-diff'), b = tr.querySelector('.opn-val');
+            a.textContent = has ? formatNum(diff) : ''; b.textContent = has ? formatNum(diff * Number(inp.dataset.cost)) : '';
+            a.className = `text-right font-mono font-bold opn-diff ${col}`; b.className = `text-right font-mono opn-val ${col}`;
+            renderOpnameSummary();
+        }
+        function opnameFillSystem() {
+            getPhysicalStockItems().forEach(i => { opnameDraft[i.code] = String(Number(i.stock) || 0); });
+            renderStockOpname();
+        }
+        function opnameClear() { Object.keys(opnameDraft).forEach(k => delete opnameDraft[k]); renderStockOpname(); }
+        async function saveStockOpname() {
+            if (!requireAdmin('Menyimpan stok opname')) return;
+            const rows = [];
+            getPhysicalStockItems().forEach(i => {
+                const d = opnameDraft[i.code];
+                if (d === undefined || d === '' || isNaN(Number(d)) || Number(d) < 0) return;
+                const sys = Number(i.stock) || 0, phys = Number(d);
+                if (phys !== sys) rows.push({ it: i, sys, phys });
+            });
+            if (!rows.length) { showToast('Tidak ada selisih stok untuk disimpan.', 'info'); return; }
+            const val = rows.reduce((a, r) => a + (r.phys - r.sys) * (Number(r.it.cost) || 0), 0);
+            if (!confirm(`Simpan stok opname?\n\n${rows.length} barang akan disesuaikan.\nNilai selisih: Rp ${formatNum(val)}\n\nStok sistem diubah sesuai stok fisik.`)) return;
+            const id = generateInvoiceId('OPN'), now = new Date().toISOString();
+            rows.forEach(({ it, sys, phys }) => {
+                it.stock = phys;
+                appState.stockLedger.unshift({ date: now, ref: id, code: it.code, name: it.name, type: 'OPNAME', inQty: phys > sys ? phys - sys : 0, outQty: phys < sys ? sys - phys : 0, balance: phys });
+            });
+            if (!Array.isArray(appState.stockOpnames)) appState.stockOpnames = [];
+            appState.stockOpnames.unshift({ id, date: now, note: (document.getElementById('opname-note').value || '').trim(), totalValue: val,
+                items: rows.map(({ it, sys, phys }) => ({ code: it.code, name: it.name, unit: it.unit || 'PCS', system: sys, physical: phys, diff: phys - sys, cost: Number(it.cost) || 0 })) });
+            opnameClear();
+            document.getElementById('opname-note').value = '';
+            await saveAppState();
+            showToast(`Stok opname ${id} tersimpan (${rows.length} barang).`, 'success');
+        }
+
         // ---------- Sub menu sidebar (panah kecil, hanya desktop) & tombol Tutup kanan bawah ----------
         function closeCurrentTab() {
             const sec = [...document.querySelectorAll('main section[id^="view-"]')].find(x => !x.classList.contains('hidden'));
@@ -4753,7 +4856,7 @@
         function initSidebarSubmenus() {
             const mk = (fn, arr) => arr.map(([l, k]) => [l, () => fn(k)]);
             const SUB = {
-                masterdata: mk(switchMasterSubTab, [['Daftar Barang & Harga', 'items'], ['Supplier', 'suppliers'], ['Pelanggan', 'customers'], ['Kartu Stok', 'kartustok']]),
+                masterdata: mk(switchMasterSubTab, [['Daftar Barang & Harga', 'items'], ['Supplier', 'suppliers'], ['Pelanggan', 'customers'], ['Kartu Stok', 'kartustok'], ['Stok Opname', 'opname']]),
                 pembelian: mk(switchPurchaseSubTab, [['Pesanan (PO)', 'po'], ['Pembelian', 'pembelian'], ['Retur Pembelian', 'retur'], ['Cashback', 'cashback']]),
                 kasir: mk(switchSalesSubTab, [['Pesanan (SO)', 'so'], ['Penjualan', 'jual'], ['Retur Penjualan', 'retur'], ['Kasir Cepat', 'kasir']]),
                 ppob: mk(setPpobMode, [['Pulsa & Paket Data', 'pulsa'], ['Transfer Bank', 'transfer'], ['Tarik Tunai', 'tarik'], ['E-Wallet & Token PLN', 'ewallet']]),
@@ -5182,12 +5285,13 @@
         // 4. MASTER DATA (BARANG, SUPPLIER, PELANGGAN)
         // =========================================================================
         function switchMasterSubTab(sub) {
-            ['items', 'suppliers', 'customers', 'kartustok'].forEach(s => {
+            ['items', 'suppliers', 'customers', 'kartustok', 'opname'].forEach(s => {
                 document.getElementById(`mpane-${s}`)?.classList.add('hidden');
                 document.getElementById(`msub-${s}`)?.classList.remove('active');
             });
             document.getElementById(`mpane-${sub}`)?.classList.remove('hidden');
             document.getElementById(`msub-${sub}`)?.classList.add('active');
+            if (sub === 'opname') renderStockOpname();
         }
 
         function renderMasterItemsTable() {
@@ -9646,7 +9750,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             exps.forEach(x => { byCat[x.category || 'Lain-lain'] = (byCat[x.category || 'Lain-lain'] || 0) + (Number(x.amount) || 0); });
             const biaya = exps.reduce((a, x) => a + (Number(x.amount) || 0), 0);
             const pendapatan = pos + ppob + bri + svc;
-            return { pos, ppob, bri, svc, pendapatan, cogs, kotor: pendapatan - cogs, byCat, biaya, bersih: pendapatan - cogs - biaya, exps };
+            const opn = (appState.stockOpnames || []).filter(o => accInRange(o.date)).reduce((a, o) => a + (Number(o.totalValue) || 0), 0);
+            return { pos, ppob, bri, svc, pendapatan, cogs, kotor: pendapatan - cogs, byCat, biaya, opn, bersih: pendapatan - cogs - biaya + opn, exps };
         }
 
         function renderAccounting() {
@@ -9696,6 +9801,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 h = accPanel('Laporan Laba Rugi', accRow('Penjualan Kasir (POS, bersih retur)', formatRp(pl.pos)) + accRow('Pulsa, Kuota & PPOB', formatRp(pl.ppob)) + accRow('Jasa & Admin BRILink', formatRp(pl.bri)) + accRow('Service HP', formatRp(pl.svc)) +
                     accRow('Total Pendapatan', formatRp(pl.pendapatan), '', true) + accRow('HPP & Modal Deposit', `(${formatRp(pl.cogs)})`, 'text-red-700') + accRow('LABA KOTOR', formatRp(pl.kotor), red(pl.kotor), true) +
                     (Object.entries(pl.byCat).map(([c, v]) => accRow('Biaya ' + esc(c), `(${formatRp(v)})`, 'text-red-700')).join('') || accRow('Biaya Operasional', '(0)', 'text-red-700')) +
+                    accRow('Selisih Stok Opname (+untung / -rugi)', formatRp(pl.opn), red(pl.opn)) +
                     accRow(pl.bersih >= 0 ? 'LABA BERSIH USAHA' : 'RUGI BERSIH USAHA', formatRp(pl.bersih), red(pl.bersih) + ' bg-slate-50', true));
             } else if (accSub === 'biaya') {
                 const today = getTodayIsoDate(), adm = isCurrentUserAdmin();
@@ -10105,6 +10211,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             const exps = (appState.expenses || []).filter(x => rptInRange(x.date));
             const expTotal = exps.reduce((a, x) => a + (Number(x.amount) || 0), 0);
             lines.push(['Biaya Operasional (sewa, listrik, gaji, dll.)', exps.length, 0, expTotal, -expTotal]);
+            const opns = (appState.stockOpnames || []).filter(o => rptInRange(o.date));
+            const opnV = opns.reduce((a, o) => a + (Number(o.totalValue) || 0), 0);
+            lines.push(['Selisih Stok Opname', opns.length, opnV > 0 ? opnV : 0, opnV < 0 ? -opnV : 0, opnV]);
             const rev = lines.reduce((s, r) => s + r[2], 0);
             const cogs = lines.reduce((s, r) => s + r[3], 0);
             const net = rev - cogs;
