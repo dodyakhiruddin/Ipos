@@ -874,6 +874,7 @@
                                     <label class="flex items-center gap-1.5 pb-1.5 font-semibold"><input type="checkbox" id="ov-hide0" onchange="renderOpnameCetak()"> Sembunyikan stok sistem 0</label>
                                     <button type="button" onclick="ovExport('png')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-image mr-1"></i> Unduh PNG</button>
                                     <button type="button" onclick="ovExport('jpg')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-image mr-1"></i> Unduh JPG</button>
+                                    <button type="button" onclick="ovExportExcel()" class="ipos-btn-success px-3 py-1.5 rounded font-bold"><i class="fas fa-file-excel mr-1"></i> Export Excel</button>
                                     <button type="button" onclick="ovPrint()" class="ipos-btn px-3 py-1.5 rounded font-bold"><i class="fas fa-print mr-1"></i> Cetak A4</button>
                                 </div>
                                 <div id="ov-info" class="text-xs font-bold text-slate-600"></div>
@@ -5289,6 +5290,39 @@
                 }
                 if (cvs.length > 1) showToast(`${cvs.length} lembar A4 diunduh.`, 'success');
             } catch (e) { showToast('Gagal membuat gambar: ' + e.message, 'error'); }
+        }
+        function ovExportExcel() {
+            try {
+                const items = ovItems();
+                if (!items.length) { showToast('Tidak ada data voucher untuk diexport.', 'error'); return; }
+                const store = (appState.settings && appState.settings.storeName) || 'DONET CELL';
+                const dateStr = ovDateStr();
+                const rows = [[store], ['STOK OPNAME VOUCHER'], ['Tanggal: ' + dateStr], [],
+                    ['No', 'Kode Voucher', 'Kategori', 'Nama Item', 'Stok Sistem', 'Stok Fisik', 'Selisih']];
+                const first = rows.length + 1;
+                items.forEach((i, idx) => {
+                    const r = rows.length + 1;
+                    rows.push([idx + 1, String(i.code || ''), plStripV(i.category), plStripV(i.name), Number(i.stock) || 0, '', { t: 'n', f: `IF(F${r}="","",F${r}-E${r})` }]);
+                });
+                const last = rows.length;
+                rows.push([]);
+                rows.push(['', '', '', 'TOTAL', { t: 'n', f: `SUM(E${first}:E${last})` }, { t: 'n', f: `SUM(F${first}:F${last})` }, { t: 'n', f: `SUM(G${first}:G${last})` }]);
+                const fname = 'Stok_Opname_Voucher_' + ((document.getElementById('ov-date') || {}).value || getTodayIsoDate()) + '.xlsx';
+                if (typeof XLSX === 'undefined') {
+                    const csv = rows.map(r => r.map(c => { if (c && typeof c === 'object') c = ''; return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',')).join('\n');
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }));
+                    a.download = fname.replace('.xlsx', '.csv'); a.click();
+                    showToast('Library Excel tidak tersedia, diunduh sebagai CSV.', 'info'); return;
+                }
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                ws['!cols'] = [{ wch: 5 }, { wch: 22 }, { wch: 18 }, { wch: 34 }, { wch: 12 }, { wch: 12 }, { wch: 10 }];
+                ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }, { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } }];
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Opname Voucher');
+                XLSX.writeFile(wb, fname);
+                showToast('Excel opname voucher berhasil diunduh.', 'success');
+            } catch (e) { showToast('Gagal export Excel: ' + e.message, 'error'); }
         }
         async function ovPrint() {
             try {
