@@ -5196,33 +5196,44 @@
         function ovPageHtmls() {
             const items = ovItems(), st = appState.settings, dateStr = ovDateStr();
             const pos = (document.getElementById('ov-pos') || {}).value === 'bawah' ? 'bawah' : 'atas';
-            const HALF = 561, FS = 8, RH = 13, GAP = 10, SIS = 34, FIS = 42, SEL = 38;
-            const maxLen = items.reduce((m, i) => Math.max(m, String(i.code || '').length), 8);
-            const codeW = Math.ceil(maxLen * FS * 0.62) + 8;
-            let cols = 1;
-            for (let c = 4; c >= 1; c--) { if (codeW + SIS + FIS + SEL <= (766 - GAP * (c - 1)) / c) { cols = c; break; } }
+            const HALF = 561, PADX = 10, GAP = 8, SIS = 29, FIS = 32, SEL = 32, FONT = 'Tahoma,Verdana,Arial,sans-serif';
+            // lebar kode terpanjang diukur langsung dengan font yang dipakai
+            const ctx = document.createElement('canvas').getContext('2d');
+            const codeWidth = fs => { ctx.font = `bold ${fs}px ${FONT}`; return items.reduce((m, i) => Math.max(m, ctx.measureText(String(i.code || '')).width), 0); };
+            const innerW = 794 - PADX * 2;
+            // pakai 4 kotak sampai penuh; huruf 9 -> 7 px, ambil terbesar yang muat tanpa terpotong
+            let cols = 4, FS = 7;
+            for (const c of [4, 3, 2, 1]) {
+                const gw = (innerW - GAP * (c - 1)) / c;
+                let ok = 0;
+                for (let f = 9; f >= 7; f -= 0.5) { if (codeWidth(f) + 8 <= gw - SIS - FIS - SEL) { ok = f; break; } }
+                if (ok) { cols = c; FS = ok; break; }
+                if (c === 1) { cols = 1; FS = 7; }
+            }
+            const RH = Math.round(FS * 1.55 * 2) / 2;
             const rows = Math.floor((HALF - 20 - 40 - 28 - 14) / RH);
             const per = cols * rows;
             const pages = Math.max(1, Math.ceil(items.length / per));
-            ovMeta = { total: items.length, pages, cols };
-            const cell = 'border:1px dashed #94a3b8;padding:0 2px;white-space:nowrap;overflow:hidden;line-height:11px;height:' + RH + 'px;box-sizing:border-box';
+            ovMeta = { total: items.length, pages, cols, font: FS };
+            const cell = `padding:0 2px;white-space:nowrap;overflow:hidden;line-height:${RH - 2}px;height:${RH}px;box-sizing:border-box;border:0;border-bottom:1px solid #64748b`;
             const group = (arr) => {
                 let prev = null;
                 const trs = arr.map(i => {
                     const prov = plStripV(i.category), top = prev !== null && prov !== prev ? 'border-top:2px solid #0f3d7a;' : '';
                     prev = prov;
-                    return `<tr><td style="${cell};${top}font-weight:700">${esc(i.code)}</td><td style="${cell};${top}text-align:right;font-family:monospace">${formatNum(Number(i.stock) || 0)}</td><td style="${cell};${top}"></td><td style="${cell};${top}"></td></tr>`;
+                    return `<tr><td style="${cell};${top}font-weight:700">${esc(i.code)}</td><td style="${cell};${top}text-align:right">${formatNum(Number(i.stock) || 0)}</td><td style="${cell};${top}"></td><td style="${cell};${top}"></td></tr>`;
                 }).join('');
-                const th = 'background:#0f3d7a;color:#fff;font-size:7px;font-weight:800;padding:0 2px;height:14px;border:1px solid #0f3d7a;box-sizing:border-box';
+                const th = 'background:#0f3d7a;color:#fff;font-size:7px;font-weight:700;padding:0 2px;height:14px;border:0;box-sizing:border-box';
                 return `<table style="border-collapse:collapse;table-layout:fixed;width:100%;font-size:${FS}px;color:#111827"><colgroup><col><col style="width:${SIS}px"><col style="width:${FIS}px"><col style="width:${SEL}px"></colgroup><thead><tr><th style="${th};text-align:left">KODE VOUCHER</th><th style="${th};text-align:right">SISTEM</th><th style="${th};text-align:center">FISIK</th><th style="${th};text-align:center">SELISIH</th></tr></thead><tbody>${trs}</tbody></table>`;
             };
             const out = [];
             for (let p = 0; p < pages; p++) {
                 const pageItems = items.slice(p * per, (p + 1) * per);
                 const gs = [];
-                for (let g = 0; g < cols; g++) { const a = pageItems.slice(g * rows, (g + 1) * rows); if (a.length) gs.push(group(a)); }
+                const pc = Math.min(rows, Math.ceil(pageItems.length / cols)); // isi dibagi rata antar kotak
+                for (let g = 0; g < cols; g++) { const a = pageItems.slice(g * pc, (g + 1) * pc); if (a.length) gs.push(group(a)); }
                 const body = gs.length ? `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:${GAP}px;align-items:start">${gs.join('')}</div>` : '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:12px">Tidak ada item voucher.</div>';
-                const report = h => `<div style="height:${h}px;box-sizing:border-box;padding:10px 14px;overflow:hidden">
+                const report = h => `<div style="height:${h}px;box-sizing:border-box;padding:10px ${PADX}px;overflow:hidden">
                     <div style="display:flex;justify-content:space-between;align-items:flex-end;height:40px;border-bottom:2px solid #0f3d7a;padding-bottom:3px;margin-bottom:4px;box-sizing:border-box">
                         <div><div style="font-size:13px;font-weight:900;color:#0f3d7a;line-height:1.1">STOK OPNAME VOUCHER</div><div style="font-size:10px;font-weight:700;color:#475569">${esc(st.storeName || 'TOKO')}</div></div>
                         <div style="text-align:right;font-size:10px;line-height:1.3"><div><b>Tanggal:</b> ${esc(dateStr)}</div><div style="color:#475569">Hal ${p + 1}/${pages} | ${items.length} item</div></div>
@@ -5233,7 +5244,7 @@
                 // A4 dibagi 2, tetapi hanya 1 laporan yang dicetak (atas / bawah); setengah lainnya kosong untuk hari berikutnya
                 const top = pos === 'atas' ? report(HALF) : blank(HALF);
                 const bot = pos === 'bawah' ? report(1123 - HALF) : blank(1123 - HALF);
-                out.push(`<div class="ov-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden">${top}${bot}<div style="position:absolute;left:0;right:0;top:${HALF}px;border-top:1px dashed #64748b"></div></div>`);
+                out.push(`<div class="ov-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:${FONT};overflow:hidden">${top}${bot}<div style="position:absolute;left:0;right:0;top:${HALF}px;border-top:1px dashed #64748b"></div></div>`);
             }
             return out;
         }
