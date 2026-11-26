@@ -1359,7 +1359,7 @@
                                     </div>
                                     <div class="sm:col-span-4 space-y-1">
                                         <div class="flex items-center gap-1">
-                                            <input type="number" id="pos-cash-paid" oninput="calculatePosChange()" placeholder="Bayar Tunai..." class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-400 text-sm">
+                                            <input type="text" inputmode="decimal" data-money id="pos-cash-paid" oninput="calculatePosChange()" placeholder="Bayar Tunai..." class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-400 text-sm">
                                             <button type="button" onclick="setExactCash()" class="bg-sky-700 hover:bg-sky-600 px-2.5 py-1.5 rounded font-bold text-[11px] shrink-0">Pas</button>
                                         </div>
                                         <div class="text-[11px] text-slate-300 flex justify-between">
@@ -1468,11 +1468,11 @@
                                 <div class="grid grid-cols-3 gap-2.5">
                                     <div>
                                         <label class="block font-bold mb-1">Modal / Pokok (Rp)</label>
-                                        <input type="number" id="ppob-modal-amount" oninput="recalcPpobProfit()" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                                        <input type="text" inputmode="decimal" data-money id="ppob-modal-amount" oninput="recalcPpobProfit()" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                                     </div>
                                     <div>
                                         <label class="block font-bold mb-1">Harga Jual / Total (Rp)</label>
-                                        <input type="number" id="ppob-sell-amount" oninput="recalcPpobProfit()" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
+                                        <input type="text" inputmode="decimal" data-money id="ppob-sell-amount" oninput="recalcPpobProfit()" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
                                     </div>
                                     <div>
                                         <label class="block font-bold mb-1">Fee / Laba Bersih</label>
@@ -1605,7 +1605,7 @@
                                     </div>
                                     <div>
                                         <label class="block font-bold mb-1">Biaya Inject per PCS (Rp)</label>
-                                        <input type="number" id="vf-inject-cost" min="0" value="18000" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                                        <input type="text" inputmode="decimal" data-money id="vf-inject-cost" data-min="0" value="18000" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                                     </div>
                                 </div>
                                 <div>
@@ -1677,7 +1677,7 @@
                                 </div>
                                 <div>
                                     <label class="block font-bold mb-1">Nominal Mutasi (Rp)</label>
-                                    <input type="number" id="sd-amount" min="1000" value="1000000" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                                    <input type="text" inputmode="decimal" data-money id="sd-amount" data-min="1000" value="1000000" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                                 </div>
                                 <div>
                                     <label class="block font-bold mb-1">Keterangan Mutasi</label>
@@ -1791,70 +1791,31 @@
                 </section>
 
                 <!-- ==================== MENU 9: AKUTANSI, SALDO DOMPET & RUGI LABA ==================== -->
-                <section id="view-akuntansi" class="hidden p-3 sm:p-4 max-w-6xl mx-auto space-y-4">
-                    <!-- Dynamic Wallet Cards -->
-                    <div id="acc-wallets-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <!-- Rendered dynamically via JS -->
-                    </div>
-
-                    <!-- Ringkasan Laba Rugi & Perkiraan Akun -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div class="ipos-panel rounded-lg overflow-hidden">
-                            <div class="ipos-panel-header px-4 py-2 text-xs font-bold">
-                                Laporan Laba Rugi Ringkas (Akumulasi Sistem)
-                            </div>
-                            <div class="p-4 space-y-2.5 text-xs">
-                                <div class="flex justify-between py-1 border-b border-slate-200">
-                                    <span>Pendapatan Penjualan Retail (POS)</span>
-                                    <span id="pl-rev-pos" class="font-mono font-bold">0</span>
-                                </div>
-                                <div class="flex justify-between py-1 border-b border-slate-200">
-                                    <span>Pendapatan Pulsa, Kuota & PPOB</span>
-                                    <span id="pl-rev-ppob" class="font-mono font-bold">0</span>
-                                </div>
-                                <div class="flex justify-between py-1 border-b border-slate-200">
-                                    <span>Pendapatan Jasa & Admin BRILink</span>
-                                    <span id="pl-rev-brilink" class="font-mono font-bold">0</span>
-                                </div>
-                                <div class="flex justify-between py-1 border-b border-slate-200 text-red-700">
-                                    <span>Harga Pokok Penjualan (HPP & Modal Deposit)</span>
-                                    <span id="pl-cogs" class="font-mono font-bold">(0)</span>
-                                </div>
-                                <div class="flex justify-between py-2 bg-emerald-50 px-2.5 rounded border border-emerald-200 text-sm font-extrabold text-emerald-800">
-                                    <span>LABA BERSIH USAHA</span>
-                                    <span id="pl-net-profit" class="font-mono">0</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="ipos-panel rounded-lg overflow-hidden">
-                            <div class="ipos-panel-header px-4 py-2 text-xs font-bold">
-                                Daftar Perkiraan Akun (Chart of Accounts - iPos 5)
-                            </div>
-                            <div class="p-3 overflow-auto max-h-64">
-                                <table class="w-full table-grid border-collapse">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-left">Kode</th>
-                                            <th class="text-left">Nama Perkiraan Akun</th>
-                                            <th class="text-left">Kelompok</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td class="font-mono">1101</td><td>Kas Laci Toko Utama</td><td>Harta / Kas</td></tr>
-                                        <tr><td class="font-mono">1102</td><td>Rekening Bank Agen BRILink</td><td>Harta / Bank</td></tr>
-                                        <tr><td class="font-mono">1103</td><td>Deposit Server Pulsa & PPOB</td><td>Harta / Deposit</td></tr>
-                                        <tr><td class="font-mono">1104</td><td>Persediaan Voucher & Aksesoris</td><td>Harta / Persediaan</td></tr>
-                                        <tr><td class="font-mono">1105</td><td>Piutang Usaha / Pelanggan</td><td>Harta / Piutang</td></tr>
-                                        <tr><td class="font-mono">2101</td><td>Utang Usaha / Supplier</td><td>Kewajiban / Utang</td></tr>
-                                        <tr><td class="font-mono">4101</td><td>Pendapatan Penjualan Retail</td><td>Pendapatan</td></tr>
-                                        <tr><td class="font-mono">4102</td><td>Pendapatan Fee Admin BRILink</td><td>Pendapatan</td></tr>
-                                        <tr><td class="font-mono">5101</td><td>Harga Pokok Penjualan (HPP)</td><td>Beban Pokok</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                <section id="view-akuntansi" class="hidden p-3 sm:p-4 max-w-6xl mx-auto space-y-3">
+                    <div class="ipos-panel rounded-lg p-3 text-[11px]">
+                        <div class="font-bold text-slate-700 mb-2">Alur Akuntansi Sederhana (semua otomatis dari transaksi)</div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                            <div class="bg-sky-50 border border-sky-200 rounded p-2"><b>1. Catat Transaksi</b><br>Kasir, PPOB, BRILink, Pembelian, Utang/Piutang, Biaya</div>
+                            <div class="bg-emerald-50 border border-emerald-200 rounded p-2"><b>2. Kas &amp; Dompet</b><br>Saldo dompet naik/turun otomatis (lihat tab Alur Kas)</div>
+                            <div class="bg-amber-50 border border-amber-200 rounded p-2"><b>3. Laba Rugi</b><br>Pendapatan - HPP - Biaya = Laba Bersih</div>
+                            <div class="bg-violet-50 border border-violet-200 rounded p-2"><b>4. Neraca</b><br>Harta - Utang = Modal Bersih</div>
                         </div>
                     </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex flex-wrap gap-1">
+                            <button onclick="switchAccSubTab('ringkasan')" id="acc-tab-ringkasan" class="ipos-tab active px-3 py-1 rounded-t font-bold">Ringkasan</button>
+                            <button onclick="switchAccSubTab('kas')" id="acc-tab-kas" class="ipos-tab px-3 py-1 rounded-t font-bold">Alur Kas</button>
+                            <button onclick="switchAccSubTab('labarugi')" id="acc-tab-labarugi" class="ipos-tab px-3 py-1 rounded-t font-bold">Laba Rugi</button>
+                            <button onclick="switchAccSubTab('biaya')" id="acc-tab-biaya" class="ipos-tab px-3 py-1 rounded-t font-bold">Biaya Operasional</button>
+                            <button onclick="switchAccSubTab('neraca')" id="acc-tab-neraca" class="ipos-tab px-3 py-1 rounded-t font-bold">Neraca</button>
+                        </div>
+                        <select id="acc-period" onchange="renderAccounting()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
+                            <option value="HARI_INI">Hari Ini</option>
+                            <option value="BULAN_INI" selected>Bulan Ini</option>
+                            <option value="SEMUA">Semua Waktu</option>
+                        </select>
+                    </div>
+                    <div id="acc-body" class="space-y-3 text-xs"></div>
                 </section>
 
                 <!-- ==================== MENU BARU: UTANG & PIUTANG ==================== -->
@@ -1981,7 +1942,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block font-bold mb-1">Saldo Saat Ini (Rp)</label>
-                        <input type="number" id="wallet-balance-input" value="0" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-800">
+                        <input type="text" inputmode="decimal" data-money id="wallet-balance-input" value="0" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-800">
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Warna Kartu</label>
@@ -2232,7 +2193,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Est. Harga (Rp)</label>
-                            <input type="number" id="po-form-cost" min="0" value="10000" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="text" inputmode="decimal" data-money id="po-form-cost" data-min="0" value="10000" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <button type="button" onclick="addPoDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
@@ -2345,7 +2306,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Harga Beli (Rp)</label>
-                            <input type="number" id="buy-item-cost" min="0" value="18000" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="text" inputmode="decimal" data-money id="buy-item-cost" data-min="0" value="18000" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <button type="button" onclick="addPurchaseDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
@@ -2516,17 +2477,17 @@
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Harga Pokok (HPP)</label>
-                        <input type="number" id="item-cost" value="10000" min="0" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono">
+                        <input type="text" inputmode="decimal" data-money id="item-cost" value="10000" data-min="0" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block font-bold mb-1 text-blue-900">Harga Jual Umum / Eceran (Rp)</label>
-                        <input type="number" id="item-price" value="13000" min="0" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
+                        <input type="text" inputmode="decimal" data-money id="item-price" value="13000" data-min="0" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
                     </div>
                     <div>
                         <label class="block font-bold mb-1 text-emerald-900">Harga Jual Grosir / Reseller (Rp)</label>
-                        <input type="number" id="item-wholesale-price" value="12000" min="0" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-800">
+                        <input type="text" inputmode="decimal" data-money id="item-wholesale-price" value="12000" data-min="0" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-800">
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
@@ -2721,11 +2682,11 @@
                         </div>
                         <div>
                             <label class="block font-bold text-slate-600 mb-1">Nominal Utama (Rp)</label>
-                            <input type="number" id="ocr-ext-amount" oninput="updateOcrSalesMatch()" placeholder="0" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
+                            <input type="text" inputmode="decimal" data-money id="ocr-ext-amount" oninput="updateOcrSalesMatch()" placeholder="0" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
                         </div>
                         <div>
                             <label class="block font-bold text-slate-600 mb-1">Margin PPOB (Rp)</label>
-                            <input type="number" id="ocr-ext-margin" value="3000" min="0" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                            <input type="text" inputmode="decimal" data-money id="ocr-ext-margin" value="3000" data-min="0" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                         </div>
                         <div>
                             <label class="block font-bold text-slate-600 mb-1">Qty Barang (Khusus Nota)</label>
@@ -2811,11 +2772,11 @@
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="block font-bold mb-1">Modal / Pokok (Rp)</label>
-                        <input type="number" id="edit-trx-cost" oninput="recalcEditTrxProfit()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold">
+                        <input type="text" inputmode="decimal" data-money id="edit-trx-cost" oninput="recalcEditTrxProfit()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold">
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Total Jual (Rp)</label>
-                        <input type="number" id="edit-trx-total" oninput="recalcEditTrxProfit()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold">
+                        <input type="text" inputmode="decimal" data-money id="edit-trx-total" oninput="recalcEditTrxProfit()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold">
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Laba Bersih</label>
@@ -2881,11 +2842,11 @@
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Modal Part (Rp)</label>
-                        <input type="number" id="sc-modal-cost" min="0" value="0" oninput="recalcServiceCompletion()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold">
+                        <input type="text" inputmode="decimal" data-money id="sc-modal-cost" data-min="0" value="0" oninput="recalcServiceCompletion()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold">
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Total Tagihan (Rp)</label>
-                        <input type="number" id="sc-service-price" min="0" value="0" oninput="recalcServiceCompletion()" required class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-blue-800">
+                        <input type="text" inputmode="decimal" data-money id="sc-service-price" data-min="0" value="0" oninput="recalcServiceCompletion()" required class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-blue-800">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2.5 items-center">
@@ -3019,7 +2980,7 @@
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
                         <label class="block font-bold mb-1">Nominal (Rp)</label>
-                        <input type="number" id="debt-amount-input" min="100" required oninput="updateDebtPartyInfo()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                        <input type="text" inputmode="decimal" data-money id="debt-amount-input" data-min="100" required oninput="updateDebtPartyInfo()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Pengaruh ke Saldo</label>
@@ -3055,7 +3016,7 @@
                 <div>
                     <label class="block font-bold mb-1">Nominal Pembayaran (Rp)</label>
                     <div class="flex gap-1.5">
-                        <input type="number" id="dp-pay-amount" min="1" required class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                        <input type="text" inputmode="decimal" data-money id="dp-pay-amount" data-min="1" required class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                         <button type="button" onclick="setFullDebtPayAmount()" class="ipos-btn px-3 py-1.5 rounded font-bold text-sky-800">Lunas Penuh</button>
                     </div>
                 </div>
@@ -3089,7 +3050,7 @@
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Nominal Deposit (Rp)</label>
-                    <input type="number" id="dep-amount" min="1000" value="5000000" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-sm">
+                    <input type="text" inputmode="decimal" data-money id="dep-amount" data-min="1000" value="5000000" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-sm">
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Sumber Dana Deposit</label>
@@ -3141,7 +3102,7 @@
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Harga Retur Satuan (Rp)</label>
-                        <input type="number" id="ret-form-cost" min="0" value="10000" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                        <input type="text" inputmode="decimal" data-money id="ret-form-cost" data-min="0" value="10000" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                     </div>
                 </div>
                 <div>
@@ -3189,7 +3150,7 @@
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Nominal Cashback (Rp)</label>
-                    <input type="number" id="cb-form-amount" min="1" step="any" required placeholder="Isi sesuai yang benar-benar diterima" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                    <input type="text" inputmode="decimal" data-money id="cb-form-amount" data-min="1" required placeholder="Isi sesuai yang benar-benar diterima" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Cashback Masuk Ke</label>
@@ -3258,7 +3219,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Harga Jual (Rp)</label>
-                            <input type="number" id="so-form-price" min="0" value="0" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="text" inputmode="decimal" data-money id="so-form-price" data-min="0" value="0" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <button type="button" onclick="addSoDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
@@ -3372,7 +3333,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Harga Jual (Rp)</label>
-                            <input type="number" id="sale-form-price" min="0" value="0" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="text" inputmode="decimal" data-money id="sale-form-price" data-min="0" value="0" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <button type="button" onclick="addSaleDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
@@ -3450,7 +3411,7 @@
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Harga Retur Satuan (Rp)</label>
-                        <input type="number" id="sret-form-price" min="0" value="0" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                        <input type="text" inputmode="decimal" data-money id="sret-form-price" data-min="0" value="0" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                     </div>
                 </div>
                 <div>
@@ -4225,6 +4186,7 @@
                     }
                 ],
                 fundTransfers: [],
+                expenses: [],
                 purchaseOrders: [],
                 purchaseRecords: [],
                 purchaseReturns: [],
@@ -4337,7 +4299,7 @@
             } catch (e) {}
         }
 
-        const DATA_COLLECTIONS = ['walletDeletions','items','suppliers','customers','voucherProductions','serviceTickets','debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','transactions','stockLedger'];
+        const DATA_COLLECTIONS = ['walletDeletions','items','suppliers','customers','voucherProductions','serviceTickets','debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','transactions','stockLedger','expenses'];
         function buildStateFromSaved(saved) {
             const d = createDefaultState(activeDatabaseName);
             DATA_COLLECTIONS.forEach(k => { if (!Array.isArray(saved[k])) d[k] = []; }); // koleksi hilang = kosong, BUKAN barang demo
@@ -4531,7 +4493,7 @@
             appState = buildStateFromSaved(st);
             appState.settings = appState.settings || {};
             appState.settings.supabaseUrl = keep.url; appState.settings.supabaseKey = keep.key;
-            ['debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','voucherProductions','stockLedger','serviceTickets','transactions','items','suppliers','customers']
+            ['debtsReceivables','fundTransfers','purchaseOrders','purchaseRecords','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','voucherProductions','stockLedger','serviceTickets','transactions','items','suppliers','customers','expenses']
                 .forEach(k => { if (!Array.isArray(appState[k])) appState[k] = []; });
             try { ensureCategoriesIntegrity(); ensureWalletListIntegrity(); } catch (e) {}
             saveStateToIndexedDBForDb(activeDatabaseName, appState).catch(() => {});
@@ -4654,6 +4616,58 @@
         function formatRp(n) {
             return formatNum(n);
         }
+
+        // ---------- Input nominal otomatis bertitik ribuan (1.000), nilai tetap terbaca angka biasa ----------
+        const _nativeVal = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+        function fmtMoneyTyped(text) {
+            let t = String(text).replace(/[^0-9,\-]/g, '');
+            const neg = t.startsWith('-'); t = t.replace(/-/g, '');
+            const parts = t.split(',');
+            const int = parts[0].replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return (neg ? '-' : '') + int + (parts.length > 1 ? ',' + parts.slice(1).join('').slice(0, 2) : '');
+        }
+        function enhanceMoneyInput(el) {
+            if (el._moneyEnh) return; el._moneyEnh = true;
+            Object.defineProperty(el, 'value', {
+                configurable: true,
+                get() { return _nativeVal.get.call(el).replace(/\./g, '').replace(',', '.'); },
+                set(v) {
+                    if (v === '' || v == null) { _nativeVal.set.call(el, ''); return; }
+                    const n = Number(v);
+                    _nativeVal.set.call(el, isNaN(n) ? String(v) : n.toLocaleString('id-ID', { maximumFractionDigits: 2 }));
+                }
+            });
+            const cur = _nativeVal.get.call(el);
+            if (cur) _nativeVal.set.call(el, fmtMoneyTyped(cur));
+        }
+        function enhanceMoneyAll(root) { (root || document).querySelectorAll('[data-money]').forEach(enhanceMoneyInput); }
+        document.addEventListener('input', ev => {
+            const el = ev.target;
+            if (!el || !el.matches || !el.matches('[data-money]')) return;
+            const raw = _nativeVal.get.call(el);
+            const before = raw.slice(0, el.selectionStart ?? raw.length).replace(/[^0-9,]/g, '').length;
+            const f = fmtMoneyTyped(raw);
+            if (f === raw) return;
+            _nativeVal.set.call(el, f);
+            let pos = 0, cnt = 0;
+            while (pos < f.length && cnt < before) { if (/[0-9,]/.test(f[pos])) cnt++; pos++; }
+            try { el.setSelectionRange(pos, pos); } catch (e) {}
+        });
+        // pengganti validasi min="" bawaan browser (input sudah bertipe teks)
+        document.addEventListener('submit', ev => {
+            for (const el of ev.target.querySelectorAll('[data-money][data-min]')) {
+                if (el.disabled || el.offsetParent === null || el.value === '') continue;
+                if (Number(el.value) < Number(el.dataset.min)) {
+                    ev.preventDefault(); ev.stopPropagation();
+                    showToast(`Nilai minimal ${formatNum(Number(el.dataset.min))}.`, 'error');
+                    el.focus(); return;
+                }
+            }
+        }, true);
+        document.addEventListener('DOMContentLoaded', () => {
+            enhanceMoneyAll();
+            new MutationObserver(() => enhanceMoneyAll()).observe(document.body, { childList: true, subtree: true });
+        });
 
         function getTodayIsoDate() {
             const d = new Date();
@@ -5913,7 +5927,7 @@
                             <input type="number" min="1" value="${it.qty}" onchange="updatePoDraftItem(${idx}, 'qty', this.value)" class="w-16 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
                         </td>
                         <td class="text-right">
-                            <input type="number" min="0" value="${it.cost}" onchange="updatePoDraftItem(${idx}, 'cost', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
+                            <input type="text" inputmode="decimal" data-money value="${formatNum(it.cost)}" onchange="updatePoDraftItem(${idx}, 'cost', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
                         </td>
                         <td class="text-right font-mono font-bold text-blue-900">${formatRp(sub)}</td>
                         <td class="text-center">
@@ -6222,7 +6236,7 @@
                             <input type="number" min="1" value="${it.qty}" onchange="updatePurchaseDraftItem(${idx}, 'qty', this.value)" class="w-16 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
                         </td>
                         <td class="text-right">
-                            <input type="number" min="0" value="${it.cost}" onchange="updatePurchaseDraftItem(${idx}, 'cost', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
+                            <input type="text" inputmode="decimal" data-money value="${formatNum(it.cost)}" onchange="updatePurchaseDraftItem(${idx}, 'cost', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
                         </td>
                         <td class="text-right font-mono font-bold text-blue-900">${formatRp(sub)}</td>
                         <td class="text-center">
@@ -7816,7 +7830,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                             <input type="number" min="1" value="${it.qty}" onchange="updateSoDraftItem(${idx}, 'qty', this.value)" class="w-16 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
                         </td>
                         <td class="text-right">
-                            <input type="number" min="0" value="${it.price}" onchange="updateSoDraftItem(${idx}, 'price', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
+                            <input type="text" inputmode="decimal" data-money value="${formatNum(it.price)}" onchange="updateSoDraftItem(${idx}, 'price', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
                         </td>
                         <td class="text-right font-mono font-bold text-blue-900">${formatRp(sub)}</td>
                         <td class="text-center"><button type="button" onclick="removeSoDraftItem(${idx})" class="text-red-600 hover:text-red-800 font-bold px-1">&times;</button></td>
@@ -8108,7 +8122,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                             <input type="number" min="1" value="${it.qty}" onchange="updateSaleDraftItem(${idx}, 'qty', this.value)" class="w-16 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
                         </td>
                         <td class="text-right">
-                            <input type="number" min="0" value="${it.price}" onchange="updateSaleDraftItem(${idx}, 'price', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
+                            <input type="text" inputmode="decimal" data-money value="${formatNum(it.price)}" onchange="updateSaleDraftItem(${idx}, 'price', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
                         </td>
                         <td class="text-right font-mono font-bold text-blue-900">${formatRp(sub)}</td>
                         <td class="text-center"><button type="button" onclick="removeSaleDraftItem(${idx})" class="text-red-600 hover:text-red-800 font-bold px-1">&times;</button></td>
@@ -9537,22 +9551,144 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         // =========================================================================
         // 11. LAPORAN, AKUNTANSI & STRUK THERMAL
         // =========================================================================
-        function renderProfitLossSummary() {
-            const salesRetTotal = (appState.salesReturns || []).reduce((s, r) => s + (Number(r.total) || 0), 0);
-            const salesRetCogs = (appState.salesReturns || []).reduce((s, r) => s + (Number(r.cost) || 0) * (Number(r.qty) || 0), 0);
-            const revPos = appState.transactions.filter(t => t.module === 'POS').reduce((s, t) => s + t.total, 0) - salesRetTotal;
-            const revPpob = appState.transactions.filter(t => t.module === 'PPOB').reduce((s, t) => s + t.total, 0);
-            const revBri = appState.transactions.filter(t => t.module === 'BRILINK' || t.module === 'SERVICE').reduce((s, t) => s + t.total, 0);
-            const cogs = appState.transactions.reduce((s, t) => s + (Number(t.modal) || 0), 0) - salesRetCogs;
-            const net = (revPos + revPpob + revBri) - cogs;
-
-            const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-            setT('pl-rev-pos', formatRp(revPos));
-            setT('pl-rev-ppob', formatRp(revPpob));
-            setT('pl-rev-brilink', formatRp(revBri));
-            setT('pl-cogs', `(${formatRp(cogs)})`);
-            setT('pl-net-profit', formatRp(net));
+        // =========================================================================
+        // AKUNTANSI SEDERHANA: Ringkasan, Alur Kas, Laba Rugi, Biaya, Neraca
+        // =========================================================================
+        let accSub = 'ringkasan';
+        const ACC_CATS = ['Listrik & Air', 'Sewa Tempat', 'Gaji Karyawan', 'Internet & Pulsa Operasional', 'Transportasi', 'Perlengkapan / ATK', 'Lain-lain'];
+        function switchAccSubTab(k) { accSub = k; renderAccounting(); }
+        function accInRange(d) {
+            const per = document.getElementById('acc-period')?.value || 'BULAN_INI';
+            if (per === 'SEMUA') return true;
+            const day = rptLocalDay(d), t = getTodayIsoDate();
+            return per === 'HARI_INI' ? day === t : day.slice(0, 7) === t.slice(0, 7);
         }
+        function accRow(label, val, cls = '', bold = false) {
+            return `<div class="flex justify-between py-1 border-b border-slate-200 ${cls} ${bold ? 'font-extrabold' : ''}"><span>${label}</span><span class="font-mono ${bold ? '' : 'font-bold'}">${val}</span></div>`;
+        }
+        function accPanel(title, inner) {
+            return `<div class="ipos-panel rounded-lg overflow-hidden"><div class="ipos-panel-header px-4 py-2 text-xs font-bold">${title}</div><div class="p-3">${inner}</div></div>`;
+        }
+        function accDebtTotals() {
+            let piu = 0, utg = 0;
+            (appState.debtsReceivables || []).forEach(d => {
+                const r = Math.max(0, (Number(d.totalAmount) || 0) - (Number(d.paidAmount) || 0));
+                if (d.type === 'PIUTANG') piu += r; else utg += r;
+            });
+            return { piu, utg };
+        }
+        function accProfit() {
+            const trx = (appState.transactions || []).filter(t => accInRange(t.date));
+            const rets = (appState.salesReturns || []).filter(r => accInRange(r.date));
+            const retTotal = rets.reduce((a, r) => a + (Number(r.total) || 0), 0);
+            const retCogs = rets.reduce((a, r) => a + (Number(r.cost) || 0) * (Number(r.qty) || 0), 0);
+            const rev = m => trx.filter(t => (Array.isArray(m) ? m : [m]).includes(t.module)).reduce((a, t) => a + (Number(t.total) || 0), 0);
+            const pos = rev('POS') - retTotal, ppob = rev('PPOB'), bri = rev('BRILINK'), svc = rev('SERVICE');
+            const cogs = trx.reduce((a, t) => a + (Number(t.modal) || 0), 0) - retCogs;
+            const exps = (appState.expenses || []).filter(x => accInRange(x.date));
+            const byCat = {};
+            exps.forEach(x => { byCat[x.category || 'Lain-lain'] = (byCat[x.category || 'Lain-lain'] || 0) + (Number(x.amount) || 0); });
+            const biaya = exps.reduce((a, x) => a + (Number(x.amount) || 0), 0);
+            const pendapatan = pos + ppob + bri + svc;
+            return { pos, ppob, bri, svc, pendapatan, cogs, kotor: pendapatan - cogs, byCat, biaya, bersih: pendapatan - cogs - biaya, exps };
+        }
+
+        function renderAccounting() {
+            const body = document.getElementById('acc-body');
+            if (!body) return;
+            ['ringkasan', 'kas', 'labarugi', 'biaya', 'neraca'].forEach(k => document.getElementById('acc-tab-' + k)?.classList.toggle('active', k === accSub));
+            const wl = appState.walletList || [];
+            const totalKas = wl.reduce((a, w) => a + (Number(appState.wallets[w.id]) || 0), 0);
+            const stok = Number(getTotalPhysicalStockAssetValue()) || 0;
+            const { piu, utg } = accDebtTotals();
+            const harta = totalKas + stok + piu;
+            const pl = accProfit();
+            const red = v => v < 0 ? 'text-red-700' : 'text-emerald-700';
+            let h = '';
+            if (accSub === 'ringkasan') {
+                const card = (t, v, c) => `<div class="ipos-panel rounded-lg p-3 border-l-4 ${c}"><div class="font-bold text-slate-500 uppercase text-[10px]">${t}</div><div class="text-lg font-extrabold font-mono mt-1">${formatRp(v)}</div></div>`;
+                h = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    ${card('Total Kas & Dompet', totalKas, 'border-l-emerald-500')}
+                    ${card('Nilai Persediaan', stok, 'border-l-amber-500')}
+                    ${card('Piutang Pelanggan', piu, 'border-l-sky-500')}
+                    ${card('Utang Supplier', utg, 'border-l-rose-500')}
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    ${accPanel('Saldo per Dompet', wl.map(w => accRow(esc(w.name), formatRp(Number(appState.wallets[w.id]) || 0))).join('') + accRow('TOTAL', formatRp(totalKas), '', true))}
+                    ${accPanel('Hasil Usaha (periode terpilih)', accRow('Pendapatan', formatRp(pl.pendapatan)) + accRow('HPP / Modal', `(${formatRp(pl.cogs)})`, 'text-red-700') + accRow('Biaya Operasional', `(${formatRp(pl.biaya)})`, 'text-red-700') + accRow(pl.bersih >= 0 ? 'LABA BERSIH' : 'RUGI BERSIH', formatRp(pl.bersih), red(pl.bersih), true) + accRow('Modal Bersih (Harta - Utang)', formatRp(harta - utg), '', true))}
+                </div>`;
+            } else if (accSub === 'kas') {
+                const only = document.getElementById('acc-kas-filter')?.value || 'ALL';
+                const { mv } = collectCashMovements();
+                let list = mv.filter(m => accInRange(m.date));
+                if (only === 'DEBT') list = list.filter(m => m.src === 'DEBT');
+                list.sort((a, b) => b.ts - a.ts);
+                const tIn = list.reduce((a, m) => a + m.inn, 0), tOut = list.reduce((a, m) => a + m.out, 0);
+                h = accPanel('Alur Kas Masuk & Keluar', `
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <select id="acc-kas-filter" onchange="renderAccounting()" class="bg-white border border-slate-300 rounded px-2 py-1 font-semibold">
+                            <option value="ALL" ${only === 'ALL' ? 'selected' : ''}>Semua Alur Kas</option>
+                            <option value="DEBT" ${only === 'DEBT' ? 'selected' : ''}>Hanya Utang &amp; Piutang</option>
+                        </select>
+                        <div class="font-bold">Masuk <span class="text-emerald-700 font-mono">${formatRp(tIn)}</span> | Keluar <span class="text-red-700 font-mono">${formatRp(tOut)}</span> | Bersih <span class="font-mono ${red(tIn - tOut)}">${formatRp(tIn - tOut)}</span></div>
+                    </div>
+                    <div class="overflow-auto max-h-[55vh] border border-slate-300 rounded"><table class="w-full table-grid border-collapse"><thead><tr><th class="text-left">Tanggal</th><th class="text-left">Dompet</th><th class="text-left">Ref</th><th class="text-left">Keterangan</th><th class="text-right">Masuk</th><th class="text-right">Keluar</th></tr></thead><tbody>
+                    ${list.slice(0, 300).map(m => `<tr><td class="font-mono">${rptFmtDay(m.date)}</td><td>${esc(getWalletNameById(m.wid))}</td><td class="font-mono">${esc(m.ref)}</td><td>${esc(m.desc)}</td><td class="text-right font-mono text-emerald-700">${m.inn ? formatRp(m.inn) : ''}</td><td class="text-right font-mono text-red-700">${m.out ? formatRp(m.out) : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="text-center text-slate-400 py-3">Belum ada mutasi kas pada periode ini.</td></tr>'}
+                    </tbody></table></div>
+                    <div class="text-[11px] text-slate-500 mt-2">Penjualan/pembelian tempo baru masuk kas saat dibayar (cicilan). Catatan utang/piutang manual masuk saat dicatat bila memilih dompet; catatan manual lama tanpa dompet tidak tampil.</div>`);
+            } else if (accSub === 'labarugi') {
+                h = accPanel('Laporan Laba Rugi', accRow('Penjualan Kasir (POS, bersih retur)', formatRp(pl.pos)) + accRow('Pulsa, Kuota & PPOB', formatRp(pl.ppob)) + accRow('Jasa & Admin BRILink', formatRp(pl.bri)) + accRow('Service HP', formatRp(pl.svc)) +
+                    accRow('Total Pendapatan', formatRp(pl.pendapatan), '', true) + accRow('HPP & Modal Deposit', `(${formatRp(pl.cogs)})`, 'text-red-700') + accRow('LABA KOTOR', formatRp(pl.kotor), red(pl.kotor), true) +
+                    (Object.entries(pl.byCat).map(([c, v]) => accRow('Biaya ' + esc(c), `(${formatRp(v)})`, 'text-red-700')).join('') || accRow('Biaya Operasional', '(0)', 'text-red-700')) +
+                    accRow(pl.bersih >= 0 ? 'LABA BERSIH USAHA' : 'RUGI BERSIH USAHA', formatRp(pl.bersih), red(pl.bersih) + ' bg-slate-50', true));
+            } else if (accSub === 'biaya') {
+                const today = getTodayIsoDate(), adm = isCurrentUserAdmin();
+                h = accPanel('Catat Biaya Operasional (otomatis mengurangi saldo dompet)', `
+                    <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 items-end">
+                        <div><label class="block font-bold mb-1">Tanggal</label><input type="date" id="ex-date" value="${today}" class="w-full border border-slate-300 rounded px-2 py-1.5"></div>
+                        <div><label class="block font-bold mb-1">Jenis Biaya</label><select id="ex-cat" class="w-full border border-slate-300 rounded px-2 py-1.5">${ACC_CATS.map(c => `<option>${c}</option>`).join('')}</select></div>
+                        <div><label class="block font-bold mb-1">Keterangan</label><input type="text" id="ex-desc" placeholder="mis. Token listrik" class="w-full border border-slate-300 rounded px-2 py-1.5"></div>
+                        <div><label class="block font-bold mb-1">Jumlah (Rp)</label><input type="text" inputmode="numeric" data-money id="ex-amount" placeholder="0" class="w-full border border-slate-300 rounded px-2 py-1.5 font-mono"></div>
+                        <div><label class="block font-bold mb-1">Dibayar dari</label><select id="ex-wallet" class="w-full border border-slate-300 rounded px-2 py-1.5">${wl.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('')}</select></div>
+                    </div>
+                    <button onclick="saveExpense()" class="ipos-btn-primary px-3 py-1.5 rounded font-bold mt-2"><i class="fas fa-plus mr-1"></i> Simpan Biaya</button>
+                    <div class="overflow-auto max-h-[45vh] border border-slate-300 rounded mt-3"><table class="w-full table-grid border-collapse"><thead><tr><th class="text-left">Tanggal</th><th class="text-left">Jenis</th><th class="text-left">Keterangan</th><th class="text-left">Dompet</th><th class="text-right">Jumlah</th><th class="w-12">Aksi</th></tr></thead><tbody>
+                    ${pl.exps.sort((a, b) => rptTs(b.date) - rptTs(a.date)).map(x => `<tr><td class="font-mono">${rptFmtDay(x.date)}</td><td>${esc(x.category)}</td><td>${esc(x.desc)}</td><td>${esc(getWalletNameById(x.wallet))}</td><td class="text-right font-mono text-red-700">${formatRp(x.amount)}</td><td class="text-center">${adm ? `<button onclick="deleteExpense('${escJs(x.id)}')" class="ipos-btn px-1.5 py-0.5 rounded text-red-600" title="Hapus (Admin)"><i class="fas fa-trash"></i></button>` : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="text-center text-slate-400 py-3">Belum ada biaya pada periode ini.</td></tr>'}
+                    <tr class="font-extrabold"><td colspan="4" class="text-right">TOTAL BIAYA</td><td class="text-right font-mono">${formatRp(pl.biaya)}</td><td></td></tr></tbody></table></div>`);
+            } else if (accSub === 'neraca') {
+                h = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    ${accPanel('HARTA (Aset)', wl.map(w => accRow('Kas/Dompet: ' + esc(w.name), formatRp(Number(appState.wallets[w.id]) || 0))).join('') + accRow('Persediaan Barang', formatRp(stok)) + accRow('Piutang Pelanggan', formatRp(piu)) + accRow('TOTAL HARTA', formatRp(harta), '', true))}
+                    ${accPanel('KEWAJIBAN & MODAL', accRow('Utang Supplier', formatRp(utg)) + accRow('Modal Bersih (Harta - Utang)', formatRp(harta - utg), red(harta - utg)) + accRow('TOTAL KEWAJIBAN + MODAL', formatRp(harta), '', true))}
+                </div><div class="text-[11px] text-slate-500">Neraca sederhana: Harta = Utang + Modal. Modal bersih sudah mencakup modal awal dan akumulasi laba yang masih di usaha.</div>`;
+            }
+            body.innerHTML = h;
+        }
+
+        async function saveExpense() {
+            const amt = Number(document.getElementById('ex-amount').value) || 0;
+            const w = document.getElementById('ex-wallet').value;
+            const desc = document.getElementById('ex-desc').value.trim();
+            if (amt <= 0) { showToast('Isi jumlah biaya.', 'error'); return; }
+            if (!desc) { showToast('Isi keterangan biaya.', 'error'); return; }
+            if (!walletExists(w)) { showToast('Pilih dompet pembayaran.', 'error'); return; }
+            if ((Number(appState.wallets[w]) || 0) < amt) { showToast(`Saldo ${getWalletNameById(w)} tidak cukup (Rp ${formatRp(appState.wallets[w])}).`, 'error'); return; }
+            const d = document.getElementById('ex-date').value || getTodayIsoDate();
+            if (!Array.isArray(appState.expenses)) appState.expenses = [];
+            appState.expenses.unshift({ id: generateInvoiceId('BYA'), date: d === getTodayIsoDate() ? new Date().toISOString() : d, category: document.getElementById('ex-cat').value, desc, amount: amt, wallet: w });
+            appState.wallets[w] -= amt;
+            await saveAppState();
+            showToast(`Biaya Rp ${formatRp(amt)} tersimpan.`, 'success');
+        }
+        async function deleteExpense(id) {
+            if (!requireAdmin('Menghapus biaya operasional')) return;
+            const x = (appState.expenses || []).find(e => e.id === id);
+            if (!x || !confirm(`Hapus biaya ${x.category} Rp ${formatRp(x.amount)}?\nSaldo ${getWalletNameById(x.wallet)} dikembalikan.`)) return;
+            if (walletExists(x.wallet)) appState.wallets[x.wallet] += Number(x.amount) || 0;
+            appState.expenses = appState.expenses.filter(e => e.id !== id);
+            await saveAppState();
+            showToast('Biaya dihapus.', 'info');
+        }
+        function renderProfitLossSummary() { renderAccounting(); }
 
         // =========================================================================
         // LAPORAN: 7 sub menu (Master Data, Pembelian, Penjualan, Hutang, Piutang, Rugi/Laba, Kas)
@@ -9875,6 +10011,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             ];
             const lines = defs.map(([name, m]) => [name, m.n, m.rev, m.cogs, m.rev - m.cogs]);
             lines.push(['Retur Penjualan (pengurang)', rets.length, -retTotal, -retCogs, -retTotal + retCogs]);
+            const exps = (appState.expenses || []).filter(x => rptInRange(x.date));
+            const expTotal = exps.reduce((a, x) => a + (Number(x.amount) || 0), 0);
+            lines.push(['Biaya Operasional (sewa, listrik, gaji, dll.)', exps.length, 0, expTotal, -expTotal]);
             const rev = lines.reduce((s, r) => s + r[2], 0);
             const cogs = lines.reduce((s, r) => s + r[3], 0);
             const net = rev - cogs;
@@ -9883,32 +10022,32 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 title: 'Laporan Rugi/Laba',
                 summary: [
                     { l: 'Total Pendapatan', v: rev, rp: true, c: 'text-sky-900' },
-                    { l: 'HPP & Modal', v: cogs, rp: true, c: 'text-red-700' },
+                    { l: 'HPP, Modal & Biaya', v: cogs, rp: true, c: 'text-red-700' },
                     { l: net >= 0 ? 'Laba Bersih Usaha' : 'Rugi Usaha', v: net, rp: true, c: net >= 0 ? 'text-emerald-700' : 'text-red-700' },
                     { l: 'Jumlah Transaksi', v: nTrx }
                 ],
                 sections: [{
                     title: 'Rincian Pendapatan, HPP & Laba per Modul',
                     cols: [{ h: 'Sumber Pendapatan' }, { h: 'Jml Transaksi', a: 'right' }, { h: 'Pendapatan', a: 'right' },
-                        { h: 'HPP / Modal', a: 'right' }, { h: 'Laba / (Rugi)', a: 'right' }],
+                        { h: 'HPP / Modal / Biaya', a: 'right' }, { h: 'Laba / (Rugi)', a: 'right' }],
                     rows: lines,
                     foot: ['LABA BERSIH USAHA', nTrx, rev, cogs, net]
                 }],
-                note: 'Dihitung sama seperti ringkasan di menu Akutansi: Pendapatan dikurangi HPP/Modal. Pembelian stok menjadi HPP saat barang terjual, dan biaya operasional (sewa, listrik, gaji, dsb.) tidak dihitung.'
+                note: 'Dihitung sama seperti ringkasan di menu Akutansi: Pendapatan dikurangi HPP/Modal. Pembelian stok menjadi HPP saat barang terjual, dan biaya operasional dari tab Biaya di menu Akutansi ikut mengurangi laba.'
             };
         }
 
         // ---------- 7. Laporan Kas ----------
-        function buildCashReport() {
+        function collectCashMovements() {
             const wl = appState.walletList || [];
             const nameToId = {};
             wl.forEach(w => { nameToId[w.name] = w.id; });
             const mv = [];
-            const add = (date, wid, ref, desc, inn, out) => {
+            const add = (date, wid, ref, desc, inn, out, src) => {
                 if (!walletExists(wid)) return;
                 inn = Number(inn) || 0; out = Number(out) || 0;
                 if (!inn && !out) return;
-                mv.push({ date, ts: rptTs(date), wid, ref, desc, inn, out });
+                mv.push({ date, ts: rptTs(date), wid, ref, desc, inn, out, src });
             };
             (appState.transactions || []).forEach(t => {
                 add(t.date, t.paymentMethod, t.id, `${t.module}: ${t.description || ''}`, t.total, 0);
@@ -9927,8 +10066,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 if (r.wallet !== 'POTONG_PIUTANG') add(r.date, r.wallet, r.id, `Retur penjualan ${r.itemName || ''}`, 0, r.total);
             });
             (appState.debtsReceivables || []).forEach(d => (Array.isArray(d.payments) ? d.payments : []).forEach(p => {
-                if (d.type === 'PIUTANG') add(p.date, p.wallet, d.id, `Terima pembayaran piutang ${d.party || ''}`, p.amount, 0);
-                else add(p.date, p.wallet, d.id, `Bayar utang ke ${d.party || ''}`, 0, p.amount);
+                if (d.type === 'PIUTANG') add(p.date, p.wallet, d.id, `Terima pembayaran piutang ${d.party || ''}`, p.amount, 0, 'DEBT');
+                else add(p.date, p.wallet, d.id, `Bayar utang ke ${d.party || ''}`, 0, p.amount, 'DEBT');
             }));
             (appState.fundTransfers || []).forEach(f => {
                 const note = f.note ? ` - ${f.note}` : '';
@@ -9936,6 +10075,18 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 add(f.date, nameToId[f.to], 'MUTASI', `Mutasi dari ${f.from}${note}`, f.amount, 0);
             });
 
+            // Catatan utang/piutang manual: dana awal yang keluar (piutang/kasbon) atau masuk (utang/pinjaman)
+            (appState.debtsReceivables || []).forEach(d => {
+                if (!d.manual || !d.initWallet || d.initWallet === 'NONE') return;
+                if (d.type === 'PIUTANG') add(d.date, d.initWallet, d.id, `Pemberian piutang ke ${d.party || ''}`, 0, d.totalAmount, 'DEBT');
+                else add(d.date, d.initWallet, d.id, `Terima pinjaman/utang dari ${d.party || ''}`, d.totalAmount, 0, 'DEBT');
+            });
+            (appState.expenses || []).forEach(x => add(x.date, x.wallet, x.id, `Biaya ${x.category || ''}: ${x.desc || ''}`, 0, x.amount, 'BIAYA'));
+            return { wl, mv, nameToId };
+        }
+
+        function buildCashReport() {
+            const { wl, mv } = collectCashMovements();
             const inRange = mv.filter(m => rptInRange(m.date));
             const sel = document.getElementById('rpt-wallet')?.value || 'ALL';
             const scoped = sel === 'ALL' ? inRange : inRange.filter(m => m.wid === sel);
