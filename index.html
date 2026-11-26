@@ -871,14 +871,11 @@
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <label class="block"><span class="block font-bold mb-0.5">Catatan bawah</span><input type="text" id="pl-note" oninput="plSetField('note', this.value)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
                                             <div class="sm:col-span-2 bg-slate-50 border border-slate-200 rounded p-2">
-                                                <div class="font-bold mb-1">Logo di bagian bawah gambar <span class="font-normal text-slate-500">(ukuran tampil seragam: e-wallet 120 x 60 px, BRILink 250 x 60 px)</span></div>
-                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                    <div><span class="block font-bold mb-0.5">Logo E-Wallet (maks. 4, pilih sekaligus)</span><input type="file" accept="image/*" multiple onchange="plLogo(this, 'logoEw')" class="w-full"><div id="pl-ew-thumbs" class="flex flex-wrap gap-1 mt-1"></div><button type="button" onclick="plClearLogo('logoEw')" class="text-red-600 underline text-[11px]">Hapus semua logo e-wallet</button></div>
-                                                    <div><span class="block font-bold mb-0.5">Logo BRILink</span><input type="file" accept="image/*" onchange="plLogo(this, 'logoBri')" class="w-full"><div id="pl-bri-thumb" class="mt-1"></div><button type="button" onclick="plClearLogo('logoBri')" class="text-red-600 underline text-[11px]">Hapus logo BRILink</button></div>
-                                                </div>
-                                                <div class="text-[11px] text-slate-500 mt-1">Agar simetris, pakai 2 atau 4 logo e-wallet (dibagi kiri-kanan, BRILink di tengah). Logo otomatis dipas ke ukuran seragam.</div>
+                                                <div class="font-bold mb-1">Logo E-Wallet <span class="font-normal text-slate-500">(tampil seragam 80 x 64 px, maks. 6 logo)</span></div>
+                                                <div id="pl-ew-slots" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                                                <div class="mt-2"><span class="block font-bold mb-0.5">Logo BRILink <span class="font-normal text-slate-500">(tampil 250 x 64 px)</span></span><input type="file" accept="image/*" onchange="plLogo(this, 'logoBri')" class="w-full"><div id="pl-bri-thumb" class="mt-1"></div><button type="button" onclick="plClearLogo('logoBri')" class="text-red-600 underline text-[11px]">Hapus logo BRILink</button></div>
+                                                <div class="text-[11px] text-slate-500 mt-1">Isi <b>3 logo e-wallet</b> agar selebar logo BRILink (3 x 80 = 240 px, simetris). Lebih dari 3 logo disusun 2 baris.</div>
                                             </div>
-                                        </div>
                                         <div class="flex flex-wrap gap-2 items-center">
                                             <input type="text" id="pl-search" oninput="renderPriceList()" placeholder="Cari item voucher..." class="bg-white border border-slate-300 rounded px-2.5 py-1.5 w-48">
                                             <button type="button" onclick="plSelectAll(true)" class="ipos-btn px-2.5 py-1.5 rounded font-bold">Pilih Semua</button>
@@ -4925,7 +4922,6 @@
             c.sel = [...set]; plPersist(); renderPriceList();
         }
         function plCount() { const el = document.getElementById('pl-count'); if (el) el.textContent = `Terpilih: ${plSelected().length} dari ${plVItems().length}`; }
-        const PL_EW_MAX = 4;
         function plFitLogo(file, w, h) {
             return new Promise(res => {
                 const fr = new FileReader();
@@ -4945,28 +4941,30 @@
             });
         }
         async function plLogo(inp, key) {
-            const files = [...(inp.files || [])];
-            if (!files.length) return;
-            const c = plCfg();
-            if (key === 'logoEw') {
-                for (const f of files) {
-                    if (c.logosEw.length >= PL_EW_MAX) { showToast(`Maksimal ${PL_EW_MAX} logo e-wallet.`, 'info'); break; }
-                    const d = await plFitLogo(f, 240, 120); if (d) c.logosEw.push(d);
-                }
-            } else { const d = await plFitLogo(files[0], 500, 120); if (d) c.logoBri = d; }
+            const f = inp.files && inp.files[0];
+            if (!f) return;
+            const d = await plFitLogo(f, 500, 128);
+            if (d) plCfg().logoBri = d;
             inp.value = ''; plPersist(); plRenderThumbs(); plRenderPreview();
         }
-        function plRemoveEw(i) { plCfg().logosEw.splice(i, 1); plPersist(); plRenderThumbs(); plRenderPreview(); }
+        async function plLogoSlot(inp, i) {
+            const f = inp.files && inp.files[0];
+            if (!f) return;
+            const d = await plFitLogo(f, 160, 128);
+            if (d) { const a = plCfg().logosEw; while (a.length <= i) a.push(''); a[i] = d; }
+            plPersist(); plRenderThumbs(); plRenderPreview();
+        }
+        function plRemoveEw(i) { plCfg().logosEw[i] = ''; plPersist(); plRenderThumbs(); plRenderPreview(); }
         function plClearLogo(key) { const c = plCfg(); if (key === 'logoBri') c.logoBri = ''; else { c.logosEw = []; c.logoEw = ''; } plPersist(); plRenderThumbs(); plRenderPreview(); }
         function plRenderThumbs() {
-            const c = plCfg(), t = document.getElementById('pl-ew-thumbs'), b = document.getElementById('pl-bri-thumb');
-            if (t) t.innerHTML = c.logosEw.map((d, i) => `<span class="relative inline-block border border-slate-300 bg-white"><img src="${d}" style="width:60px;height:30px"><button type="button" onclick="plRemoveEw(${i})" class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px] leading-none">x</button></span>`).join('');
-            if (b) b.innerHTML = c.logoBri ? `<img src="${c.logoBri}" style="width:125px;height:30px" class="border border-slate-300 bg-white">` : '';
+            const c = plCfg(), t = document.getElementById('pl-ew-slots'), b = document.getElementById('pl-bri-thumb');
+            if (t) t.innerHTML = [0, 1, 2, 3, 4, 5].map(i => { const d = c.logosEw[i]; return `<div class="border border-slate-300 bg-white rounded p-1"><div class="text-[10px] font-bold">E-Wallet ${i + 1}</div>${d ? `<img src="${d}" style="width:80px;height:40px;object-fit:contain" class="border border-slate-200">` : '<div class="text-slate-400 text-[10px]" style="height:40px">kosong</div>'}<input type="file" accept="image/*" onchange="plLogoSlot(this, ${i})" class="w-full text-[10px]">${d ? `<button type="button" onclick="plRemoveEw(${i})" class="text-red-600 underline text-[10px]">Hapus</button>` : ''}</div>`; }).join('');
+            if (b) b.innerHTML = c.logoBri ? `<div style="width:250px;height:64px;background:#fff url(${c.logoBri}) center/contain no-repeat" class="border border-slate-300"></div>` : '';
         }
         function plSetSec(code, v) { const c = plCfg(); v = String(v || '').trim(); if (v) c.sec[code] = v; else delete c.sec[code]; plPersist(); plRenderPreview(); }
 
         // ----- Nama tampil: hapus awalan "V." dan nama provider di depan item -----
-        const PL_OPS = ['THREE', 'TRI', 'AXIS', 'SMART', 'SMARTFREN', 'INDOSAT', 'IM3', 'TELKOMSEL', 'TSEL', 'XL', 'BYU', 'AXIATA'];
+        const PL_OPS = ['THREE', 'THEE', 'TRI', 'AXIS', 'SMART', 'SMARTFREN', 'INDOSAT', 'ISAT', 'IM3', 'TELKOMSEL', 'TSEL', 'SIMPATI', 'XL', 'BYU', 'AXIATA'];
         const PL_ORDER = ['THREE', 'AXIS', 'SMART', 'INDOSAT', 'TELKOMSEL', 'XL'];
         function plStripV(t) { return String(t || '').replace(/^\s*V\s*(?:[.\-:]\s*|\s+)/i, '').trim(); }
         function plItemName(i, prov) {
@@ -5000,45 +4998,49 @@
                 if (!anyManual && sections.length < 2) sections = [{ name: '', items: sections.flatMap(x => x.items) }];
                 return { name: pn.toUpperCase(), theme: plTheme(pn, idx), sections };
             });
-            const rank = n => { const k = PL_ORDER.findIndex(o => n.includes(o)); return k < 0 ? 99 : k; };
-            return provs.sort((a, b) => rank(a.name) - rank(b.name) || a.name.localeCompare(b.name));
+            return provs.sort((a, b) => a.name.localeCompare(b.name));
         }
 
         function plPosterHtml() {
             const c = plCfg(), st = appState.settings, provs = plProviders();
-            const rowsOf = p => 1 + p.sections.reduce((a, x) => a + (x.name ? 1 : 0) + x.items.length, 0);
-            const chunks = []; for (let i = 0; i < provs.length; i += 3) chunks.push(provs.slice(i, i + 3));
-            const R = chunks.reduce((a, ch) => a + Math.max(...ch.map(rowsOf)), 0) || 1;
-            const avail = 1123 - 24 - 190 - Math.max(0, chunks.length - 1) * 34;
-            const h = Math.max(15, Math.min(30, Math.floor(avail / R))), f = Math.max(9, Math.round(h * 0.5));
-            const table = p => {
-                const ln = p.theme.fg === '#ffffff' || p.theme.fg === '#fff' ? 'rgba(255,255,255,.85)' : 'rgba(0,0,0,.7)';
-                const head = (t, bg) => `<div style="background:${bg};color:#000;font-weight:800;text-align:center;height:${h}px;line-height:${h}px;font-size:${f + 1}px;border-bottom:1px solid #000;text-transform:uppercase">${esc(t)}</div>`;
-                return `<div style="border:2px solid #000;background:#fff;align-self:start">${head(p.name, '#ffff00')}
-                    ${p.sections.map(x => (x.name ? head(x.name, '#ffffff') : '') + x.items.map(i => `<div style="display:flex;height:${h}px;line-height:${h}px;background:#fff;color:#111;border-bottom:1px dotted #b6bec9;font-size:${f}px;font-weight:600"><div style="flex:1;min-width:0;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase">${esc(i.n)}</div><div style="width:62px;text-align:right;padding:0 6px;border-left:1px dotted #b6bec9;font-weight:700">${formatNum(i.price)}</div></div>`).join('')).join('')}</div>`;
-            };
-            const body = chunks.map((ch, k) => `${k ? '<div style="display:grid;grid-template-columns:repeat(3,1fr);column-gap:8px;margin:14px 0"><div style="height:12px;background:#0b2a63"></div><div style="height:12px;background:#0b2a63"></div><div style="height:12px;background:#0b2a63"></div></div>' : ''}<div style="display:grid;grid-template-columns:repeat(3,1fr);column-gap:8px;align-items:start">${ch.map(table).join('')}</div>`).join('')
-                || '<div style="text-align:center;color:#94a3b8;padding:60px 0;font-size:22px">Belum ada item dipilih</div>';
-            const slot = (inner, w) => `<div style="width:${w}px;height:60px;flex:none">${inner}</div>`;
-            const pill = (t, bg, w) => slot(`<div style="width:100%;height:100%;background:${bg};color:#fff;font-weight:800;font-size:${w > 200 ? 20 : 15}px;border-radius:6px;display:flex;align-items:center;justify-content:center">${esc(t)}</div>`, w);
-            const ew = c.logosEw.length ? c.logosEw.map(d => slot(`<img src="${d}" style="width:120px;height:60px;display:block">`, 120))
-                : [['DANA', '#118eea'], ['OVO', '#4c2a86'], ['GoPay', '#00aa13'], ['ShopeePay', '#ee4d2d']].map(([t, bg]) => pill(t, bg, 120));
-            const bri = c.logoBri ? slot(`<img src="${c.logoBri}" style="width:250px;height:60px;display:block">`, 250) : pill('AgenBRILink', '#00529c', 250);
-            const half = Math.ceil(ew.length / 2);
-            return `<div id="pl-poster" style="width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;padding:12px">
-                <div style="flex:1">${body}</div>
-                <div style="text-align:right;font-size:11px;color:#475569;margin:8px 2px 4px">Update ${plToday()}${c.note ? ' | ' + esc(c.note) : ''}</div>
-                <div style="background:#ffc000;text-align:center;padding:8px 10px;font-family:'Times New Roman',Georgia,serif;font-weight:900;font-size:46px;letter-spacing:3px;color:#000;text-transform:uppercase">${esc(st.storeName || 'TOKO')}</div>
-                <div style="display:flex;justify-content:center;align-items:center;gap:8px;padding:10px 0 4px">${ew.slice(0, half).join('')}${bri}${ew.slice(half).join('')}</div>
-                ${(st.storeAddress || st.storePhone) ? `<div style="text-align:center;font-size:11px;color:#334155;margin-top:2px">${esc(st.storeAddress || '')}${st.storePhone ? ' | Telp/WA: ' + esc(st.storePhone) : ''}</div>` : ''}
-            </div>`;
+            const n = provs.reduce((a, p) => a + p.sections.reduce((b, x) => b + x.items.length, 0), 0);
+            const z = n <= 12 ? { nm: 17, pr: 19, pad: 10 } : n <= 30 ? { nm: 15, pr: 17, pad: 8 } : { nm: 13, pr: 15, pad: 6 };
+            const groups = provs.map(p => `
+                <div style="margin-top:14px">
+                    <div style="background:#e0ecff;color:#0f3d7a;font-weight:800;font-size:${z.nm + 3}px;padding:5px 12px;border-left:8px solid #0f3d7a">${esc(p.name)}</div>
+                    ${p.sections.map(x => `${x.name ? `<div style="margin:8px 6px 0"><span style="display:inline-block;font-weight:800;font-size:${z.nm}px;color:#92400e;border-bottom:2px solid #fbbf24;padding:0 4px">${esc(x.name)}</span></div>` : ''}
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);column-gap:18px;padding:0 4px">
+                        ${x.items.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:${z.pad}px 4px;border-bottom:2px dotted #94a3b8"><span style="font-size:${z.nm}px;font-weight:600;color:#1e293b;min-width:0;line-height:1.2">${esc(i.n)}</span><span style="font-size:${z.pr}px;font-weight:900;color:#b91c1c;white-space:nowrap">${formatNum(i.price)}</span></div>`).join('')}
+                    </div>`).join('')}
+                </div>`).join('') || '<div style="text-align:center;color:#94a3b8;padding:60px 0;font-size:22px">Belum ada item dipilih</div>';
+            // Baris logo: e-wallet (kiri, selebar BRILink) dan BRILink (kanan), ukuran seragam
+            const slot = (d, w, hh) => `<div style="width:${w}px;height:${hh}px;flex:none;background:#fff url(${d}) center/contain no-repeat"></div>`;
+            const pill = (t, bg, w) => `<div style="width:${w}px;height:64px;flex:none;background:${bg};color:#fff;font-weight:800;font-size:${w > 200 ? 20 : 13}px;border-radius:6px;display:flex;align-items:center;justify-content:center">${esc(t)}</div>`;
+            const ewl = (c.logosEw || []).filter(Boolean).slice(0, 6);
+            const ew = ewl.length ? ewl.map(d => slot(d, 80, 64)) : [['DANA', '#118eea'], ['OVO', '#4c2a86'], ['GoPay', '#00aa13']].map(([t, bg]) => pill(t, bg, 80));
+            const bri = c.logoBri ? slot(c.logoBri, 250, 64) : pill('AgenBRILink', '#00529c', 250);
+            return `<div id="pl-poster" style="width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column">
+                <div style="background:#0f3d7a;color:#fff;text-align:center;padding:26px 20px 18px;border-bottom:8px solid #fbbf24">
+                    <div style="font-size:44px;font-weight:900;letter-spacing:1px">${esc(st.storeName || 'TOKO')}</div>
+                    <div style="font-size:30px;font-weight:800;color:#fbbf24;margin-top:4px">DAFTAR HARGA VOUCHER</div>
+                    <div style="font-size:14px;margin-top:4px">Berlaku per ${plToday()}</div>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;background:#f1f5f9">
+                    <div><div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:3px">MELAYANI E-WALLET</div><div style="display:flex;flex-wrap:wrap;gap:5px;width:250px">${ew.join('')}</div></div>
+                    <div style="text-align:right"><div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:3px">TRANSFER &amp; TARIK TUNAI</div>${bri}</div>
+                </div>
+                <div style="flex:1;padding:4px 20px 10px">${groups}</div>
+                <div style="background:#0f3d7a;color:#fff;text-align:center;padding:10px 20px;font-size:13px">
+                    <div>${esc(st.storeAddress || '')}${st.storePhone ? ' | Telp/WA: ' + esc(st.storePhone) : ''}</div>
+                    <div style="color:#fbbf24;font-weight:700;margin-top:2px">${esc(c.note || '')}</div>
+                </div></div>`;
         }
         function plRenderPreview() {
             const el = document.getElementById('pl-preview');
             if (!el) return;
             el.innerHTML = plPosterHtml();
             const h = document.getElementById('pl-poster').offsetHeight, w = document.getElementById('pl-warn');
-            if (w) { w.classList.toggle('hidden', h <= 1130); w.textContent = h > 1130 ? 'Item terlalu banyak untuk 1 lembar A4, kurangi item agar muat.' : ''; }
+            if (w) { w.classList.toggle('hidden', h <= 1130); w.textContent = h > 1130 ? 'Gambar lebih panjang dari 1 lembar A4: PNG/JPG tetap utuh, tapi saat Cetak A4 akan diperkecil agar muat 1 halaman.' : ''; }
         }
         function renderPriceList() {
             const c = plCfg();
