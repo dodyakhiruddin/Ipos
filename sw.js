@@ -1,5 +1,5 @@
 // Service Worker DONET CELL: cache offline + menerima gambar dari menu "Bagikan" (WhatsApp, galeri, dll)
-const CACHE = 'donet-app-v5';
+const CACHE = 'donet-app-v6';
 const SHARE_CACHE = 'share-target-v1';
 const CACHEABLE_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'cdn.tailwindcss.com', 'code.jquery.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
@@ -28,11 +28,34 @@ self.addEventListener('fetch', e => {
 async function handleShare(req) {
     try {
         const fd = await req.formData();
-        const file = fd.get('bukti');
+        const c = await caches.open(SHARE_CACHE);
+        const proofKey = new URL('shared-proof', self.registration.scope).href;
+        const metaKey = new URL('shared-proof-meta', self.registration.scope).href;
+
+        let file = fd.get('bukti');
+        if (!(file && typeof file === 'object' && file.size)) {
+            for (const [, v] of fd.entries()) {
+                if (v && typeof v === 'object' && typeof v.arrayBuffer === 'function' && v.size > 0) {
+                    file = v;
+                    break;
+                }
+            }
+        }
         if (file && file.size) {
-            const c = await caches.open(SHARE_CACHE);
-            await c.put(new URL('shared-proof', self.registration.scope).href,
-                new Response(file, { headers: { 'Content-Type': file.type || 'image/jpeg' } }));
+            await c.put(proofKey, new Response(file, { headers: { 'Content-Type': file.type || 'image/jpeg' } }));
+        } else {
+            await c.delete(proofKey);
+        }
+
+        const title = String(fd.get('title') || '').trim();
+        const text = String(fd.get('text') || '').trim();
+        const sharedUrl = String(fd.get('url') || '').trim();
+        if (title || text || sharedUrl) {
+            await c.put(metaKey, new Response(JSON.stringify({ title, text, url: sharedUrl, receivedAt: Date.now() }), {
+                headers: { 'Content-Type': 'application/json' }
+            }));
+        } else {
+            await c.delete(metaKey);
         }
     } catch (err) { /* lanjut: aplikasi tetap dibuka */ }
     return Response.redirect(new URL('./?share-target=1', self.registration.scope).href, 303);

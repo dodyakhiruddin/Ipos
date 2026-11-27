@@ -20,7 +20,10 @@
     "params": {
       "title": "title",
       "text": "text",
-      "files": [ { "name": "bukti", "accept": ["image/*"] } ]
+      "url": "url",
+      "files": [
+        { "name": "bukti", "accept": ["image/*", ".png", ".jpg", ".jpeg", ".webp"] }
+      ]
     }
   }
 }

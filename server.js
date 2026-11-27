@@ -20,6 +20,10 @@ app.use(express.static(__dirname, {
   }
 }));
 
+app.post('/share-target', (_req, res) => {
+  res.redirect(303, '/?share-target=1');
+});
+
 app.get('*', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.sendFile(path.join(__dirname, 'index.html'));

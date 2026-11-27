@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#0b2557">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="DONET CELL">
+    <link rel="icon" type="image/png" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
     <title>Menu Utama - DONET CELL [GROSIRDONET]</title>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -381,6 +386,9 @@
                 <div id="ipos-login-error" class="hidden mt-2.5 text-[11px] text-red-600 bg-red-50 border border-red-200 rounded px-2.5 py-1 text-center font-medium">
                     User atau Password tidak valid untuk database ini!
                 </div>
+                <div id="login-shared-proof-note" class="hidden mt-2.5 text-[11px] text-sky-900 bg-sky-50 border border-sky-300 rounded px-2.5 py-1.5 font-semibold">
+                    <i class="fas fa-share-alt mr-1 text-sky-600"></i> Bukti transfer dari menu Bagikan sudah diterima. Silakan Masuk untuk langsung memprosesnya.
+                </div>
 
                 <!-- Footer Buttons -->
                 <div class="mt-4 pt-2.5 border-t border-slate-300/80 flex items-center justify-between">
@@ -419,6 +427,12 @@
             <button onclick="openSettingsModal('supabase')" id="cloud-status-badge" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer" title="Klik untuk konfigurasi sinkronisasi Supabase Cloud">
                 <span id="cloud-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
                 <span id="cloud-status-text">Mode Offline (Lokal)</span>
+            </button>
+
+            <!-- Tombol Install PWA / Hubungkan Share HP -->
+            <button type="button" id="pwa-install-btn" onclick="triggerPwaInstall()" class="ipos-btn-primary px-2.5 py-1 rounded flex items-center gap-1 font-semibold text-xs shadow-sm" title="Pasang aplikasi ke HP agar bukti transfer dari MyBCA, m-Banking, DANA & OVO bisa langsung dibagikan ke sini">
+                <i class="fas fa-share-alt"></i>
+                <span class="hidden md:inline" id="pwa-install-label">Pasang App / Share HP</span>
             </button>
 
             <!-- Tombol Ganti Database / Login -->
@@ -2772,6 +2786,10 @@
                     <div class="bg-amber-50 border border-amber-200 rounded p-2 text-[11px] text-amber-900">
                         <b>Tips:</b> Pastikan foto struk/nota terang dan tegak lurus agar pembacaan nominal otomatis lebih akurat.
                     </div>
+                    <button type="button" onclick="openShareGuideModal()" class="w-full text-[11px] text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded px-2.5 py-1.5 font-semibold text-left flex items-center justify-between transition">
+                        <span><i class="fas fa-share-alt mr-1.5 text-sky-600"></i>Cara Kirim Bukti dari MyBCA, m-Banking, DANA &amp; OVO</span>
+                        <i class="fas fa-chevron-right text-[10px] text-sky-600"></i>
+                    </button>
                 </div>
 
                 <!-- Right: Extracted Result & Raw OCR Text -->
@@ -2836,6 +2854,45 @@
                             <i class="fas fa-check-circle"></i> Gunakan ke Form Transaksi
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: PANDUAN HUBUNGKAN MENU BAGIKAN HP (PWA SHARE TARGET) ==================== -->
+    <div id="share-guide-modal" style="z-index:65" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between">
+                <span class="font-bold text-xs sm:text-sm text-sky-900">
+                    <i class="fas fa-share-alt mr-1.5 text-sky-600"></i> Hubungkan Bukti Transfer dari Menu Share HP
+                </span>
+                <button type="button" onclick="closeModal('share-guide-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <div class="p-4 space-y-3 text-xs text-slate-700 max-h-[80vh] overflow-y-auto">
+                <div class="bg-sky-50 border border-sky-200 rounded p-2.5 text-sky-900">
+                    Agar <b>DONET CELL</b> muncul di menu <b>Bagikan / Share</b> saat mengirim bukti transfer dari <b>MyBCA, BRImo, Livin' Mandiri, BNI, DANA, OVO, GoPay, WhatsApp,</b> atau <b>Galeri</b>, pasang aplikasi ini terlebih dahulu ke layar utama HP.
+                </div>
+                <div id="share-guide-install-box" class="hidden">
+                    <button type="button" onclick="triggerNativePwaInstall()" class="ipos-btn-success w-full py-2 rounded font-bold shadow flex items-center justify-center gap-2">
+                        <i class="fas fa-download"></i> Pasang Aplikasi DONET CELL Sekarang
+                    </button>
+                </div>
+                <div class="space-y-1.5 border border-slate-200 rounded p-2.5 bg-white">
+                    <div class="font-bold text-slate-800"><i class="fab fa-android mr-1 text-emerald-600"></i> Langkah di Android (Chrome):</div>
+                    <ol class="list-decimal pl-4 space-y-1 text-[11.5px]">
+                        <li>Buka aplikasi ini lewat <b>Google Chrome</b> (alamat <code>https://</code>).</li>
+                        <li>Ketuk tombol <b>Pasang Aplikasi</b> di atas, atau buka menu <b>&vellip;</b> (kanan atas Chrome) lalu pilih <b>Tambahkan ke layar utama / Install aplikasi</b>.</li>
+                        <li>Buka bukti transfer di <b>MyBCA / m-Banking / DANA / OVO / Galeri</b>, lalu ketuk tombol <b>Bagikan (Share)</b>.</li>
+                        <li>Pilih ikon <b>DONET CELL</b> &mdash; gambar atau teks bukti transfer akan otomatis masuk dan dibaca nominal serta nomor referensinya.</li>
+                    </ol>
+                </div>
+                <div class="space-y-1 border border-slate-200 rounded p-2.5 bg-slate-50">
+                    <div class="font-bold text-slate-800"><i class="fab fa-apple mr-1 text-slate-700"></i> Pengguna iPhone / iPad (Safari):</div>
+                    <p class="text-[11px] text-slate-600">Ketuk tombol <b>Bagikan</b> di Safari &rarr; <b>Tambahkan ke Layar Utama</b>. Untuk memindai bukti dari MyBCA/DANA/OVO di iOS, simpan screenshot lalu tekan tombol <b>Scan Bukti (OCR)</b>.</p>
+                </div>
+                <div class="flex justify-end gap-2 pt-1">
+                    <button type="button" onclick="closeModal('share-guide-modal'); openOcrScannerModal('ppob');" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-camera mr-1"></i> Scan Bukti Manual</button>
+                    <button type="button" onclick="closeModal('share-guide-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Tutup</button>
                 </div>
             </div>
         </div>
@@ -12472,10 +12529,18 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         // =========================================================================
         // 13. AUTO-SCAN OCR NOTA & STRUK TRANSFER
         // =========================================================================
-        function openOcrScannerModal(mode = 'ppob') {
+        function openOcrScannerModal(mode = 'ppob', preserveValues = false) {
             if (mode !== 'penjualan') ocrSalesContext = 'kasir';
             document.getElementById('ocr-target-mode').value = mode;
-            const snEl0 = document.getElementById('ocr-ext-sn'); if (snEl0) snEl0.value = '';
+            if (!preserveValues) {
+                ['ocr-raw-text', 'ocr-ext-provider', 'ocr-ext-target', 'ocr-ext-amount', 'ocr-ext-desc', 'ocr-ext-ref', 'ocr-ext-sn']
+                    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+                const img = document.getElementById('ocr-preview-img');
+                if (img) { img.removeAttribute('src'); img.classList.add('hidden'); }
+                document.getElementById('ocr-upload-placeholder')?.classList.remove('hidden');
+                document.getElementById('ocr-detected-badge')?.classList.add('hidden');
+                document.getElementById('ocr-amount-candidates')?.classList.add('hidden');
+            }
             ['ocr-file-input', 'ocr-camera-input'].forEach(id => { const f = document.getElementById(id); if (f) f.value = ''; });
             const mg = Number(appState.settings?.ocrPpobMargin);
             document.getElementById('ocr-ext-margin').value = Number.isFinite(mg) && mg >= 0 && appState.settings?.ocrPpobMargin !== undefined ? mg : 3000;
@@ -12486,6 +12551,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         async function handleOcrImageUpload(e) {
             const file = e.target.files?.[0];
             if (!file) return;
+            const extraSharedText = String(e.sharedText || '').trim();
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 const img = document.getElementById('ocr-preview-img');
@@ -12494,7 +12560,12 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 document.getElementById('ocr-upload-placeholder').classList.add('hidden');
 
                 if (typeof Tesseract === 'undefined') {
-                    showToast('Library OCR belum termuat (perlu internet saat pertama kali). Isi data secara manual.', 'error');
+                    if (extraSharedText) {
+                        document.getElementById('ocr-raw-text').value = extraSharedText;
+                        parseRawOcrTextManual();
+                    } else {
+                        showToast('Library OCR belum termuat (perlu internet saat pertama kali). Isi data secara manual.', 'error');
+                    }
                     return;
                 }
                 const progBox = document.getElementById('ocr-progress-box');
@@ -12509,10 +12580,18 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                             }
                         }
                     });
-                    document.getElementById('ocr-raw-text').value = res.data.text || '';
+                    const ocrText = String(res.data.text || '').trim();
+                    document.getElementById('ocr-raw-text').value = extraSharedText && ocrText
+                        ? `${ocrText}\n\n--- Teks Share ---\n${extraSharedText}`
+                        : (ocrText || extraSharedText);
                     parseRawOcrTextManual();
                 } catch (err) {
-                    showToast('Gagal memindai gambar OCR.', 'error');
+                    if (extraSharedText) {
+                        document.getElementById('ocr-raw-text').value = extraSharedText;
+                        parseRawOcrTextManual();
+                    } else {
+                        showToast('Gagal memindai gambar OCR.', 'error');
+                    }
                 } finally {
                     progBox.classList.add('hidden');
                 }
@@ -12526,11 +12605,12 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 .replace(/\b\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}\b/g, ' ')
                 .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, ' ')
                 .replace(/(?:\+?62|\b0)8[\d -]{8,14}\d/g, ' ');
-            const POS = /(total|nominal|jumlah|amount|tagihan|bayar|transfer|harga|tarik|setor|pembelian|rp)/i;
-            const NEG = /(admin|biaya|fee|saldo|sisa|kembali|ref|no\.?\s*(?:rek|ref|trx)|id\s*(?:trx|transaksi)|pajak|ppn)/i;
+            const STRONG_POS = /(total\s*(?:bayar|transfer|transaksi|pembayaran)?|nominal(?:\s*transfer)?|jumlah\s*(?:transfer|bayar)|kirim\s*uang|transfer\s*berhasil)/i;
+            const POS = /(total|nominal|jumlah|amount|tagihan|bayar|transfer|harga|tarik|setor|pembelian|top\s*up|rp|idr)/i;
+            const NEG = /(admin|biaya|fee|saldo|sisa|kembali|poin|cashback|ref|no\.?\s*(?:rek|ref|trx)|id\s*(?:trx|transaksi)|pajak|ppn)/i;
             const found = [];
             clean.split('\n').forEach(line => {
-                const re = /(rp\.?\s*)?(\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,]\d{1,2})?(?![\d])/gi;
+                const re = /((?:rp\.?|idr)\s*)?(\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,]\d{1,2})?(?![\d])/gi;
                 let m;
                 while ((m = re.exec(line)) !== null) {
                     const hasRp = !!m[1];
@@ -12544,8 +12624,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                     let score = 0;
                     if (hasRp) score += 3;
                     if (grouped) score += 1;
-                    if (POS.test(line)) score += 2;
-                    if (NEG.test(line)) score -= 3;
+                    if (STRONG_POS.test(line)) score += 3;
+                    else if (POS.test(line)) score += 2;
+                    if (NEG.test(line)) score -= 4;
                     found.push({ val, score });
                 }
             });
@@ -12553,6 +12634,44 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             found.sort((x, y) => (y.score - x.score) || (y.val - x.val));
             const uniq = [...new Set(found.map(f => f.val))].slice(0, 5);
             return { best: found[0].val, candidates: uniq };
+        }
+
+        function detectOcrProvider(rawText) {
+            const upper = String(rawText || '').toUpperCase();
+            const rules = [
+                [/\b(?:MY\s*BCA|MYBCA|M-TRANSFER|BCA\s*MOBILE|BANK\s*BCA|BCA)\b/, 'BCA'],
+                [/\b(?:BRIMO|BRILINK|BANK\s*BRI|BRI)\b/, 'BRI'],
+                [/\b(?:LIVIN|MANDIRI)\b/, 'MANDIRI'],
+                [/\b(?:BNI\s*MOBILE|WOND|BANK\s*BNI|BNI)\b/, 'BNI'],
+                [/\b(?:BSI\s*MOBILE|BYOND|BANK\s*SYARIAH|BSI)\b/, 'BSI'],
+                [/\b(?:SEABANK|SEA\s*BANK)\b/, 'SEABANK'],
+                [/\b(?:BANK\s*JAGO|JAGO)\b/, 'JAGO'],
+                [/\b(?:BLU\s*BY\s*BCA|BLUBCA)\b/, 'BLU'],
+                [/\b(?:OCTO|CIMB(?:\s*NIAGA)?)\b/, 'CIMB'],
+                [/\bPERMATA\b/, 'PERMATA'],
+                [/\bDANAMON\b/, 'DANAMON'],
+                [/\bBTN\b/, 'BTN'],
+                [/\bDANA\b/, 'DANA'],
+                [/\bOVO\b/, 'OVO'],
+                [/\b(?:GO-?PAY|GOPAY)\b/, 'GOPAY'],
+                [/\b(?:SHOPEE\s*PAY|SHOPEEPAY|SPAY)\b/, 'SHOPEEPAY'],
+                [/\b(?:LINK\s*AJA|LINKAJA)\b/, 'LINKAJA'],
+                [/\bQRIS\b/, 'QRIS'],
+                [/\bTELKOMSEL\b/, 'TELKOMSEL'],
+                [/\bINDOSAT\b/, 'INDOSAT'],
+                [/\bXL\b/, 'XL'],
+                [/\bAXIS\b/, 'AXIS'],
+                [/\bTRI\b/, 'TRI'],
+                [/\bSMARTFREN\b/, 'SMARTFREN'],
+                [/\bBY\.U\b/, 'BY.U'],
+                [/\bPLN\b/, 'PLN'],
+                [/\bBPJS\b/, 'BPJS'],
+                [/\bPDAM\b/, 'PDAM']
+            ];
+            for (const [re, name] of rules) {
+                if (re.test(upper)) return name;
+            }
+            return '';
         }
 
         function parseRawOcrTextManual() {
@@ -12565,7 +12684,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             if (box) {
                 if (candidates.length > 1) {
                     box.innerHTML = '<span class="text-slate-500 font-semibold">Nominal lain terbaca:</span>' + candidates.map(v =>
-                        `<button type="button" onclick="document.getElementById('ocr-ext-amount').value=${v}" class="ipos-btn px-1.5 py-0.5 rounded font-mono">${formatNum(v)}</button>`
+                        `<button type="button" onclick="document.getElementById('ocr-ext-amount').value=${v};updateOcrSalesMatch();" class="ipos-btn px-1.5 py-0.5 rounded font-mono">${formatNum(v)}</button>`
                     ).join('');
                     box.classList.remove('hidden');
                 } else {
@@ -12578,17 +12697,14 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             if (phoneMatch) {
                 document.getElementById('ocr-ext-target').value = phoneMatch[0].replace(/^\+?62/, '0');
             } else {
-                const acc = txt.replace(/[ \t]/g, '').match(/\b\d{10,16}\b/);
+                const acc = txt.replace(/(\d)[ \t-]+(?=\d)/g, '$1').match(/(?<!\d)\d{10,16}(?!\d)/);
                 if (acc) document.getElementById('ocr-ext-target').value = acc[0];
             }
 
-            // Bank / operator / e-wallet
-            const providers = ['BRI', 'BNI', 'BCA', 'MANDIRI', 'BSI', 'CIMB', 'PERMATA', 'DANAMON', 'DANA', 'OVO', 'GOPAY', 'SHOPEEPAY', 'LINKAJA',
-                'TELKOMSEL', 'INDOSAT', 'XL', 'AXIS', 'TRI', 'SMARTFREN', 'BY.U', 'PLN', 'BPJS', 'PDAM'];
-            const upper = txt.toUpperCase();
-            const prov = providers.find(p => new RegExp('(^|[^A-Z])' + p.replace('.', '\\.') + '([^A-Z]|$)').test(upper));
+            // Bank / operator / e-wallet (MyBCA, BRImo, Livin', DANA, OVO, GoPay, SeaBank, dll)
+            const prov = detectOcrProvider(txt);
             const provEl = document.getElementById('ocr-ext-provider');
-            if (prov && provEl && !provEl.value.trim()) provEl.value = prov;
+            if (prov && provEl) provEl.value = prov;
 
             document.getElementById('ocr-ext-desc').value = txt.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 2).join(' - ');
             const refEl = document.getElementById('ocr-ext-ref');
@@ -12652,15 +12768,17 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             box.textContent = info.text;
         }
 
-        // Ambil nomor referensi / resi dari teks hasil OCR
+        // Ambil nomor referensi / resi dari teks hasil OCR (MyBCA, BRImo, Livin', DANA, OVO, GoPay)
         function pickOcrReference(rawText) {
             const lines = String(rawText || '').split('\n');
-            const KEY = /\b(?:no\.?\s*ref(?:erensi)?|nomor\s*ref(?:erensi)?|ref(?:erensi)?\.?\s*(?:no|id)?|no\.?\s*(?:trx|transaksi)|nomor\s*transaksi|id\s*(?:trx|transaksi)|kode\s*transaksi)\b/i;
+            const KEY = /\b(?:no\.?\s*ref(?:erensi)?|kode\s*ref(?:erensi)?|nomor\s*ref(?:erensi)?|ref(?:erensi)?\.?\s*(?:no|id)?|no\.?\s*(?:trx|transaksi|jurnal)|nomor\s*transaksi|id\s*(?:trx|transaksi|order)|kode\s*transaksi|rrn|stan)\b/i;
             for (let i = 0; i < lines.length; i++) {
                 const m = KEY.exec(lines[i]);
                 if (!m) continue;
                 const rest = lines[i].slice(m.index + m[0].length) + ' ' + (lines[i + 1] || '');
-                const tok = rest.replace(/[\s:.\-]+/g, ' ').trim().split(' ').find(t => /^[A-Za-z0-9]{8,}$/.test(t) && /\d{4,}/.test(t));
+                const tok = rest.replace(/[:.\s]+/g, ' ').trim().split(' ')
+                    .map(t => t.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9-]+$/g, ''))
+                    .find(t => /^[A-Za-z0-9-]{8,}$/.test(t) && (t.match(/\d/g) || []).length >= 4);
                 if (tok) return tok.toUpperCase();
             }
             return '';
@@ -12802,9 +12920,60 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         // =========================================================================
         // 14. KEYBOARD SHORTCUTS & INITIAL BOOT
         // =========================================================================
-        // ---------- Terima bukti transfer dari menu "Bagikan" (WhatsApp, galeri, dll) ----------
-        // Butuh: aplikasi dibuka lewat https & sudah di-install (Tambahkan ke Layar Utama) di Android/Chrome.
+        // ---------- Terima bukti transfer dari menu "Bagikan" (MyBCA, m-Banking, DANA, OVO, WhatsApp, Galeri) ----------
         let pendingSharedProof = null;
+        let pendingSharedText = '';
+        let deferredInstallPrompt = null;
+
+        function isStandaloneMode() {
+            return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator?.standalone === true;
+        }
+        function updatePwaInstallUI() {
+            const btn = document.getElementById('pwa-install-btn');
+            const guideBox = document.getElementById('share-guide-install-box');
+            const standalone = isStandaloneMode();
+            if (btn) btn.classList.toggle('hidden', standalone);
+            if (guideBox) guideBox.classList.toggle('hidden', !deferredInstallPrompt || standalone);
+        }
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            updatePwaInstallUI();
+        });
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            updatePwaInstallUI();
+            showToast('Aplikasi DONET CELL terpasang! Sekarang tersedia di menu Bagikan (Share) HP.', 'success');
+        });
+        async function triggerNativePwaInstall() {
+            if (!deferredInstallPrompt) {
+                openShareGuideModal();
+                return false;
+            }
+            try {
+                await deferredInstallPrompt.prompt();
+                const choice = await deferredInstallPrompt.userChoice;
+                if (choice && choice.outcome === 'accepted') {
+                    deferredInstallPrompt = null;
+                    updatePwaInstallUI();
+                    closeModal('share-guide-modal');
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+        async function triggerPwaInstall() {
+            if (deferredInstallPrompt) {
+                await triggerNativePwaInstall();
+            } else {
+                openShareGuideModal();
+            }
+        }
+        function openShareGuideModal() {
+            updatePwaInstallUI();
+            document.getElementById('share-guide-modal')?.classList.remove('hidden');
+        }
+
         async function loadSharedProofFromCache() {
             if (!/[?&]share-target\b/.test(location.search)) return;
             try { history.replaceState(null, '', location.pathname); } catch (e) {}
@@ -12812,41 +12981,72 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 if (!('caches' in window)) return;
                 const cache = await caches.open('share-target-v1');
                 const key = new URL('shared-proof', location.href).href;
+                const metaKey = new URL('shared-proof-meta', location.href).href;
+
                 const res = await cache.match(key);
-                if (!res) return;
-                const blob = await res.blob();
-                await cache.delete(key);
-                if (blob.size) pendingSharedProof = new File([blob], 'bukti-transfer', { type: blob.type || 'image/jpeg' });
-            } catch (e) { console.warn('Gagal membaca gambar yang dibagikan:', e); }
+                if (res) {
+                    const blob = await res.blob();
+                    await cache.delete(key);
+                    if (blob.size) pendingSharedProof = new File([blob], 'bukti-transfer', { type: blob.type || 'image/jpeg' });
+                }
+
+                const metaRes = await cache.match(metaKey);
+                if (metaRes) {
+                    const meta = await metaRes.json().catch(() => null);
+                    await cache.delete(metaKey);
+                    if (meta) {
+                        pendingSharedText = [meta.title, meta.text, meta.url].filter(Boolean).join('\n').trim();
+                    }
+                }
+
+                if (pendingSharedProof || pendingSharedText) {
+                    document.getElementById('login-shared-proof-note')?.classList.remove('hidden');
+                    if (isLoggedIn) offerSharedProof();
+                }
+            } catch (e) { console.warn('Gagal membaca gambar/teks yang dibagikan:', e); }
         }
         function offerSharedProof() {
-            if (!pendingSharedProof || !isLoggedIn) return;
+            if ((!pendingSharedProof && !pendingSharedText) || !isLoggedIn) return;
+            document.getElementById('login-shared-proof-note')?.classList.add('hidden');
             document.getElementById('shared-proof-chooser')?.remove();
             const box = document.createElement('div');
             box.id = 'shared-proof-chooser';
             box.className = 'fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4';
+            const previewUrl = pendingSharedProof ? URL.createObjectURL(pendingSharedProof) : '';
+            const previewHtml = previewUrl
+                ? `<div class="border border-slate-200 rounded bg-slate-50 p-1.5 flex justify-center"><img src="${previewUrl}" alt="Preview bukti" class="max-h-36 rounded object-contain"></div>`
+                : '';
+            const textHtml = pendingSharedText
+                ? `<div class="border border-sky-200 rounded bg-sky-50 p-2 text-[11px] font-mono text-slate-700 max-h-20 overflow-y-auto whitespace-pre-wrap">${esc(pendingSharedText.slice(0, 260))}</div>`
+                : '';
             box.innerHTML = `
-                <div class="ipos-win-modal bg-white rounded-lg w-full max-w-xs p-4 space-y-2 text-xs">
+                <div class="ipos-win-modal bg-white rounded-lg w-full max-w-sm p-4 space-y-2 text-xs shadow-2xl">
                     <div class="font-bold text-sm text-slate-800"><i class="fas fa-share-alt mr-1.5 text-sky-600"></i> Bukti transfer diterima</div>
-                    <div class="text-slate-600">Gunakan gambar ini untuk:</div>
-                    <button type="button" data-act="kasir" class="ipos-btn-primary w-full py-2 rounded font-bold">Kasir (POS)</button>
-                    <button type="button" data-act="faktur" class="ipos-btn-primary w-full py-2 rounded font-bold">Faktur Penjualan</button>
-                    <button type="button" data-act="ppob" class="ipos-btn-primary w-full py-2 rounded font-bold">PPOB / Pulsa</button>
-                    <button type="button" data-act="batal" class="ipos-btn w-full py-2 rounded font-semibold">Batal</button>
+                    ${previewHtml}
+                    ${textHtml}
+                    <div class="text-slate-600">Gunakan bukti dari MyBCA / m-Banking / DANA / OVO ini untuk:</div>
+                    <button type="button" data-act="transfer" class="ipos-btn-primary w-full py-2 rounded font-bold"><i class="fas fa-exchange-alt mr-1"></i> Transfer Bank (BRILink)</button>
+                    <button type="button" data-act="ewallet" class="ipos-btn-primary w-full py-2 rounded font-bold"><i class="fas fa-bolt mr-1"></i> TopUp E-Wallet / Pulsa PPOB</button>
+                    <button type="button" data-act="kasir" class="ipos-btn w-full py-2 rounded font-bold text-sky-900"><i class="fas fa-cash-register mr-1"></i> Kasir Cepat (POS)</button>
+                    <button type="button" data-act="faktur" class="ipos-btn w-full py-2 rounded font-bold text-sky-900"><i class="fas fa-file-invoice-dollar mr-1"></i> Faktur Penjualan</button>
+                    <button type="button" data-act="batal" class="ipos-btn w-full py-1.5 rounded font-semibold text-slate-600">Batal</button>
                 </div>`;
             box.addEventListener('click', ev => {
                 const act = ev.target.closest('button')?.dataset.act;
                 if (!act) return;
+                if (previewUrl) try { URL.revokeObjectURL(previewUrl); } catch (_) {}
                 box.remove();
-                if (act === 'batal') { pendingSharedProof = null; return; }
+                if (act === 'batal') { pendingSharedProof = null; pendingSharedText = ''; return; }
                 useSharedProof(act);
             });
             document.body.appendChild(box);
         }
         async function useSharedProof(act) {
             const file = pendingSharedProof;
+            const sharedText = pendingSharedText;
             pendingSharedProof = null;
-            if (!file) return;
+            pendingSharedText = '';
+            if (!file && !sharedText) return;
             if (act === 'faktur') {
                 switchTab('kasir', 'jual');
                 openSaleFormModal(-1);
@@ -12855,13 +13055,18 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 switchTab('kasir', 'kasir');
                 openSalesTransferScan('kasir');
             } else {
-                switchTab('ppob', 'pulsa');
+                const subMode = act === 'transfer' ? 'transfer' : (act === 'ewallet' ? 'ewallet' : 'pulsa');
+                switchTab('ppob', subMode);
                 openOcrScannerModal('ppob');
-                const img = document.getElementById('ocr-preview-img');
-                if (img) { img.removeAttribute('src'); img.classList.add('hidden'); }
-                document.getElementById('ocr-upload-placeholder')?.classList.remove('hidden');
             }
-            await handleOcrImageUpload({ target: { files: [file] } });
+            if (file) {
+                await handleOcrImageUpload({ target: { files: [file] }, sharedText });
+            } else if (sharedText) {
+                const rawEl = document.getElementById('ocr-raw-text');
+                if (rawEl) rawEl.value = sharedText;
+                parseRawOcrTextManual();
+                showToast('Teks bukti transfer berhasil dibaca otomatis.', 'success');
+            }
         }
 
         document.addEventListener('keydown', (e) => {
@@ -12945,6 +13150,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 try { await fn(); } catch (e) { console.error('Langkah awal gagal [' + name + ']:', e); }
             };
             await step('shared', loadSharedProofFromCache);
+            await step('pwa', updatePwaInstallUI);
             await step('load', loadDatabaseForActiveTenant);
             await step('identity', updateDatabaseIdentityUI);
             await step('ppob', () => setPpobMode('pulsa'));
