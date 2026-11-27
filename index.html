@@ -265,37 +265,90 @@
             .ipos-rib-ico::after { content:''; position:absolute; inset:0 0 50% 0;
                 background:linear-gradient(180deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,.06) 100%); pointer-events:none; }
             .ipos-rib-lbl { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+            .mobile-sub-list, .mobile-sub-caret, #mobile-drawer-header, #mobile-drawer-search-wrap, #mobile-drawer-backdrop, #mobile-menu-btn { display:none !important; }
         }
 
-        /* ===================== TAMPILAN HP ===================== */
+        /* ===================== TAMPILAN HP: DRAWER SAMPING + SUB-MENU AKORDION ===================== */
         @media (max-width: 639px) {
             body { height:100dvh !important; }
             .ipos-topbar { padding:6px 8px; }
             .ipos-topbar > div:first-child { min-width:0; flex:1; }
             #topbar-window-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
             .ipos-topbar .fa-cash-register + span, #cloud-status-text { display:none; }
-            .ipos-topbar .ipos-btn, #cloud-status-badge { min-height:34px; }
+            .ipos-topbar .ipos-btn, #cloud-status-badge { min-height:36px; }
+            #topbar-logout-btn { display:none !important; }
 
-            /* Menu samping berubah jadi bilah menu bawah yang bisa digeser */
-            body > .flex.flex-1.overflow-hidden { flex-direction:column-reverse; }
-            .ipos-sidebar { width:100% !important; flex-direction:row !important; border-top:2px solid var(--orange);
-                box-shadow:0 -4px 14px rgba(11,37,87,.28); padding-bottom:env(safe-area-inset-bottom,0px); }
-            .ipos-sidebar > div:first-child { width:100%; overflow-x:auto !important; overflow-y:hidden !important;
-                -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-            .ipos-sidebar > div:first-child::-webkit-scrollbar { display:none; }
-            .ipos-sidebar > div:first-child > div:first-child, .ipos-sidebar > div:last-child { display:none; }
-            .ipos-sidebar .space-y-0\.5 { display:flex; gap:2px; padding:5px 6px; }
-            .ipos-sidebar-item { flex-direction:column !important; width:auto !important; min-width:64px; max-width:78px;
-                padding:6px 4px !important; gap:3px !important; margin:0 !important; text-align:center !important;
-                border-left:0 !important; border-top:3px solid transparent; border-radius:10px; }
-            .ipos-sidebar-item i { font-size:17px; width:auto !important; }
-            .ipos-sidebar-item span { display:block !important; font-size:10px; line-height:1.15; white-space:normal; }
-            .ipos-sidebar-item.active { background:linear-gradient(180deg,var(--orange) 0%,var(--orange2) 100%);
-                border-top-color:#ffd8b0 !important; }
+            /* Workspace penuh; navigasi dipindah ke laci samping kiri (hamburger) */
+            body > .flex.flex-1.overflow-hidden { flex-direction:column; }
+            .ipos-sidebar {
+                position:fixed !important; top:0; bottom:0; left:0;
+                width:272px !important; max-width:82vw; z-index:60;
+                flex-direction:column !important;
+                background:linear-gradient(180deg,#11326f 0%,#091d46 100%) !important;
+                border-right:1px solid rgba(255,255,255,.15);
+                box-shadow:8px 0 28px rgba(4,12,34,.55);
+                transform:translateX(-105%);
+                transition:transform .22s cubic-bezier(.16,1,.3,1);
+            }
+            .ipos-sidebar.mobile-open { transform:translateX(0); }
+            .ipos-sidebar > div:first-child { width:100%; overflow-y:auto !important; overflow-x:hidden !important; -webkit-overflow-scrolling:touch; }
+            .ipos-sidebar > div:first-child > div.p-3 { display:none; }
+            .ipos-sidebar .space-y-0\.5 { display:flex; flex-direction:column; gap:2px; padding:4px 10px 14px; }
+
+            .ipos-sidebar-item {
+                width:100% !important; min-height:42px;
+                padding:8px 12px !important; gap:12px !important; margin:0 !important;
+                border-left:3px solid transparent; border-radius:8px;
+                font-size:13.5px !important; font-weight:500; color:#e2e8f0 !important;
+                text-align:left !important;
+            }
+            .ipos-sidebar-item i { font-size:15px; width:20px !important; text-align:center; color:#ffffff !important; opacity:.95; }
+            .ipos-sidebar-item span { display:inline !important; }
+            .ipos-sidebar-item.active, .ipos-sidebar-item.mobile-expanded {
+                background:rgba(255,255,255,.13) !important;
+                border-left-color:var(--orange) !important;
+                color:#ffffff !important; font-weight:700;
+            }
+            #nav-logout { display:none !important; }
+
+            .mobile-sub-caret { display:inline-flex; align-items:center; margin-left:auto; font-size:11px; color:rgba(255,255,255,.72); transition:transform .16s ease; }
+            .mobile-sub-list {
+                margin:2px 0 6px 22px; padding-left:14px;
+                border-left:1px solid rgba(255,255,255,.24);
+                display:flex; flex-direction:column; gap:2px;
+            }
+            .mobile-sub-list.hidden { display:none !important; }
+            .mobile-sub-item {
+                width:100%; min-height:38px; padding:7px 12px; border-radius:7px;
+                font-size:13px; font-weight:500; color:#cbd5e1; text-align:left;
+                display:flex; align-items:center;
+                transition:background-color .12s ease, color .12s ease;
+            }
+            .mobile-sub-item:hover { background:rgba(255,255,255,.08); color:#ffffff; }
+            .mobile-sub-item.active { background:rgba(255,255,255,.16); color:#ffffff; font-weight:700; }
+
+            /* Footer user + tombol Logout merah di bagian bawah drawer */
+            .ipos-sidebar > div:last-child {
+                display:flex !important;
+                padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px)) !important;
+                background:#08183b !important;
+                border-top:1px solid rgba(255,255,255,.14) !important;
+            }
+            .ipos-sidebar > div:last-child .sm\:block { display:block !important; max-width:128px; }
+            #sidebar-logout-btn {
+                background:#dc2626; color:#ffffff !important;
+                padding:7px 12px !important; border-radius:7px;
+                font-weight:700; font-size:12px; min-height:36px;
+                display:inline-flex; align-items:center; gap:6px;
+                box-shadow:0 2px 6px rgba(0,0,0,.28);
+            }
+            #sidebar-logout-btn:hover { background:#b91c1c; }
+
             #mdi-tab-bar { display:none !important; }
 
             /* Kenyamanan sentuh & modal */
             input:not([type=checkbox]):not([type=radio]), select, textarea { font-size:16px !important; }
+            #mobile-menu-search { font-size:13px !important; }
             .ipos-btn, .ipos-btn-primary, .ipos-btn-success, .ipos-btn-danger { min-height:36px; }
             .ipos-tab { white-space:nowrap; }
             div:has(> .ipos-tab) { overflow-x:auto; flex-wrap:nowrap !important; scrollbar-width:none; }
@@ -490,8 +543,11 @@
 
     <!-- TOP WINDOW BAR -->
     <header class="ipos-topbar px-3 py-1.5 flex items-center justify-between select-none shrink-0">
-        <div class="flex items-center gap-2.5">
-            <div class="flex items-center gap-1.5 bg-[#0063b1] text-white px-2.5 py-0.5 rounded shadow-sm font-bold text-xs tracking-wide">
+        <div class="flex items-center gap-2">
+            <button type="button" id="mobile-menu-btn" onclick="openMobileDrawer()" class="sm:hidden ipos-btn px-2 py-1 rounded flex items-center justify-center text-[#0b2557] min-h-[40px] min-w-[40px] shrink-0" aria-label="Buka Menu" title="Buka Menu">
+                <i class="fas fa-bars text-base"></i>
+            </button>
+            <div class="flex items-center gap-1.5 bg-[#0063b1] text-white px-2.5 py-0.5 rounded shadow-sm font-bold text-xs tracking-wide shrink-0">
                 <i class="fas fa-cash-register"></i>
                 <span>DONET CELL</span>
             </div>
@@ -539,11 +595,14 @@
 
     <!-- MAIN WORKSPACE CONTAINER -->
     <div class="flex flex-1 overflow-hidden">
-        
-        <!-- LEFT SIDEBAR NAVIGATION (IPOS 5 STYLE) -->
-        <aside class="ipos-sidebar w-14 sm:w-56 flex flex-col justify-between shrink-0 z-20 shadow-lg">
+
+        <!-- BACKDROP DRAWER HP -->
+        <div id="mobile-drawer-backdrop" onclick="closeMobileDrawer()" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-[55] hidden sm:hidden"></div>
+
+        <!-- LEFT SIDEBAR NAVIGATION (DESKTOP TAB BAR / MOBILE DRAWER) -->
+        <aside id="app-sidebar" class="ipos-sidebar w-14 sm:w-56 flex flex-col justify-between shrink-0 z-20 shadow-lg">
             <div class="overflow-y-auto flex-1">
-                <!-- Brand Header Sidebar -->
+                <!-- Brand Header Sidebar (Desktop placeholder, hidden on desktop via CSS) -->
                 <div class="p-3 border-b border-slate-700/80 flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded bg-sky-500 flex items-center justify-center text-white font-extrabold text-sm shadow shrink-0">
                         <i class="fas fa-broadcast-tower"></i>
@@ -554,69 +613,100 @@
                     </div>
                 </div>
 
+                <!-- Header Drawer HP + Kolom Pencarian Menu -->
+                <div id="mobile-drawer-header" class="sm:hidden px-3.5 pt-3 pb-2 flex items-center gap-3 border-b border-white/10">
+                    <button type="button" onclick="closeMobileDrawer()" class="w-9 h-9 rounded-lg flex items-center justify-center text-white hover:bg-white/10" aria-label="Tutup Menu">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                    <span class="font-extrabold text-base tracking-wide text-white">DONET CELL</span>
+                </div>
+                <div id="mobile-drawer-search-wrap" class="sm:hidden px-3 py-2.5">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-300/70 text-xs pointer-events-none"></i>
+                        <input type="text" id="mobile-menu-search" oninput="renderMobileDrawerSubmenus()" placeholder="Cari menu..." autocomplete="off" class="w-full bg-[#193b7a] border border-white/15 rounded-lg pl-8 pr-8 py-2 text-white placeholder-slate-300/70 focus:outline-none focus:border-sky-300">
+                        <button type="button" id="mobile-menu-search-clear" onclick="document.getElementById('mobile-menu-search').value=''; renderMobileDrawerSubmenus();" class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-white px-1 text-sm">&times;</button>
+                    </div>
+                </div>
+
                 <!-- Menu Categories -->
                 <div class="py-2 space-y-0.5 text-xs">
-                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="ipos-sidebar-item active w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
+                    <button onclick="handleSidebarNavClick('dashboard')" id="nav-dashboard" class="ipos-sidebar-item active w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
                         <i class="fas fa-tachometer-alt w-4 text-center text-amber-400"></i>
                         <span class="hidden sm:inline">Dashboard</span>
                     </button>
 
-                    <button onclick="switchTab('masterdata')" id="nav-masterdata" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="handleSidebarNavClick('masterdata')" id="nav-masterdata" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-database w-4 text-center text-orange-300"></i>
-                        <span class="hidden sm:inline">Master data</span>
+                        <span class="hidden sm:inline">Master Data</span>
+                        <span class="mobile-sub-caret"><i class="fas fa-chevron-right"></i></span>
                     </button>
+                    <div id="mobile-sub-masterdata" class="mobile-sub-list hidden"></div>
 
-                    <button onclick="switchTab('pembelian')" id="nav-pembelian" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="handleSidebarNavClick('pembelian')" id="nav-pembelian" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-file-invoice w-4 text-center text-indigo-300"></i>
                         <span class="hidden sm:inline">Pembelian</span>
+                        <span class="mobile-sub-caret"><i class="fas fa-chevron-right"></i></span>
                     </button>
+                    <div id="mobile-sub-pembelian" class="mobile-sub-list hidden"></div>
 
-                    <button onclick="switchTab('kasir')" id="nav-kasir" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="handleSidebarNavClick('kasir')" id="nav-kasir" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-shopping-cart w-4 text-center text-emerald-400"></i>
                         <span class="hidden sm:inline">Penjualan</span>
+                        <span class="mobile-sub-caret"><i class="fas fa-chevron-right"></i></span>
                     </button>
+                    <div id="mobile-sub-kasir" class="mobile-sub-list hidden"></div>
 
-                    <button onclick="switchTab('ppob')" id="nav-ppob" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="handleSidebarNavClick('ppob')" id="nav-ppob" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-bolt w-4 text-center text-yellow-400"></i>
                         <span class="hidden sm:inline">Transaksi PPOB</span>
+                        <span class="mobile-sub-caret"><i class="fas fa-chevron-right"></i></span>
                     </button>
+                    <div id="mobile-sub-ppob" class="mobile-sub-list hidden"></div>
 
-                    <button onclick="switchTab('servicehp')" id="nav-servicehp" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="handleSidebarNavClick('servicehp')" id="nav-servicehp" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-tools w-4 text-center text-rose-400"></i>
                         <span class="hidden sm:inline">Service HP</span>
                     </button>
 
-                    <button onclick="switchTab('cetakvoucher')" id="nav-cetakvoucher" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left" title="Pembuatan Voucher Fisik">
+                    <button onclick="handleSidebarNavClick('cetakvoucher')" id="nav-cetakvoucher" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left" title="Pembuatan Voucher Fisik">
                         <i class="fas fa-sim-card w-4 text-center text-cyan-300"></i>
                         <span class="hidden sm:inline">Voucher Fisik</span>
                     </button>
 
-                    <button onclick="switchTab('sumberdana')" id="nav-sumberdana" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="handleSidebarNavClick('sumberdana')" id="nav-sumberdana" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-wallet w-4 text-center text-teal-300"></i>
                         <span class="hidden sm:inline">Sumber Dana</span>
                     </button>
 
-                    <button onclick="switchTab('utangpiutang')" id="nav-utangpiutang" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="handleSidebarNavClick('utangpiutang')" id="nav-utangpiutang" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-hand-holding-usd w-4 text-center text-amber-300"></i>
                         <span class="hidden sm:inline">Utang Piutang</span>
+                        <span class="mobile-sub-caret"><i class="fas fa-chevron-right"></i></span>
                     </button>
+                    <div id="mobile-sub-utangpiutang" class="mobile-sub-list hidden"></div>
 
-                    <button onclick="switchTab('akuntansi')" id="nav-akuntansi" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="handleSidebarNavClick('akuntansi')" id="nav-akuntansi" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-balance-scale w-4 text-center text-purple-300"></i>
                         <span class="hidden sm:inline">Akuntansi</span>
+                        <span class="mobile-sub-caret"><i class="fas fa-chevron-right"></i></span>
                     </button>
+                    <div id="mobile-sub-akuntansi" class="mobile-sub-list hidden"></div>
 
-                    <button onclick="switchTab('laporan')" id="nav-laporan" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="handleSidebarNavClick('laporan')" id="nav-laporan" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-chart-bar w-4 text-center text-sky-300"></i>
                         <span class="hidden sm:inline">Laporan</span>
+                        <span class="mobile-sub-caret"><i class="fas fa-chevron-right"></i></span>
                     </button>
+                    <div id="mobile-sub-laporan" class="mobile-sub-list hidden"></div>
 
-                    <button onclick="openPengaturanTab()" id="nav-pengaturan" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left" title="Pengaturan Sistem & Cloud">
+                    <button onclick="handleSidebarNavClick('pengaturan')" id="nav-pengaturan" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left" title="Pengaturan Sistem & Cloud">
                         <i class="fas fa-cogs w-4 text-center text-slate-300"></i>
                         <span class="hidden sm:inline">Pengaturan</span>
+                        <span class="mobile-sub-caret"><i class="fas fa-chevron-right"></i></span>
                     </button>
+                    <div id="mobile-sub-pengaturan" class="mobile-sub-list hidden"></div>
 
-                    <button onclick="switchTab('petunjuk')" id="nav-petunjuk" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left" title="Petunjuk dan Penggunaan">
+                    <button onclick="handleSidebarNavClick('petunjuk')" id="nav-petunjuk" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left" title="Petunjuk dan Penggunaan">
                         <i class="fas fa-book-open w-4 text-center text-lime-300"></i>
                         <span class="hidden sm:inline">Petunjuk</span>
                     </button>
@@ -631,18 +721,19 @@
             <!-- Sidebar Footer User Info -->
             <div class="p-2.5 border-t border-slate-700/80 bg-[#0c1b33] text-[11px] text-slate-300 flex items-center justify-between">
                 <div class="flex items-center gap-2 truncate">
-                    <div id="sidebar-user-avatar" class="w-6 h-6 rounded-full bg-sky-700 flex items-center justify-center text-white font-bold shrink-0">A</div>
+                    <div id="sidebar-user-avatar" class="w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-sky-600 flex items-center justify-center text-white font-bold shrink-0">A</div>
                     <div class="hidden sm:block truncate">
                         <div class="font-semibold text-white">User: <span id="sidebar-user-name">ADMIN</span></div>
                         <div class="text-[10px] text-slate-400">Role: <span id="sidebar-user-role" class="text-sky-300 font-semibold">ADMIN</span> • <span id="sidebar-user-loc">UTM</span></div>
                     </div>
                 </div>
-                <div class="flex items-center gap-0.5 shrink-0">
-                    <button onclick="openLoginModal()" class="text-slate-400 hover:text-amber-300 p-1" title="Ganti User / Login Ulang">
+                <div class="flex items-center gap-1 shrink-0">
+                    <button onclick="closeMobileDrawer(); openLoginModal()" class="text-slate-300 hover:text-amber-300 p-1.5 sm:p-1" title="Ganti User / Login Ulang">
                         <i class="fas fa-exchange-alt"></i>
                     </button>
                     <button type="button" id="sidebar-logout-btn" onclick="logoutUser()" class="text-rose-400 hover:text-rose-300 p-1" title="Logout / Keluar Akun">
                         <i class="fas fa-sign-out-alt"></i>
+                        <span class="sm:hidden">Logout</span>
                     </button>
                 </div>
             </div>
@@ -6843,8 +6934,162 @@ alter table donet_cell_state disable row level security;</div>
                 }).join('');
                 return `<div class="ipos-rib-group">${btns}</div>`;
             }).join('');
+            if (typeof renderMobileDrawerSubmenus === 'function') renderMobileDrawerSubmenus();
         }
         document.addEventListener('DOMContentLoaded', renderDesktopRibbon);
+
+        // ---------- Laci Samping HP + Akordion Sub-Menu + Pencarian ----------
+        let mobileExpandedTab = null;
+        let _mobileSubHandlers = [];
+        function isMobileViewport() {
+            return !(window.matchMedia && window.matchMedia('(min-width: 640px)').matches);
+        }
+        function getMobileSubItems(tabId) {
+            const admin = isCurrentUserAdmin();
+            switch (tabId) {
+                case 'masterdata':
+                    return [
+                        { key: 'items', label: 'Daftar Barang', fn: () => switchTab('masterdata', 'items') },
+                        { key: 'suppliers', label: 'Supplier', fn: () => switchTab('masterdata', 'suppliers') },
+                        { key: 'customers', label: 'Pelanggan', fn: () => switchTab('masterdata', 'customers') },
+                        { key: 'kartustok', label: 'Kartu Stok', fn: () => switchTab('masterdata', 'kartustok') },
+                        { key: 'opname', label: 'Stok Opname', fn: () => switchTab('masterdata', 'opname') },
+                        { key: 'opnamecetak', label: 'Cetak Opname Voucher', fn: () => switchTab('masterdata', 'opnamecetak') },
+                        { key: 'daftarharga', label: 'Daftar Harga', fn: () => switchTab('masterdata', 'daftarharga') }
+                    ];
+                case 'pembelian':
+                    return [
+                        { key: 'po', label: 'Pesanan (PO)', fn: () => switchTab('pembelian', 'po') },
+                        { key: 'pembelian', label: 'Daftar Pembelian', fn: () => switchTab('pembelian', 'pembelian') },
+                        { key: 'retur', label: 'Retur Pembelian', fn: () => switchTab('pembelian', 'retur') },
+                        { key: 'cashback', label: 'Cashback', fn: () => switchTab('pembelian', 'cashback') }
+                    ];
+                case 'kasir':
+                    return [
+                        { key: 'so', label: 'Pesanan (SO)', fn: () => switchTab('kasir', 'so') },
+                        { key: 'jual', label: 'Penjualan', fn: () => switchTab('kasir', 'jual') },
+                        { key: 'retur', label: 'Retur Penjualan', fn: () => switchTab('kasir', 'retur') },
+                        { key: 'kasir', label: 'Kasir Cepat (F2)', fn: () => switchTab('kasir', 'kasir') }
+                    ];
+                case 'ppob':
+                    return [
+                        { key: 'pulsa', label: 'Pulsa & Paket Data', fn: () => switchTab('ppob', 'pulsa') },
+                        { key: 'transfer', label: 'Transfer Bank (BRILink)', fn: () => switchTab('ppob', 'transfer') },
+                        { key: 'tarik', label: 'Tarik Tunai ATM/PKH', fn: () => switchTab('ppob', 'tarik') },
+                        { key: 'ewallet', label: 'E-Wallet & Token PLN', fn: () => switchTab('ppob', 'ewallet') }
+                    ];
+                case 'utangpiutang':
+                    return [
+                        { key: 'piutang', label: 'Daftar Piutang', fn: () => switchTab('utangpiutang', 'piutang') },
+                        { key: 'utang', label: 'Daftar Utang', fn: () => switchTab('utangpiutang', 'utang') }
+                    ];
+                case 'akuntansi':
+                    return [
+                        { key: 'ringkasan', label: 'Ringkasan', fn: () => switchTab('akuntansi', 'ringkasan') },
+                        { key: 'kas', label: 'Alur Kas', fn: () => switchTab('akuntansi', 'kas') },
+                        { key: 'labarugi', label: 'Laba Rugi', fn: () => switchTab('akuntansi', 'labarugi') },
+                        { key: 'biaya', label: 'Biaya Ops', fn: () => switchTab('akuntansi', 'biaya') },
+                        { key: 'neraca', label: 'Neraca', fn: () => switchTab('akuntansi', 'neraca') },
+                        { key: 'saldoawal', label: 'Saldo Awal', fn: () => switchTab('akuntansi', 'saldoawal') }
+                    ];
+                case 'laporan':
+                    return [
+                        { key: 'master', label: 'Lap. Master Data', fn: () => switchTab('laporan', 'master') },
+                        { key: 'pembelian', label: 'Lap. Pembelian', fn: () => switchTab('laporan', 'pembelian') },
+                        { key: 'penjualan', label: 'Lap. Penjualan', fn: () => switchTab('laporan', 'penjualan') },
+                        { key: 'hutang', label: 'Lap. Hutang Usaha', fn: () => switchTab('laporan', 'hutang') },
+                        { key: 'piutang', label: 'Lap. Piutang Usaha', fn: () => switchTab('laporan', 'piutang') },
+                        { key: 'labarugi', label: 'Lap. Rugi/Laba', fn: () => switchTab('laporan', 'labarugi') },
+                        { key: 'kas', label: 'Lap. Kas', fn: () => switchTab('laporan', 'kas') }
+                    ];
+                case 'pengaturan': {
+                    const items = [{ key: 'general', label: 'Profil Toko', fn: () => openSettingsModal('general') }];
+                    if (admin) {
+                        items.push({ key: 'users', label: 'Kelola User', fn: () => openSettingsModal('users') });
+                        items.push({ key: 'supabase', label: 'Cloud & Sync', fn: () => openSettingsModal('supabase') });
+                        items.push({ key: 'backup', label: 'Backup & Tutup Buku', fn: () => openSettingsModal('backup') });
+                    }
+                    items.push({ key: 'db', label: 'Ganti Database', fn: () => openDbModal() });
+                    return items;
+                }
+                default:
+                    return [];
+            }
+        }
+        function triggerMobileSubItem(idx) {
+            const fn = _mobileSubHandlers[idx];
+            closeMobileDrawer();
+            if (typeof fn === 'function') fn();
+        }
+        function renderMobileDrawerSubmenus() {
+            const q = (document.getElementById('mobile-menu-search')?.value || '').trim().toLowerCase();
+            const clr = document.getElementById('mobile-menu-search-clear');
+            if (clr) clr.classList.toggle('hidden', !q);
+            _mobileSubHandlers = [];
+            const tabs = ['dashboard', 'masterdata', 'pembelian', 'kasir', 'ppob', 'servicehp', 'cetakvoucher', 'sumberdana', 'utangpiutang', 'akuntansi', 'laporan', 'pengaturan', 'petunjuk'];
+            tabs.forEach(tabId => {
+                const btn = document.getElementById('nav-' + tabId);
+                const subBox = document.getElementById('mobile-sub-' + tabId);
+                if (!btn) return;
+                const mainLbl = (btn.querySelector('span:not(.mobile-sub-caret)')?.textContent || '').toLowerCase();
+                const allSubs = getMobileSubItems(tabId);
+                const matchedSubs = q ? allSubs.filter(s => s.label.toLowerCase().includes(q) || mainLbl.includes(q)) : allSubs;
+                const showMain = !q || mainLbl.includes(q) || matchedSubs.length > 0;
+                btn.classList.toggle('hidden', !showMain);
+
+                if (subBox) {
+                    const isOpen = allSubs.length > 0 && (q ? matchedSubs.length > 0 : mobileExpandedTab === tabId);
+                    btn.classList.toggle('mobile-expanded', isOpen);
+                    const caret = btn.querySelector('.mobile-sub-caret i');
+                    if (caret) caret.className = isOpen ? 'fas fa-chevron-down' : 'fas fa-chevron-right';
+                    if (isOpen && matchedSubs.length > 0) {
+                        const activeKey = activeSubState[tabId] || '';
+                        subBox.innerHTML = matchedSubs.map(item => {
+                            const idx = _mobileSubHandlers.length;
+                            _mobileSubHandlers.push(item.fn);
+                            const isSubAct = activeRibbonTab === tabId && activeKey === item.key;
+                            return `<button type="button" onclick="triggerMobileSubItem(${idx})" class="mobile-sub-item ${isSubAct ? 'active' : ''}">${esc(item.label)}</button>`;
+                        }).join('');
+                        subBox.classList.remove('hidden');
+                    } else {
+                        subBox.innerHTML = '';
+                        subBox.classList.add('hidden');
+                    }
+                }
+            });
+        }
+        function openMobileDrawer() {
+            if (!isMobileViewport()) return;
+            const sb = document.getElementById('app-sidebar');
+            const bd = document.getElementById('mobile-drawer-backdrop');
+            if (!sb || !bd) return;
+            if (getMobileSubItems(activeRibbonTab).length > 0) mobileExpandedTab = activeRibbonTab;
+            renderMobileDrawerSubmenus();
+            bd.classList.remove('hidden');
+            sb.classList.add('mobile-open');
+        }
+        function closeMobileDrawer() {
+            document.getElementById('app-sidebar')?.classList.remove('mobile-open');
+            document.getElementById('mobile-drawer-backdrop')?.classList.add('hidden');
+        }
+        function handleSidebarNavClick(tabId) {
+            if (!isMobileViewport()) {
+                if (tabId === 'pengaturan') openPengaturanTab();
+                else switchTab(tabId);
+                return;
+            }
+            const subs = getMobileSubItems(tabId);
+            if (subs.length > 0) {
+                mobileExpandedTab = (mobileExpandedTab === tabId) ? null : tabId;
+                renderMobileDrawerSubmenus();
+            } else {
+                switchTab(tabId);
+                closeMobileDrawer();
+            }
+        }
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMobileDrawer(); });
+        window.addEventListener('resize', () => { if (!isMobileViewport()) closeMobileDrawer(); });
+        document.addEventListener('DOMContentLoaded', renderMobileDrawerSubmenus);
 
         function closeMdiTab(e, tabId) {
             e.stopPropagation();
@@ -14271,8 +14516,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (swRefreshing) return;
                 try {
-                    if (sessionStorage.getItem('donet_sw_reloaded_v15')) return;
-                    sessionStorage.setItem('donet_sw_reloaded_v15', '1');
+                    if (sessionStorage.getItem('donet_sw_reloaded_v16')) return;
+                    sessionStorage.setItem('donet_sw_reloaded_v16', '1');
                 } catch (_) {}
                 swRefreshing = true;
                 window.location.reload();
