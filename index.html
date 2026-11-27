@@ -2474,6 +2474,42 @@ alter table donet_cell_state disable row level security;</div>
                             </div>
                         </div>
                     </div>
+
+                    <div class="bg-rose-50 border border-rose-300 rounded p-3 space-y-2.5">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="font-bold text-rose-950"><i class="fas fa-eraser mr-1 text-rose-700"></i> Kosongkan Database (Tanpa Pindah Saldo)</div>
+                                <div class="text-[11px] text-rose-900">
+                                    Istilah iPos 5 / akuntansi: <b>Tutup Buku Tanpa Pindah Saldo / Reset Transaksi &amp; Saldo</b>.
+                                    Menghapus seluruh transaksi &amp; catatan Utang/Piutang serta meng-nol-kan saldo, sedangkan <b>Data Master (Barang, Supplier, Pelanggan, Dompet, User &amp; Pengaturan) tetap utuh</b>.
+                                </div>
+                            </div>
+                            <button type="button" onclick="openKosongkanTanpaSaldoConfirm()" class="ipos-btn-danger px-3 py-1.5 rounded font-bold shrink-0">
+                                <i class="fas fa-broom mr-1"></i> Kosongkan Tanpa Saldo
+                            </button>
+                        </div>
+                        <div id="kosongkan-tanpa-saldo-confirm-box" class="hidden bg-white border border-rose-300 rounded p-2.5 space-y-2">
+                            <div class="text-[11px] text-rose-900 font-semibold">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Konfirmasi Kosongkan Database (Tanpa Pindah Saldo):
+                            </div>
+                            <ul class="list-disc pl-4 text-[10.5px] text-slate-700 space-y-0.5">
+                                <li>Seluruh riwayat <b>Penjualan, PPOB/BRILink, Service HP, Pembelian, PO, Retur, Biaya &amp; Mutasi</b> akan dihapus.</li>
+                                <li>Seluruh catatan <b>Utang &amp; Piutang</b> (baik lunas maupun belum lunas) akan <b>dihapus semua</b>.</li>
+                                <li>Saldo seluruh <b>Kas, Rekening Bank &amp; Server Pulsa</b> di-nol-kan menjadi <b>Rp 0</b>.</li>
+                                <li><b>Data Master</b> (Daftar Barang, Supplier, Pelanggan, Daftar Sumber Dana, User &amp; Pengaturan) <b>tidak dihapus</b>.</li>
+                            </ul>
+                            <label class="flex items-center gap-2 text-[11px] font-semibold text-slate-800 bg-rose-50/70 border border-rose-200 rounded px-2.5 py-1.5 cursor-pointer select-none">
+                                <input type="checkbox" id="kosongkan-reset-stock-chk" checked>
+                                <span>Nol-kan juga Saldo Stok Barang menjadi <b>0</b> (hapus Kartu Stok)</span>
+                            </label>
+                            <div class="flex justify-end gap-2 pt-1">
+                                <button type="button" onclick="cancelKosongkanTanpaSaldoConfirm()" class="ipos-btn px-2.5 py-1 rounded font-semibold">Batal</button>
+                                <button type="button" onclick="executeKosongkanTanpaSaldo()" class="ipos-btn-danger px-3 py-1 rounded font-bold">
+                                    <i class="fas fa-trash-alt mr-1"></i> Ya, Kosongkan Transaksi &amp; Saldo Sekarang
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -13581,7 +13617,11 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             document.getElementById(`stab-${tab}`)?.classList.add('active');
             if (tab === 'users') renderSettingsUsersTable();
             if (tab === 'supabase') { renderSyncDiagnosticsBox(); if (isLoggedIn && navigator.onLine) syncNow(); }
-            if (tab === 'backup') renderSnapshotPanel();
+            if (tab === 'backup') {
+                cancelTutupBukuConfirm();
+                cancelKosongkanTanpaSaldoConfirm();
+                renderSnapshotPanel();
+            }
         }
 
         let pendingBannerImage; // undefined = tidak berubah, '' = kembali ke default
@@ -14002,6 +14042,97 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 showToast('Tutup buku selesai & tersinkron ke semua perangkat! Riwayat transaksi dikosongkan, saldo kas, stok & sisa utang/piutang dipertahankan.', 'success');
             } else {
                 showToast('Tutup buku selesai (tersimpan lokal). Sinkronisasi ke perangkat lain akan berjalan otomatis saat terhubung.', 'info');
+            }
+        }
+
+        function openKosongkanTanpaSaldoConfirm() {
+            if (!requireAdmin('Kosongkan Database Tanpa Pindah Saldo')) return;
+            cancelTutupBukuConfirm();
+            const chk = document.getElementById('kosongkan-reset-stock-chk');
+            if (chk) chk.checked = true;
+            document.getElementById('kosongkan-tanpa-saldo-confirm-box')?.classList.remove('hidden');
+        }
+
+        function cancelKosongkanTanpaSaldoConfirm() {
+            document.getElementById('kosongkan-tanpa-saldo-confirm-box')?.classList.add('hidden');
+        }
+
+        async function executeKosongkanTanpaSaldo() {
+            if (!requireAdmin('Kosongkan Database Tanpa Pindah Saldo')) return;
+            await takeSnapshot('sebelum-kosongkan-tanpa-saldo');
+            const nowIso = new Date().toISOString();
+            const resetStock = document.getElementById('kosongkan-reset-stock-chk')?.checked !== false;
+
+            appState.settings = appState.settings || {};
+            appState.settings.bookEpoch = (Number(appState.settings.bookEpoch) || 0) + 1;
+            appState.settings.lastClosedAt = nowIso;
+
+            // 1. Hapus seluruh riwayat transaksi
+            appState.transactions = [];
+            appState.purchaseOrders = [];
+            appState.purchaseRecords = [];
+            appState.purchaseReturns = [];
+            appState.purchaseCashbacks = [];
+            appState.salesOrders = [];
+            appState.salesReturns = [];
+            appState.voucherProductions = [];
+            appState.fundTransfers = [];
+            appState.serviceTickets = [];
+            appState.expenses = [];
+            appState.stockOpnames = [];
+
+            // 2. Hapus seluruh catatan Utang & Piutang (termasuk yang belum lunas)
+            appState.debtsReceivables = [];
+
+            // 3. Nol-kan seluruh saldo Kas / Rekening Bank / Server Pulsa (tanpa hapus daftar akun Sumber Dana)
+            ensureWalletListIntegrity();
+            const zeroWallets = {};
+            (appState.walletList || []).forEach(w => {
+                if (w && w.id) zeroWallets[w.id] = 0;
+            });
+            appState.wallets = zeroWallets;
+
+            // 4. Stok barang & Kartu Stok (nol-kan bila dicentang, atau pertahankan stok sebagai Saldo Awal)
+            if (resetStock) {
+                (appState.items || []).forEach(it => { it.stock = 0; });
+                appState.stockLedger = [];
+            } else {
+                appState.stockLedger = (appState.items || []).map(it => {
+                    const currentStock = Number(it.stock) || 0;
+                    return {
+                        date: nowIso,
+                        ref: 'SALDO-AWAL',
+                        code: it.code,
+                        name: it.name,
+                        type: 'STOK AWAL',
+                        inQty: currentStock,
+                        outQty: 0,
+                        balance: currentStock
+                    };
+                });
+            }
+
+            if (typeof opnameDraft === 'object' && opnameDraft) {
+                Object.keys(opnameDraft).forEach(k => delete opnameDraft[k]);
+            }
+            posCart = [];
+            selectedPoIndex = -1;
+            selectedPurchaseIndex = -1;
+            selectedReturnIndex = -1;
+            selectedSoIndex = -1;
+            selectedSaleIndex = -1;
+            selectedSretIndex = -1;
+
+            cancelKosongkanTanpaSaldoConfirm();
+            await saveStateToIndexedDBForDb(activeDatabaseName, appState);
+            refreshAllUI();
+            const syncRes = await syncNow();
+            closeModal('settings-modal');
+            const stockNote = resetStock ? ' & stok barang di-nol-kan' : ' (stok barang dipertahankan)';
+            if (syncRes && syncRes.ok) {
+                showToast(`Database berhasil dikosongkan tanpa pindah saldo & tersinkron! Transaksi, utang/piutang, & saldo dompet dihapus${stockNote}; data master tetap aman.`, 'success');
+            } else {
+                showToast(`Database dikosongkan tanpa pindah saldo (tersimpan lokal). Transaksi, utang/piutang, & saldo dompet dihapus${stockNote}.`, 'info');
             }
         }
 
@@ -14573,8 +14704,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (swRefreshing) return;
                 try {
-                    if (sessionStorage.getItem('donet_sw_reloaded_v18')) return;
-                    sessionStorage.setItem('donet_sw_reloaded_v18', '1');
+                    if (sessionStorage.getItem('donet_sw_reloaded_v19')) return;
+                    sessionStorage.setItem('donet_sw_reloaded_v19', '1');
                 } catch (_) {}
                 swRefreshing = true;
                 window.location.reload();
