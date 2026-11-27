@@ -1567,21 +1567,6 @@
 
                 <!-- ==================== MENU 5: TRANSAKSI PPOB & AGEN BRILINK ==================== -->
                 <section id="view-ppob" class="hidden p-3 sm:p-4 max-w-6xl mx-auto space-y-3">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                        <div class="ipos-panel rounded-lg p-3 border-l-4 border-l-blue-600">
-                            <div class="text-slate-500 font-bold">Saldo Rekening BRILink</div>
-                            <div id="ppob-saldo-brilink" class="text-lg font-extrabold font-mono text-blue-800">0</div>
-                        </div>
-                        <div class="ipos-panel rounded-lg p-3 border-l-4 border-l-purple-600">
-                            <div class="text-slate-500 font-bold">Deposit Server Pulsa & PPOB</div>
-                            <div id="ppob-saldo-pulsa" class="text-lg font-extrabold font-mono text-purple-800">0</div>
-                        </div>
-                        <div class="ipos-panel rounded-lg p-3 border-l-4 border-l-emerald-600">
-                            <div class="text-slate-500 font-bold">Kas Tunai Laci Toko</div>
-                            <div id="ppob-saldo-kas" class="text-lg font-extrabold font-mono text-emerald-800">0</div>
-                        </div>
-                    </div>
-
                     <div class="ipos-panel rounded-lg overflow-hidden">
                         <div class="ipos-panel-header px-4 py-2 flex flex-wrap items-center justify-between gap-2">
                             <div class="flex flex-wrap gap-1.5 text-xs">
@@ -6717,10 +6702,6 @@ alter table donet_cell_state disable row level security;</div>
                 setText('dash-last-trx-amount', '0');
                 setText('dash-last-trx-desc', 'Belum ada transaksi di periode berjalan');
             }
-
-            setText('ppob-saldo-brilink', formatRp(appState.wallets['SALDO_BRILINK'] || 0));
-            setText('ppob-saldo-pulsa', formatRp(appState.wallets['SALDO_PULSA'] || 0));
-            setText('ppob-saldo-kas', formatRp(appState.wallets['KAS_TOKO'] || 0));
 
             renderDynamicWalletsUI();
             populateCategoryDropdowns();
@@ -14060,8 +14041,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (swRefreshing) return;
                 try {
-                    if (sessionStorage.getItem('donet_sw_reloaded_v13')) return;
-                    sessionStorage.setItem('donet_sw_reloaded_v13', '1');
+                    if (sessionStorage.getItem('donet_sw_reloaded_v14')) return;
+                    sessionStorage.setItem('donet_sw_reloaded_v14', '1');
                 } catch (_) {}
                 swRefreshing = true;
                 window.location.reload();
