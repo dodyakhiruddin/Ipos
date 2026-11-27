@@ -867,10 +867,10 @@
                                 <div id="opname-history" class="space-y-1 text-xs"></div>
                             </div>
                             <div id="mpane-opnamecetak" class="hidden space-y-2.5">
-                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Lembar hitung stok khusus <b>kategori voucher (awalan V)</b>. Kolom: <b>Kode Voucher</b>, <b>Stok Sistem</b> (otomatis), <b>Stok Fisik</b> dan <b>Selisih</b> (dikosongkan untuk ditulis tangan). Kertas A4 dibagi 2 dengan garis putus-putus, tetapi tiap cetak hanya <b>1 laporan</b> (tanggal hari ini). Hari berikutnya masukkan lagi kertas sisa dan pilih posisi <b>Bawah</b>. Menu <b>Stok Opname</b> di sebelah kiri tetap dipakai untuk menyimpan hasil hitungan.</div>
+                                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Lembar hitung stok khusus <b>kategori voucher (awalan V)</b>. Seluruh item terpilih otomatis disusun agar muat dalam <b>1 lembar A4</b> (tidak pernah terpecah menjadi 2 lembar). Kolom: <b>Kode Voucher</b>, <b>Stok Sistem</b> (otomatis), <b>Stok Fisik</b> dan <b>Selisih</b> (dikosongkan untuk ditulis tangan). Pilih posisi <b>Atas</b>/<b>Bawah</b> (1/2 A4) atau <b>Penuh</b> (1 halaman A4).</div>
                                 <div class="flex flex-wrap gap-2 items-end text-xs">
                                     <label class="block"><span class="block font-bold mb-0.5">Tanggal cetak</span><input type="date" id="ov-date" onchange="renderOpnameCetak()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5"></label>
-                                    <label class="block"><span class="block font-bold mb-0.5">Posisi di kertas</span><select id="ov-pos" onchange="renderOpnameCetak()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"><option value="atas">Atas (hari pertama)</option><option value="bawah">Bawah (hari berikutnya)</option></select></label>
+                                    <label class="block"><span class="block font-bold mb-0.5">Posisi di kertas</span><select id="ov-pos" onchange="renderOpnameCetak()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"><option value="atas">Atas (1/2 A4 - hari pertama)</option><option value="bawah">Bawah (1/2 A4 - hari berikutnya)</option><option value="penuh">Penuh (1 halaman A4 penuh)</option></select></label>
                                     <label class="block"><span class="block font-bold mb-0.5">Kategori</span><select id="ov-cat" onchange="renderOpnameCetak()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select></label>
                                     <label class="flex items-center gap-1.5 pb-1.5 font-semibold"><input type="checkbox" id="ov-hide0" onchange="renderOpnameCetak()"> Sembunyikan stok sistem 0</label>
                                     <button type="button" onclick="ovExport('png')" class="ipos-btn-primary px-3 py-1.5 rounded font-bold"><i class="fas fa-image mr-1"></i> Unduh PNG</button>
@@ -5271,86 +5271,134 @@
         }
         function ovPageHtmls() {
             const items = ovItems(), st = appState.settings, dateStr = ovDateStr();
-            const pos = (document.getElementById('ov-pos') || {}).value === 'bawah' ? 'bawah' : 'atas';
-            const HALF = 561, PADX = 10, GAP = 8, SIS = 34, FIS = 38, SEL = 38, FONT = 'Tahoma,Verdana,Arial,sans-serif';
-            const ctx = document.createElement('canvas').getContext('2d');
-            const codeWidth = fs => { ctx.font = `bold ${fs}px ${FONT}`; return items.reduce((m, i) => Math.max(m, ctx.measureText(String(i.code || '')).width), 0); };
+            const posVal = (document.getElementById('ov-pos') || {}).value;
+            const pos = posVal === 'bawah' ? 'bawah' : (posVal === 'penuh' ? 'penuh' : 'atas');
+            const isFull = pos === 'penuh';
+            const HALF = 561, PADX = 8, FONT = 'Tahoma,Verdana,Arial,sans-serif';
             const innerW = 794 - PADX * 2;
-            let cols = 4, FS = 8;
-            for (const c of [4, 3, 2, 1]) {
-                const gw = (innerW - GAP * (c - 1)) / c;
-                let ok = 0;
-                for (let f = 9.5; f >= 8; f -= 0.5) {
-                    if (codeWidth(f) + 14 <= gw - SIS - FIS - SEL - 4) { ok = f; break; }
-                }
-                if (ok) { cols = c; FS = ok; break; }
-                if (c === 1) { cols = 1; FS = 8; }
-            }
+            const MAX_COL_H = isFull ? 1030 : 480;
 
-            const colW = (innerW - GAP * (cols - 1)) / cols;
+            const ctx = document.createElement('canvas').getContext('2d');
+            const maxCodeW = fs => {
+                ctx.font = `bold ${fs}px ${FONT}`;
+                return items.reduce((m, i) => Math.max(m, ctx.measureText(String(i.code || '')).width), 0);
+            };
             const provName = i => (plStripV(i.category) || 'LAINNYA').toUpperCase();
 
-            const thCell = (txt, align, w) => `<div style="${w ? `width:${w}px;flex:none;` : 'flex:1;min-width:0;'}padding:4px 4px;text-align:${align};white-space:nowrap;overflow:hidden;${w !== SEL ? 'border-right:1px solid rgba(255,255,255,0.35);' : ''}box-sizing:border-box">${txt}</div>`;
-            const tblHeadHtml = `<div style="display:flex;align-items:stretch;width:100%;background:#0f3d7a;color:#ffffff;font-size:7.5px;font-weight:700;line-height:1.25;border-bottom:1.5px solid #0f3d7a">${thCell('KODE VOUCHER', 'left', 0)}${thCell('SISTEM', 'right', SIS)}${thCell('FISIK', 'center', SIS ? FIS : 38)}${thCell('SELISIH', 'center', SEL)}</div>`;
+            const buildLayout = (cols, fs, padY, thPadY, sisW, fisW, selW, gap) => {
+                const colW = (innerW - gap * (cols - 1)) / cols;
+                const thFs = Math.max(6, Math.min(7.5, fs - 0.5));
+                const thCell = (txt, align, w) => `<div style="${w ? `width:${w}px;flex:none;` : 'flex:1;min-width:0;'}padding:${thPadY}px 3px;text-align:${align};white-space:nowrap;overflow:hidden;${w !== selW ? 'border-right:1px solid rgba(255,255,255,0.35);' : ''}box-sizing:border-box">${txt}</div>`;
+                const tblHeadHtml = `<div style="display:flex;align-items:stretch;width:100%;background:#0f3d7a;color:#ffffff;font-size:${thFs}px;font-weight:700;line-height:1.2;border-bottom:1.5px solid #0f3d7a">${thCell('KODE VOUCHER', 'left', 0)}${thCell('SISTEM', 'right', sisW)}${thCell('FISIK', 'center', fisW)}${thCell('SELISIH', 'center', selW)}</div>`;
+                const provHtml = (name, isFirst) => `<div style="background:#e0ecff;color:#0f3d7a;font-size:${fs}px;font-weight:800;letter-spacing:0.2px;line-height:1.2;padding:${padY}px 4px;border-bottom:1.5px solid #0f3d7a;${isFirst ? '' : 'border-top:1px solid #0f3d7a;'}text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</div>`;
+                const itemHtml = (i, isLast) => `<div style="display:flex;align-items:stretch;width:100%;font-size:${fs}px;line-height:1.22;color:#0f172a;background:#ffffff;${isLast ? '' : 'border-bottom:1px solid #94a3b8;'}">`
+                    + `<div style="flex:1;min-width:0;padding:${padY}px 4px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:1px solid #94a3b8;box-sizing:border-box">${esc(i.code)}</div>`
+                    + `<div style="width:${sisW}px;flex:none;padding:${padY}px 3px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;border-right:1px solid #94a3b8;box-sizing:border-box">${formatNum(Number(i.stock) || 0)}</div>`
+                    + `<div style="width:${fisW}px;flex:none;padding:${padY}px 3px;border-right:1px solid #94a3b8;box-sizing:border-box">&nbsp;</div>`
+                    + `<div style="width:${selW}px;flex:none;padding:${padY}px 3px;box-sizing:border-box">&nbsp;</div>`
+                    + `</div>`;
 
-            const provHtml = (name, isFirst) => `<div style="background:#e0ecff;color:#0f3d7a;font-size:${FS}px;font-weight:800;letter-spacing:0.3px;line-height:1.3;padding:3.5px 5px 4px;border-bottom:1.5px solid #0f3d7a;${isFirst ? '' : 'border-top:1px solid #0f3d7a;'}text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</div>`;
+                const probe = document.createElement('div');
+                probe.style.cssText = `position:fixed;left:-10000px;top:0;width:${colW}px;font-family:${FONT};border:1px solid #475569;box-sizing:border-box`;
+                probe.innerHTML = tblHeadHtml + provHtml('PROVIDER', false) + itemHtml({ code: 'SAMPLE', stock: 0 }, false);
+                document.body.appendChild(probe);
+                const hdrH = probe.children[0].offsetHeight + 2;
+                const provH = probe.children[1].offsetHeight;
+                const itemH = probe.children[2].offsetHeight;
+                probe.remove();
 
-            const itemHtml = (i, isLast) => `<div style="display:flex;align-items:stretch;width:100%;font-size:${FS}px;line-height:1.35;color:#0f172a;background:#ffffff;${isLast ? '' : 'border-bottom:1px solid #94a3b8;'}">`
-                + `<div style="flex:1;min-width:0;padding:3.5px 5px 4.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:1px solid #94a3b8;box-sizing:border-box">${esc(i.code)}</div>`
-                + `<div style="width:${SIS}px;flex:none;padding:3.5px 4px 4.5px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;border-right:1px solid #94a3b8;box-sizing:border-box">${formatNum(Number(i.stock) || 0)}</div>`
-                + `<div style="width:${FIS}px;flex:none;padding:3.5px 4px 4.5px;border-right:1px solid #94a3b8;box-sizing:border-box">&nbsp;</div>`
-                + `<div style="width:${SEL}px;flex:none;padding:3.5px 4px 4.5px;box-sizing:border-box">&nbsp;</div>`
-                + `</div>`;
+                const chunkHeight = chunk => {
+                    if (!chunk.length) return 0;
+                    let h = hdrH, prev = null;
+                    for (const it of chunk) {
+                        const p = provName(it);
+                        if (p !== prev) { h += provH; prev = p; }
+                        h += itemH;
+                    }
+                    return h;
+                };
 
-            // Ukur tinggi aktual header tabel, judul provider, dan 1 baris item
-            const probe = document.createElement('div');
-            probe.style.cssText = `position:fixed;left:-10000px;top:0;width:${colW}px;font-family:${FONT};border:1px solid #475569;box-sizing:border-box`;
-            probe.innerHTML = tblHeadHtml + provHtml('PROVIDER', false) + itemHtml({ code: 'SAMPLE', stock: 0 }, false);
-            document.body.appendChild(probe);
-            const hdrH = probe.children[0].offsetHeight + 2; // +2px border luar kotak
-            const provH = probe.children[1].offsetHeight;
-            const itemH = probe.children[2].offsetHeight;
-            probe.remove();
+                // Bagi item ke dalam kolom secara seimbang berdasarkan tinggi piksel (termasuk header provider)
+                const splitBalanced = () => {
+                    if (!items.length) return [];
+                    const effCols = Math.min(cols, items.length);
+                    if (effCols <= 1) return [items.slice()];
+                    const totalH = items.reduce((acc, it, idx) => {
+                        const prevP = idx > 0 ? provName(items[idx - 1]) : null;
+                        return acc + itemH + (provName(it) !== prevP ? provH : 0);
+                    }, 0);
+                    const targetH = Math.max(hdrH + provH + itemH, Math.ceil((totalH + hdrH * effCols) / effCols));
+                    const chunks = [];
+                    let start = 0;
+                    for (let g = 0; g < effCols && start < items.length; g++) {
+                        if (g === effCols - 1) {
+                            chunks.push(items.slice(start));
+                            break;
+                        }
+                        let curH = hdrH, prev = null, end = start;
+                        const minRemain = effCols - g - 1;
+                        while (end < items.length - minRemain) {
+                            const p = provName(items[end]);
+                            const stepH = itemH + (p !== prev ? provH : 0);
+                            if (end > start && curH + stepH > targetH) break;
+                            curH += stepH;
+                            prev = p;
+                            end++;
+                        }
+                        if (end === start) end = start + 1;
+                        chunks.push(items.slice(start, end));
+                        start = end;
+                    }
+                    return chunks;
+                };
 
-            const MAX_COL_H = 470;
-            const chunkHeight = chunk => {
-                if (!chunk.length) return 0;
-                let h = hdrH, prev = null;
-                for (const it of chunk) {
-                    const p = provName(it);
-                    if (p !== prev) { h += provH; prev = p; }
-                    h += itemH;
-                }
-                return h;
+                const chunks = splitBalanced();
+                const maxH = chunks.reduce((m, ch) => Math.max(m, chunkHeight(ch)), 0);
+                const codeSpace = colW - sisW - fisW - selW - 8;
+                const codeFits = maxCodeW(fs) <= codeSpace;
+                return { cols, fs, gap, tblHeadHtml, provHtml, itemHtml, chunks, maxH, codeFits };
             };
-            const splitBalanced = (slice) => {
-                const chunks = [];
-                const perCol = Math.max(1, Math.ceil(slice.length / cols));
-                for (let g = 0; g < cols; g++) {
-                    const ch = slice.slice(g * perCol, (g + 1) * perCol);
-                    if (ch.length) chunks.push(ch);
-                }
-                return chunks;
-            };
-            const fitsOnPage = slice => splitBalanced(slice).every(ch => chunkHeight(ch) <= MAX_COL_H);
 
-            // Bagi seluruh item menjadi beberapa halaman setengah A4 tanpa melebihi batas tinggi
-            const pageSlices = [];
-            let idx = 0;
-            while (idx < items.length) {
-                let lo = 1, hi = items.length - idx, best = 1;
-                while (lo <= hi) {
-                    const mid = Math.floor((lo + hi) / 2);
-                    if (fitsOnPage(items.slice(idx, idx + mid))) { best = mid; lo = mid + 1; }
-                    else hi = mid - 1;
+            const colOrder = items.length <= 16 ? [2, 3, 1, 4, 5] : (items.length <= 40 ? [3, 4, 2, 5, 1] : [4, 3, 5, 2, 1]);
+            const tiers = [
+                { fsList: [9.5, 9, 8.5, 8], padY: 3.5, thPadY: 3.5, sisW: 34, fisW: 38, selW: 38, gap: 8 },
+                { fsList: [8, 7.5, 7], padY: 2.5, thPadY: 3, sisW: 30, fisW: 34, selW: 34, gap: 6 },
+                { fsList: [7, 6.5], padY: 1.5, thPadY: 2.5, sisW: 26, fisW: 30, selW: 30, gap: 5 },
+                { fsList: [6.5, 6], padY: 1, thPadY: 2, sisW: 24, fisW: 27, selW: 27, gap: 4 }
+            ];
+
+            let chosen = null;
+            // Prioritas 1: Muat 1 lembar TANPA memotong kode voucher
+            outer1: for (const t of tiers) {
+                for (const c of colOrder) {
+                    if (c > Math.max(1, items.length)) continue;
+                    for (const fs of t.fsList) {
+                        const cand = buildLayout(c, fs, t.padY, t.thPadY, t.sisW, t.fisW, t.selW, t.gap);
+                        if (cand.codeFits && cand.maxH <= MAX_COL_H) { chosen = cand; break outer1; }
+                    }
                 }
-                pageSlices.push(items.slice(idx, idx + best));
-                idx += best;
             }
-            if (!pageSlices.length) pageSlices.push([]);
+            // Prioritas 2: Muat 1 lembar dengan toleransi ellipsis pada kode terpanjang
+            if (!chosen) {
+                outer2: for (const t of tiers) {
+                    for (const c of colOrder) {
+                        if (c > Math.max(1, items.length)) continue;
+                        for (const fs of t.fsList) {
+                            const cand = buildLayout(c, fs, t.padY, t.thPadY, t.sisW, t.fisW, t.selW, t.gap);
+                            if (cand.maxH <= MAX_COL_H) { chosen = cand; break outer2; }
+                        }
+                    }
+                }
+            }
+            // Fallback terakhir (item sangat banyak di mode 1/2 A4): pilih layout paling padat & skalakan proporsional agar TETAP 1 lembar
+            if (!chosen) {
+                const maxC = Math.min(5, Math.max(1, items.length));
+                chosen = buildLayout(maxC, 6, 1, 2, 24, 27, 27, 4);
+            }
 
-            const pages = pageSlices.length;
-            ovMeta = { total: items.length, pages, cols, font: FS };
+            const fitScale = chosen.maxH > MAX_COL_H ? Math.max(0.55, (MAX_COL_H - 2) / chosen.maxH) : 1;
+            const { cols, fs, gap, tblHeadHtml, provHtml, itemHtml, chunks } = chosen;
+            ovMeta = { total: items.length, pages: 1, cols, font: fs };
 
             const renderGroup = (arr) => {
                 let prev = null;
@@ -5363,27 +5411,31 @@
                 return `<div style="border:1px solid #475569;background:#ffffff;box-sizing:border-box">${tblHeadHtml}${rowsHtml}</div>`;
             };
 
-            const out = [];
-            for (let p = 0; p < pages; p++) {
-                const gs = splitBalanced(pageSlices[p]).map(renderGroup);
-                const body = gs.length
-                    ? `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:${GAP}px;align-items:start">${gs.join('')}</div>`
-                    : '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:12px">Tidak ada item voucher.</div>';
-                const report = h => `<div style="height:${h}px;box-sizing:border-box;padding:10px ${PADX}px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between">
-                    <div>
-                        <div style="display:flex;justify-content:space-between;align-items:flex-end;height:40px;border-bottom:2px solid #0f3d7a;padding-bottom:3px;margin-bottom:5px;box-sizing:border-box">
-                            <div><div style="font-size:13px;font-weight:900;color:#0f3d7a;line-height:1.1">STOK OPNAME VOUCHER</div><div style="font-size:10px;font-weight:700;color:#475569">${esc(st.storeName || 'TOKO')}</div></div>
-                            <div style="text-align:right;font-size:10px;line-height:1.3"><div><b>Tanggal:</b> ${esc(dateStr)}</div><div style="color:#475569">Hal ${p + 1}/${pages} | ${items.length} item</div></div>
-                        </div>${body}
-                    </div>
-                    <div style="display:flex;justify-content:space-between;font-size:9px;padding-top:4px;color:#334155"><span>Dihitung oleh: ____________________</span><span>Diperiksa oleh: ____________________</span></div>
-                </div>`;
-                const blank = h => `<div style="height:${h}px"></div>`;
-                const top = pos === 'atas' ? report(HALF) : blank(HALF);
-                const bot = pos === 'bawah' ? report(1123 - HALF) : blank(1123 - HALF);
-                out.push(`<div class="ov-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:${FONT};overflow:hidden">${top}${bot}<div style="position:absolute;left:0;right:0;top:${HALF}px;border-top:1px dashed #64748b"></div></div>`);
+            const gs = chunks.map(renderGroup);
+            const gridHtml = gs.length
+                ? `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:${gap}px;align-items:start">${gs.join('')}</div>`
+                : '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:12px">Tidak ada item voucher.</div>';
+            const body = fitScale < 1
+                ? `<div style="transform:scale(${fitScale.toFixed(4)});transform-origin:top left;width:${(100 / fitScale).toFixed(3)}%">${gridHtml}</div>`
+                : gridHtml;
+
+            const report = h => `<div style="height:${h}px;box-sizing:border-box;padding:8px ${PADX}px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between">
+                <div>
+                    <div style="display:flex;justify-content:space-between;align-items:flex-end;height:36px;border-bottom:2px solid #0f3d7a;padding-bottom:3px;margin-bottom:5px;box-sizing:border-box">
+                        <div><div style="font-size:13px;font-weight:900;color:#0f3d7a;line-height:1.1">STOK OPNAME VOUCHER</div><div style="font-size:10px;font-weight:700;color:#475569">${esc(st.storeName || 'TOKO')}</div></div>
+                        <div style="text-align:right;font-size:10px;line-height:1.3"><div><b>Tanggal:</b> ${esc(dateStr)}</div><div style="color:#475569">1 Lembar A4 | ${items.length} item</div></div>
+                    </div>${body}
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:9px;padding-top:4px;color:#334155"><span>Dihitung oleh: ____________________</span><span>Diperiksa oleh: ____________________</span></div>
+            </div>`;
+
+            if (isFull) {
+                return [`<div class="ov-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:${FONT};overflow:hidden">${report(1123)}</div>`];
             }
-            return out;
+            const blank = h => `<div style="height:${h}px"></div>`;
+            const top = pos === 'atas' ? report(HALF) : blank(HALF);
+            const bot = pos === 'bawah' ? report(1123 - HALF) : blank(1123 - HALF);
+            return [`<div class="ov-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:${FONT};overflow:hidden">${top}${bot}<div style="position:absolute;left:0;right:0;top:${HALF}px;border-top:1px dashed #64748b"></div></div>`];
         }
         function renderOpnameItemList() {
             const pool = ovFilteredPool();
@@ -5411,7 +5463,9 @@
             const el = document.getElementById('ov-preview');
             el.innerHTML = ovPageHtmls().map(h => `<div style="box-shadow:0 1px 6px rgba(0,0,0,.35);margin-bottom:12px">${h}</div>`).join('');
             const info = document.getElementById('ov-info');
-            if (info) info.textContent = `${ovMeta.total} item voucher terpilih | ${ovMeta.pages} lembar A4 (1 laporan per lembar, ${(document.getElementById('ov-pos') || {}).value === 'bawah' ? 'bawah' : 'atas'}) | ${ovMeta.cols} kolom`;
+            const posVal = (document.getElementById('ov-pos') || {}).value;
+            const posLabel = posVal === 'bawah' ? '1/2 A4 bawah' : (posVal === 'penuh' ? '1 halaman A4 penuh' : '1/2 A4 atas');
+            if (info) info.textContent = `${ovMeta.total} item voucher terpilih | 1 lembar A4 (${posLabel}) | ${ovMeta.cols} kolom`;
         }
         async function ovCanvases() {
             if (typeof html2canvas === 'undefined') throw new Error('html2canvas belum termuat');
