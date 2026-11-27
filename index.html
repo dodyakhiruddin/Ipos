@@ -273,23 +273,38 @@
 
     <!-- ==================== SCREEN: SUDAH LOGOUT / KELUAR ==================== -->
     <div id="logged-out-screen" class="fixed inset-0 bg-gradient-to-br from-slate-100 via-sky-50 to-slate-200 z-[65] hidden flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-sm p-6 text-center space-y-4">
-            <div class="w-16 h-16 mx-auto rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center text-2xl shadow-sm">
-                <i class="fas fa-power-off"></i>
+        <div class="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div class="text-center">
+                <div class="w-14 h-14 mx-auto rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center text-xl shadow-sm">
+                    <i class="fas fa-power-off"></i>
+                </div>
+                <div class="text-[11px] font-bold uppercase tracking-wider text-sky-700 mt-2">DONET CELL • <span id="logout-screen-db-name">GROSIRDONET</span></div>
+                <h2 class="text-lg font-extrabold text-slate-800 mt-0.5">Anda Telah Keluar</h2>
+                <p class="text-[11.5px] text-slate-600 mt-0.5">Masukkan akun &amp; password untuk masuk kembali ke Dashboard.</p>
             </div>
-            <div>
-                <div class="text-xs font-bold uppercase tracking-wider text-sky-700">DONET CELL • <span id="logout-screen-db-name">GROSIRDONET</span></div>
-                <h2 class="text-lg font-extrabold text-slate-800 mt-1">Anda Telah Keluar</h2>
-                <p class="text-xs text-slate-600 mt-1">Sesi aplikasi telah ditutup. Selama belum masuk kembali, halaman utama tetap tertutup.</p>
-            </div>
-            <div class="space-y-2 pt-1">
-                <button type="button" onclick="reenterAppFromLogout()" class="ipos-btn-primary w-full py-2.5 rounded-lg text-xs font-bold shadow flex items-center justify-center gap-2">
+            <form onsubmit="handleLogoutScreenLogin(event)" class="space-y-2.5 text-xs">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">User</label>
+                    <input type="text" id="logout-login-user" value="admin" required autocomplete="off" autocapitalize="none" spellcheck="false" oninput="refreshLogoutScreenBiometricUI()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Password</label>
+                    <input type="password" id="logout-login-pass" value="" required autocomplete="current-password" placeholder="Masukkan password..." class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500">
+                </div>
+                <div id="logout-login-error" class="hidden text-[11px] text-red-600 bg-red-50 border border-red-200 rounded px-2.5 py-1.5 text-center font-medium">
+                    User atau Password tidak valid!
+                </div>
+                <button type="submit" id="logout-login-submit" class="ipos-btn-primary w-full py-2.5 rounded-lg text-xs font-bold shadow flex items-center justify-center gap-2">
                     <i class="fas fa-sign-in-alt"></i> Masuk Kembali ke Dashboard
                 </button>
-                <button type="button" onclick="openLoginModal()" class="ipos-btn w-full py-2 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-2">
-                    <i class="fas fa-user-shield text-sky-600"></i> Ganti User / Login Manual
+                <button type="button" id="logout-btn-biometric" onclick="loginWithBiometricFromLogoutScreen()" class="hidden w-full ipos-btn-success py-2 rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-2">
+                    <i class="fas fa-fingerprint text-base"></i>
+                    <span id="logout-btn-biometric-label">Masuk dengan Sidik Jari / Face ID</span>
                 </button>
-            </div>
+                <button type="button" onclick="openDbModal()" class="ipos-btn w-full py-2 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-2">
+                    <i class="fas fa-database text-sky-600"></i> Ganti Database
+                </button>
+            </form>
         </div>
     </div>
 
@@ -4232,26 +4247,149 @@
             saveSessionState(false);
         }
 
-        function showLoggedOutScreen() {
+        async function refreshLogoutScreenBiometricUI() {
+            const btn = document.getElementById('logout-btn-biometric');
+            const lbl = document.getElementById('logout-btn-biometric-label');
+            if (!btn) return;
+            const supported = await isPlatformBiometricReady();
+            if (!supported) { btn.classList.add('hidden'); return; }
+            const typedUser = (document.getElementById('logout-login-user')?.value || '').trim();
+            const matchedCred = typedUser ? findEnrolledBiometric(activeDatabaseName, typedUser) : null;
+            const anyDbCreds = getEnrolledBiometricsForDb(activeDatabaseName);
+            const activeCred = matchedCred || (anyDbCreds.length === 1 ? anyDbCreds[0] : null);
+            if (anyDbCreds.length > 0) {
+                btn.classList.remove('hidden');
+                if (lbl) lbl.textContent = activeCred
+                    ? `Masuk dengan Sidik Jari / Face ID (${activeCred.username.toUpperCase()})`
+                    : 'Masuk dengan Sidik Jari / Face ID';
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        async function showLoggedOutScreen() {
             const dbLabel = document.getElementById('logout-screen-db-name');
             if (dbLabel) dbLabel.textContent = activeDatabaseName;
+            const usersList = (Array.isArray(appState.users) && appState.users.length > 0) ? appState.users : getDefaultUsersSeed();
+            const firstUser = usersList[0] || { username: 'admin' };
+            const uEl = document.getElementById('logout-login-user');
+            const pEl = document.getElementById('logout-login-pass');
+            const errEl = document.getElementById('logout-login-error');
+            if (uEl) uEl.value = firstUser.username || 'admin';
+            if (pEl) pEl.value = '';
+            if (errEl) errEl.classList.add('hidden');
             document.getElementById('ipos-login-modal')?.classList.add('hidden');
             document.getElementById('logged-out-screen')?.classList.remove('hidden');
+            try { await refreshLogoutScreenBiometricUI(); } catch (e) {}
+            setTimeout(() => document.getElementById('logout-login-pass')?.focus(), 60);
         }
 
         function hideLoggedOutScreen() {
             document.getElementById('logged-out-screen')?.classList.add('hidden');
         }
 
-        async function reenterAppFromLogout() {
-            hideLoggedOutScreen();
-            await loadDatabaseForActiveTenant();
-            activatePrimarySessionUser();
-            try { await takeSnapshot('login'); } catch (e) {}
-            updateDatabaseIdentityUI();
-            refreshAllUI();
-            offerSharedProof();
-            showToast(`Selamat datang kembali di DONET CELL [${activeDatabaseName}]`, 'success');
+        async function authenticateAndEnter(userInput, passInput, errEl, submitBtn, enrollChk) {
+            const candidateState = await loadStateFromIndexedDBForDb(activeDatabaseName);
+            if (candidateState && Array.isArray(candidateState.users) && candidateState.users.length > 0) {
+                appState.users = candidateState.users;
+            }
+            const usersList = (Array.isArray(appState.users) && appState.users.length > 0)
+                ? appState.users
+                : getDefaultUsersSeed();
+            const btnLabel = submitBtn ? submitBtn.textContent : '';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Memeriksa...'; }
+            let matchedAccount = null;
+            let usedPassInput = passInput;
+            let loginFailure = '';
+            try {
+                const candidates = [passInput];
+                if (passInput !== passInput.trim() && passInput.trim()) candidates.push(passInput.trim());
+                outer:
+                for (const pw of candidates) {
+                    for (const u of usersList) {
+                        if (!u || typeof u.username !== 'string') continue;
+                        if (u.username.trim().toLowerCase() === userInput.toLowerCase() && await verifyPassword(u.password, pw)) {
+                            matchedAccount = u;
+                            usedPassInput = pw;
+                            break outer;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                loginFailure = 'Terjadi kesalahan saat memeriksa password: ' + (err && err.message ? err.message : err);
+            } finally {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = btnLabel || 'Masuk'; }
+            }
+            if (!matchedAccount) {
+                if (errEl) {
+                    errEl.textContent = loginFailure || 'User atau Password tidak valid untuk database ini!';
+                    errEl.classList.remove('hidden');
+                }
+                return false;
+            }
+            if (errEl) errEl.classList.add('hidden');
+            const wantsEnroll = !!(enrollChk && enrollChk.checked);
+            await completeAuthenticatedLogin(matchedAccount, { usedPassInput, enrollBiometric: wantsEnroll });
+            return true;
+        }
+
+        async function handleLogoutScreenLogin(e) {
+            e.preventDefault();
+            const userInput = (document.getElementById('logout-login-user')?.value || '').trim();
+            const passInput = document.getElementById('logout-login-pass')?.value || '';
+            const errEl = document.getElementById('logout-login-error');
+            const submitBtn = e.submitter || document.getElementById('logout-login-submit');
+            await authenticateAndEnter(userInput, passInput, errEl, submitBtn, null);
+        }
+
+        async function loginWithBiometricFromLogoutScreen() {
+            const errEl = document.getElementById('logout-login-error');
+            const btn = document.getElementById('logout-btn-biometric');
+            const lbl = document.getElementById('logout-btn-biometric-label');
+            const origLbl = lbl ? lbl.textContent : '';
+            if (errEl) errEl.classList.add('hidden');
+            const usersList = (Array.isArray(appState.users) && appState.users.length > 0) ? appState.users : getDefaultUsersSeed();
+            const typedUser = (document.getElementById('logout-login-user')?.value || '').trim();
+            const typedCred = typedUser ? findEnrolledBiometric(activeDatabaseName, typedUser) : null;
+            const dbCreds = typedCred ? [typedCred] : getEnrolledBiometricsForDb(activeDatabaseName);
+            if (!dbCreds.length) {
+                if (errEl) {
+                    errEl.textContent = 'Belum ada sidik jari / Face ID yang didaftarkan untuk database ini di HP ini.';
+                    errEl.classList.remove('hidden');
+                }
+                return;
+            }
+            if (btn) btn.disabled = true;
+            if (lbl) lbl.textContent = 'Menunggu Sidik Jari / Face ID...';
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge,
+                        rpId: location.hostname,
+                        allowCredentials: dbCreds.map(c => ({ type: 'public-key', id: b64uDecode(c.credId), transports: ['internal'] })),
+                        userVerification: 'required',
+                        timeout: 60000
+                    }
+                });
+                const returnedId = b64uEncode(assertion.rawId);
+                const credRecord = dbCreds.find(c => c.credId === returnedId) || dbCreds[0];
+                await verifyWebAuthnAssertion(assertion, challenge, credRecord);
+                const matchedAccount = usersList.find(
+                    u => u && typeof u.username === 'string' && u.username.trim().toLowerCase() === credRecord.username.trim().toLowerCase()
+                );
+                if (!matchedAccount) throw new Error(`Akun ${credRecord.username} sudah tidak ada di database ${activeDatabaseName}.`);
+                await completeAuthenticatedLogin(matchedAccount, { usedPassInput: null, enrollBiometric: false, viaBiometric: true });
+            } catch (err) {
+                if (errEl) {
+                    errEl.textContent = formatBiometricError(err);
+                    errEl.classList.remove('hidden');
+                }
+            } finally {
+                if (btn) btn.disabled = false;
+                if (lbl && !isLoggedIn) lbl.textContent = origLbl || 'Masuk dengan Sidik Jari / Face ID';
+            }
         }
 
         async function confirmSelectDatabase() {
@@ -4266,12 +4404,13 @@
                 activatePrimarySessionUser();
                 updateDatabaseIdentityUI();
                 refreshAllUI();
+                await initialCloudSync();
                 showToast(`Database aktif diganti ke [${activeDatabaseName}]`, 'success');
             } else {
                 saveSessionState(true);
                 updateDatabaseIdentityUI();
                 refreshAllUI();
-                showLoggedOutScreen();
+                await showLoggedOutScreen();
             }
         }
 
@@ -4292,7 +4431,7 @@
             saveSessionState(true);
             updateDatabaseIdentityUI();
             try { switchTab('dashboard'); } catch (e) {}
-            showLoggedOutScreen();
+            await showLoggedOutScreen();
             showToast('Anda telah keluar (Logout).', 'info');
         }
 
@@ -5013,10 +5152,24 @@
             if (!saved.wallets || typeof saved.wallets !== 'object') d.wallets = {};
             return Object.assign(d, saved);
         }
-        function isPristineSeed(st) { // true bila isinya masih data demo bawaan HTML (belum ada data asli)
+        function isPristineSeed(st) { // true bila isinya masih data demo bawaan HTML (belum ada data asli / belum tutup buku)
             try {
+                if (!st || (Number(st.settings?.bookEpoch) || 0) > 0) return false;
                 const d = createDefaultState(activeDatabaseName);
-                return !(st.transactions || []).length && !(st.purchaseRecords || []).length && J(st.items) === J(d.items) && J(st.suppliers) === J(d.suppliers);
+                const tx = st.transactions || [];
+                const srv = st.serviceTickets || [];
+                const dr = st.debtsReceivables || [];
+                const sl = st.stockLedger || [];
+                const onlyDemoTx = tx.length === 0 || (tx.length === 1 && tx[0]?.id === 'TRX-20261123-001');
+                const onlyDemoSrv = srv.length === 0 || (srv.length === 1 && srv[0]?.id === 'SRV-20261122-001');
+                const onlyDemoDr = dr.length === 0 || (dr.length === 1 && dr[0]?.id === 'PIU-20261123-001');
+                const onlyDemoSl = sl.length === 0 || (sl.length === 1 && sl[0]?.ref === 'SALDO-AWAL' && sl[0]?.code === 'VCR-TSEL-3' && Number(sl[0]?.inQty) === 45);
+                const otherNonEmpty = ['purchaseRecords','purchaseOrders','purchaseReturns','purchaseCashbacks','salesOrders','salesReturns','fundTransfers','expenses','voucherProductions','stockOpnames']
+                    .some(k => Array.isArray(st[k]) && st[k].length > 0);
+                return onlyDemoTx && onlyDemoSrv && onlyDemoDr && onlyDemoSl && !otherNonEmpty
+                    && J(st.items) === J(d.items)
+                    && J(st.suppliers) === J(d.suppliers)
+                    && J(st.wallets) === J(d.wallets);
             } catch (e) { return false; }
         }
 
@@ -5096,7 +5249,11 @@
             }
             initSupabaseClient();
             syncBase = null; syncVersion = 0;
-            initialCloudSync();
+            if (isLoggedIn) await initialCloudSync();
+        }
+
+        function getSyncMode() {
+            return supabaseClient ? 'supabase' : 'server';
         }
 
         function initSupabaseClient() {
@@ -5117,9 +5274,9 @@
                 }
             } else {
                 supabaseClient = null;
-                if (badge) badge.className = 'flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer';
-                if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500';
-                if (txt) txt.textContent = 'Mode Offline (Lokal)';
+                if (badge) badge.className = 'flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-300 text-sky-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer';
+                if (dot) dot.className = 'w-2 h-2 rounded-full bg-sky-500';
+                if (txt) txt.textContent = 'Sinkron Server Aktif';
             }
         }
 
@@ -5128,30 +5285,30 @@
             const dot = document.getElementById('cloud-dot');
             const txt = document.getElementById('cloud-status-text');
             if (!badge || !dot || !txt) return;
+            const modeLabel = getSyncMode() === 'supabase' ? 'Supabase Cloud Aktif' : 'Sinkron Server Aktif';
             if (ok) {
                 badge.className = 'flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer';
                 dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
-                txt.textContent = 'Supabase Cloud Aktif';
-                badge.title = '';
+                txt.textContent = modeLabel;
+                badge.title = 'Data otomatis tersinkronisasi antar perangkat secara real-time';
             } else {
-                badge.className = 'flex items-center gap-1.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer';
-                dot.className = 'w-2 h-2 rounded-full bg-red-500';
-                txt.textContent = 'Cloud Gagal Sinkron';
-                badge.title = msg;
+                badge.className = 'flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer';
+                dot.className = 'w-2 h-2 rounded-full bg-amber-500';
+                txt.textContent = navigator.onLine ? 'Sinkron Tertunda' : 'Mode Offline (Lokal)';
+                badge.title = msg || 'Menunggu koneksi untuk sinkronisasi otomatis';
             }
         }
 
         // =========================================================================
-        // SINKRON MULTI-PERANGKAT (Supabase) - gabung 3-arah + kunci versi
-        // Tiap perangkat menyimpan "base" (kondisi cloud saat terakhir sinkron). Bila cloud berubah dari
-        // perangkat lain, perubahan lokal digabung ke data cloud: record baru/ubah/hapus digabung per id,
-        // saldo dompet & stok barang digabung sebagai SELISIH (cloud + perubahan lokal), bukan ditimpa.
+        // SINKRON MULTI-PERANGKAT (Server Built-in /api/sync + Opsional Supabase Cloud)
+        // Tiap perangkat menyimpan "base" (kondisi server/cloud saat terakhir sinkron). Bila berubah dari
+        // perangkat lain, perubahan digabung 3-arah + menghormati bookEpoch untuk Tutup Buku.
         // =========================================================================
         const SYNC_TABLE = 'donet_cell_state';
-        let syncBase = null, syncVersion = 0, syncBusy = false, syncAgain = false, syncTimer = null, syncChannel = null, syncChannelClient = null;
+        let syncBase = null, syncVersion = 0, syncBusy = false, syncAgain = false, syncTimer = null, syncChannel = null, syncChannelClient = null, syncEventSource = null, syncListenersBound = false;
         const syncTid = () => `tenant_${activeDatabaseName}`;
         const syncClone = o => JSON.parse(JSON.stringify(o));
-        const J = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)) ? Object.fromEntries(Object.keys(x).sort().map(q => [q, x[q]])) : x); // urutan kunci seragam (jsonb mengurutkan ulang)
+        const J = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)) ? Object.fromEntries(Object.keys(x).sort().map(q => [q, x[q]])) : x);
         const SYNC_KEYS = { items: 'code', suppliers: 'code', customers: 'code', users: 'username', walletList: 'id' };
         function syncRecKey(coll, r) {
             if (!r || typeof r !== 'object') return J(r);
@@ -5160,24 +5317,30 @@
             return String(r.id ?? r.code ?? J(r));
         }
         function syncMergeRecord(b, l, r) {
-            if (J(l) === J(b)) return r;            // lokal tidak berubah -> ikut cloud
-            if (J(r) === J(b) || J(r) === J(l)) return l; // cloud tidak berubah -> ikut lokal
-            const out = { ...r, ...l };             // dua-duanya berubah: field lokal menang...
-            if ([l.stock, b.stock, r.stock].every(n => typeof n === 'number')) out.stock = r.stock + (l.stock - b.stock); // ...kecuali stok: digabung selisih
+            if (J(l) === J(b)) return r;
+            if (J(r) === J(b) || J(r) === J(l)) return l;
+            const out = { ...r, ...l };
+            if ([l.stock, b.stock, r.stock].every(n => typeof n === 'number')) out.stock = r.stock + (l.stock - b.stock);
             return out;
         }
         function syncMergeColl(coll, b, l, r) {
             const idx = a => { const m = new Map(); (a || []).forEach(x => m.set(syncRecKey(coll, x), x)); return m; };
             const B = idx(b), L = idx(l), R = idx(r), out = new Map();
-            for (const k of [...R.keys(), ...[...L.keys()].filter(k => !R.has(k))]) {
+            // Item baru di L diletakkan di atas agar urutan transaksi terbaru tetap terjaga
+            for (const k of [...[...L.keys()].filter(k => !R.has(k)), ...R.keys()]) {
                 const bv = B.get(k), lv = L.get(k), rv = R.get(k);
-                if (lv === undefined) { if (bv === undefined || J(rv) !== J(bv)) out.set(k, rv); }        // dihapus lokal, kecuali cloud mengubahnya
-                else if (rv === undefined) { if (bv === undefined || J(lv) !== J(bv)) out.set(k, lv); }  // dihapus cloud, kecuali lokal mengubahnya
+                if (lv === undefined) { if (bv === undefined || J(rv) !== J(bv)) out.set(k, rv); }
+                else if (rv === undefined) { if (bv === undefined || J(lv) !== J(bv)) out.set(k, lv); }
                 else out.set(k, (bv !== undefined && typeof lv === 'object') ? syncMergeRecord(bv, lv, rv) : lv);
             }
             return [...out.values()];
         }
         function syncMergeState(b, l, r) {
+            const lEpoch = Number(l?.settings?.bookEpoch) || 0;
+            const rEpoch = Number(r?.settings?.bookEpoch) || 0;
+            // Jika salah satu perangkat baru saja melakukan Tutup Buku (bookEpoch lebih tinggi), periode lama tidak digabung kembali
+            if (rEpoch > lEpoch) return syncClone(r);
+            if (lEpoch > rEpoch) return syncClone(l);
             b = b || {};
             const pick = (bv, lv, rv) => J(lv) === J(bv) ? rv : lv;
             const out = { ...r, ...l };
@@ -5206,43 +5369,83 @@
             saveStateToIndexedDBForDb(activeDatabaseName, appState).catch(() => {});
             try { refreshAllUI(); } catch (e) {}
         }
-        const syncPersistMeta = () => saveStateToIndexedDBForDb('__sync_' + activeDatabaseName, { version: syncVersion, base: syncBase }).catch(() => {});
+        const syncMetaKey = () => '__sync_' + getSyncMode() + '_' + activeDatabaseName;
+        const syncPersistMeta = () => saveStateToIndexedDBForDb(syncMetaKey(), { version: syncVersion, base: syncBase }).catch(() => {});
+
+        async function remoteFetchSyncRow(tid) {
+            if (getSyncMode() === 'supabase') {
+                const { data: row, error } = await supabaseClient.from(SYNC_TABLE).select('payload,version').eq('id', tid).maybeSingle();
+                if (error) throw error;
+                return row && row.payload ? { payload: row.payload, version: Number(row.version) || 0 } : null;
+            }
+            const res = await fetch('/api/sync/' + encodeURIComponent(tid), { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            return (data && data.payload) ? { payload: data.payload, version: Number(data.version) || 0 } : null;
+        }
+
+        async function remoteWriteSyncRow(tid, target, expectedVersion) {
+            const now = new Date().toISOString();
+            if (getSyncMode() === 'supabase') {
+                if (expectedVersion === 0) {
+                    const { error } = await supabaseClient.from(SYNC_TABLE).insert({ id: tid, payload: target, version: 1, updated_at: now });
+                    if (!error) return { ok: true, version: 1 };
+                    if (error.code === '23505') return { ok: false, conflict: true };
+                    throw error;
+                }
+                const { data, error } = await supabaseClient.from(SYNC_TABLE)
+                    .update({ payload: target, version: expectedVersion + 1, updated_at: now })
+                    .eq('id', tid).eq('version', expectedVersion).select('version');
+                if (error) throw error;
+                if (data && data.length) return { ok: true, version: Number(data[0].version) || (expectedVersion + 1) };
+                return { ok: false, conflict: true };
+            }
+            const res = await fetch('/api/sync/' + encodeURIComponent(tid), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payload: target, baseVersion: expectedVersion })
+            });
+            if (res.status === 409) return { ok: false, conflict: true };
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            return { ok: true, version: Number(data.version) || (expectedVersion + 1) };
+        }
 
         async function syncNow() {
-            if (!supabaseClient) return { ok: false, error: 'Supabase belum dikonfigurasi' };
             if (dataLocked) return { ok: false, error: 'Data lokal terkunci (gagal dibaca)' };
-            if (syncBase === null) return { ok: true, queued: true };   // sinkron awal belum selesai
+            if (syncBase === null) {
+                if (isLoggedIn) await initialCloudSync({ skipSyncNow: true });
+                if (syncBase === null) return { ok: true, queued: true };
+            }
             if (syncBusy) { syncAgain = true; return { ok: true, queued: true }; }
             syncBusy = true;
             try {
+                const tid = syncTid();
                 for (let attempt = 0; attempt < 5; attempt++) {
-                    const { data: row, error: e1 } = await supabaseClient.from(SYNC_TABLE).select('payload,version').eq('id', syncTid()).maybeSingle();
-                    if (e1) throw e1;
+                    const row = await remoteFetchSyncRow(tid);
                     const local = getSanitizedStateForExport();
-                    const now = new Date().toISOString();
-                    if (row && row.payload && isPristineSeed(local) && !isPristineSeed(row.payload)) { // perangkat masih data demo, cloud berisi data asli: ambil cloud
+                    if (row && row.payload && isPristineSeed(local) && !isPristineSeed(row.payload)) {
                         syncVersion = row.version; syncBase = syncClone(row.payload); syncApplyState(syncClone(row.payload)); syncPersistMeta(); setCloudSyncStatus(true); return { ok: true };
                     }
                     if (!row) {
-                        const { error } = await supabaseClient.from(SYNC_TABLE).insert({ id: syncTid(), payload: local, version: 1, updated_at: now });
-                        if (error && error.code !== '23505') throw error;
-                        if (!error) { syncVersion = 1; syncBase = syncClone(local); syncPersistMeta(); setCloudSyncStatus(true); return { ok: true }; }
+                        if (isPristineSeed(local)) {
+                            syncVersion = 0; syncBase = syncClone(local); syncPersistMeta(); setCloudSyncStatus(true); return { ok: true };
+                        }
+                        const wr = await remoteWriteSyncRow(tid, local, 0);
+                        if (wr.ok) { syncVersion = wr.version; syncBase = syncClone(local); syncPersistMeta(); setCloudSyncStatus(true); return { ok: true }; }
                         continue;
                     }
                     const remote = row.payload || {};
                     const changedRemote = row.version !== syncVersion;
                     const target = changedRemote ? syncMergeState(syncBase, local, remote) : local;
-                    if (J(target) === J(remote)) { // tidak ada yang perlu ditulis
+                    if (J(target) === J(remote)) {
                         syncVersion = row.version; syncBase = syncClone(remote);
                         if (changedRemote && J(target) !== J(local)) syncApplyState(target);
                         syncPersistMeta(); setCloudSyncStatus(true); return { ok: true };
                     }
-                    const { data, error } = await supabaseClient.from(SYNC_TABLE)
-                        .update({ payload: target, version: row.version + 1, updated_at: now })
-                        .eq('id', syncTid()).eq('version', row.version).select('version');
-                    if (error) throw error;
-                    if (data && data.length) {   // berhasil; bila gagal (bentrok versi) ulangi: tarik, gabung, tulis
-                        syncVersion = row.version + 1; syncBase = syncClone(target);
+                    const wr = await remoteWriteSyncRow(tid, target, row.version);
+                    if (wr.ok) {
+                        syncVersion = wr.version; syncBase = syncClone(target);
                         if (J(target) !== J(local)) syncApplyState(target);
                         syncPersistMeta(); setCloudSyncStatus(true); return { ok: true };
                     }
@@ -5250,7 +5453,7 @@
                 throw new Error('Terlalu banyak bentrok sinkron, akan dicoba lagi otomatis');
             } catch (e) {
                 const msg = (e && e.message) ? e.message : String(e);
-                console.warn('Supabase sync gagal:', e);
+                console.warn('Sync gagal:', e);
                 setCloudSyncStatus(false, msg);
                 return { ok: false, error: msg };
             } finally {
@@ -5258,56 +5461,89 @@
                 if (syncAgain) { syncAgain = false; setTimeout(syncNow, 50); }
             }
         }
-        const pushToSupabase = syncNow; // nama lama tetap dipakai pemanggil lain
+        const pushToSupabase = syncNow;
 
-        async function initialCloudSync() {
-            if (!supabaseClient || !isLoggedIn) return;
+        async function initialCloudSync(opts = {}) {
+            if (!isLoggedIn) return;
+            const tid = syncTid();
             try {
-                if (dataLocked) { // pemulihan: data lokal rusak -> ambil dari cloud bila ada
-                    const { data: row } = await supabaseClient.from(SYNC_TABLE).select('payload,version').eq('id', syncTid()).maybeSingle();
-                    if (row && row.payload && confirm('Data lokal gagal dibaca. Pulihkan dari data Supabase Cloud?')) {
+                if (dataLocked) {
+                    const row = await remoteFetchSyncRow(tid);
+                    if (row && row.payload) {
                         dataLocked = false; syncBase = syncClone(row.payload); syncVersion = row.version || 0;
                         syncApplyState(syncClone(row.payload)); syncPersistMeta();
                     } else return;
                 }
-                const meta = await loadStateFromIndexedDBForDb('__sync_' + activeDatabaseName);
-                if (meta && meta.base) { syncBase = meta.base; syncVersion = meta.version || 0; }
-                else {
-                    const { data: row, error } = await supabaseClient.from(SYNC_TABLE).select('payload,version').eq('id', syncTid()).maybeSingle();
-                    if (error) throw error;
+                const meta = await loadStateFromIndexedDBForDb(syncMetaKey());
+                if (meta && meta.base) {
+                    syncBase = meta.base; syncVersion = meta.version || 0;
+                } else {
+                    const row = await remoteFetchSyncRow(tid);
                     if (row && row.payload) {
-                        let useCloud = isPristineSeed(appState); // perangkat baru/masih demo: otomatis pakai cloud
-                        if (!useCloud) {
-                            useCloud = confirm('Data database [' + activeDatabaseName + '] sudah ada di Supabase.\n\nOK = PAKAI DATA CLOUD (data di perangkat ini diganti)\nBatal = TIMPA CLOUD dengan data perangkat ini');
-                            if (!useCloud && !confirm('YAKIN menimpa data CLOUD dengan data perangkat ini?\nData di cloud akan diganti.')) useCloud = true;
+                        const rEpoch = Number(row.payload?.settings?.bookEpoch) || 0;
+                        const lEpoch = Number(appState?.settings?.bookEpoch) || 0;
+                        const useRemote = isPristineSeed(appState) || (rEpoch > lEpoch);
+                        if (useRemote) {
+                            syncBase = syncClone(row.payload);
+                            syncApplyState(syncClone(row.payload));
+                        } else if (lEpoch === rEpoch) {
+                            syncBase = createDefaultState(activeDatabaseName);
+                            delete syncBase.settings.supabaseKey; delete syncBase.settings.supabaseUrl;
+                        } else {
+                            syncBase = {};
                         }
-                        syncBase = syncClone(row.payload); syncVersion = row.version || 0;
-                        if (useCloud) syncApplyState(syncClone(row.payload));
-                    } else { syncBase = {}; syncVersion = 0; }
+                        syncVersion = row.version || 0;
+                    } else {
+                        syncBase = {}; syncVersion = 0;
+                    }
                     syncPersistMeta();
                 }
-                await syncNow();
-            } catch (e) { setCloudSyncStatus(false, (e && e.message) || String(e)); }
-            try { // realtime (butuh tabel dimasukkan ke publication, lihat supabase_setup.sql) + cadangan polling 15 detik
-                if (syncChannel && syncChannelClient) syncChannelClient.removeChannel(syncChannel);
-                syncChannelClient = supabaseClient;
-                syncChannel = supabaseClient.channel('sync-' + activeDatabaseName)
-                    .on('postgres_changes', { event: '*', schema: 'public', table: SYNC_TABLE, filter: `id=eq.${syncTid()}` },
-                        p => { const v = p.new && p.new.version; if (v && v > syncVersion) syncNow(); })
-                    .subscribe();
-            } catch (e) { console.warn('Realtime tidak aktif, memakai polling:', e); }
-            if (!syncTimer) syncTimer = setInterval(() => { if (isLoggedIn && supabaseClient && navigator.onLine) syncNow(); }, 15000);
+                if (!opts.skipSyncNow) await syncNow();
+            } catch (e) {
+                if (syncBase === null) syncBase = {};
+                setCloudSyncStatus(false, (e && e.message) || String(e));
+            }
+            if (syncEventSource) { try { syncEventSource.close(); } catch (e) {} syncEventSource = null; }
+            if (syncChannel && syncChannelClient) { try { syncChannelClient.removeChannel(syncChannel); } catch (e) {} syncChannel = null; }
+            if (getSyncMode() === 'supabase') {
+                try {
+                    syncChannelClient = supabaseClient;
+                    syncChannel = supabaseClient.channel('sync-' + activeDatabaseName)
+                        .on('postgres_changes', { event: '*', schema: 'public', table: SYNC_TABLE, filter: `id=eq.${tid}` },
+                            p => { const v = p.new && p.new.version; if (v && v > syncVersion) syncNow(); })
+                        .subscribe();
+                } catch (e) { console.warn('Realtime Supabase tidak aktif, memakai polling:', e); }
+            } else if (typeof EventSource === 'function') {
+                try {
+                    syncEventSource = new EventSource('/api/sync/' + encodeURIComponent(tid) + '/events');
+                    const onRemotePing = ev => {
+                        try {
+                            const info = JSON.parse(ev.data || '{}');
+                            if (info.version && info.version > syncVersion) syncNow();
+                        } catch (_) {}
+                    };
+                    syncEventSource.addEventListener('hello', onRemotePing);
+                    syncEventSource.addEventListener('update', onRemotePing);
+                } catch (e) { console.warn('SSE server tidak aktif, memakai polling:', e); }
+            }
+            if (!syncListenersBound && typeof window !== 'undefined') {
+                syncListenersBound = true;
+                window.addEventListener('focus', () => { if (isLoggedIn && navigator.onLine) syncNow(); });
+                window.addEventListener('online', () => { if (isLoggedIn) syncNow(); });
+                document.addEventListener('visibilitychange', () => { if (!document.hidden && isLoggedIn && navigator.onLine) syncNow(); });
+            }
+            if (!syncTimer) syncTimer = setInterval(() => { if (isLoggedIn && navigator.onLine) syncNow(); }, 5000);
         }
 
         let lastSyncErrorToastAt = 0;
         async function saveAppState() {
             await saveStateToIndexedDBForDb(activeDatabaseName, appState);
             refreshAllUI();
-            if (supabaseClient) {
-                pushToSupabase().then(r => {
-                    if (!r.ok && Date.now() - lastSyncErrorToastAt > 60000) {
+            if (isLoggedIn) {
+                syncNow().then(r => {
+                    if (r && !r.ok && Date.now() - lastSyncErrorToastAt > 60000) {
                         lastSyncErrorToastAt = Date.now();
-                        showToast('Data tersimpan lokal, tetapi gagal sinkron ke cloud: ' + r.error, 'error');
+                        showToast('Data tersimpan lokal, tetapi gagal sinkron ke server: ' + r.error, 'error');
                     }
                 });
             }
@@ -12876,17 +13112,15 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             appState.settings.supabaseUrl = document.getElementById('set-sb-url').value.trim();
             appState.settings.supabaseKey = document.getElementById('set-sb-key').value.trim();
             initSupabaseClient();
+            syncBase = null; syncVersion = 0;
             await saveAppState();
-            showToast('Konfigurasi Supabase disimpan!', 'success');
+            await initialCloudSync();
+            showToast('Konfigurasi sinkronisasi disimpan!', 'success');
         }
 
         async function syncNowWithSupabase() {
-            if (!supabaseClient) {
-                showToast('Isi URL dan Anon Key Supabase terlebih dahulu!', 'error');
-                return;
-            }
-            const r = await pushToSupabase();
-            if (r.ok) showToast('Sinkronisasi ke Supabase Cloud selesai!', 'success');
+            const r = await syncNow();
+            if (r.ok) showToast(supabaseClient ? 'Sinkronisasi ke Supabase Cloud selesai!' : 'Sinkronisasi antar perangkat via server selesai!', 'success');
             else showToast('Sinkronisasi gagal: ' + r.error, 'error');
         }
 
@@ -13010,7 +13244,11 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             await takeSnapshot('sebelum-tutup-buku');
             const nowIso = new Date().toISOString();
 
-            // 1. Kosongkan seluruh riwayat transaksi penjualan, PPOB/BRILink, service HP, pembelian, PO, retur, perakitan & mutasi
+            appState.settings = appState.settings || {};
+            appState.settings.bookEpoch = (Number(appState.settings.bookEpoch) || 0) + 1;
+            appState.settings.lastClosedAt = nowIso;
+
+            // 1. Kosongkan seluruh riwayat transaksi penjualan, PPOB/BRILink, service HP, pembelian, PO, retur, biaya, opname & mutasi
             appState.transactions = [];
             appState.purchaseOrders = [];
             appState.purchaseRecords = [];
@@ -13021,6 +13259,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             appState.voucherProductions = [];
             appState.fundTransfers = [];
             appState.serviceTickets = [];
+            appState.expenses = [];
+            appState.stockOpnames = [];
 
             // 2. Pertahankan sisa Utang & Piutang yang masih berjalan (belum lunas) sebagai saldo awal periode baru
             appState.debtsReceivables = (appState.debtsReceivables || [])
@@ -13062,9 +13302,15 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             selectedSretIndex = -1;
 
             cancelTutupBukuConfirm();
-            await saveAppState();
+            await saveStateToIndexedDBForDb(activeDatabaseName, appState);
+            refreshAllUI();
+            const syncRes = await syncNow();
             closeModal('settings-modal');
-            showToast('Tutup buku selesai! Riwayat transaksi dikosongkan, saldo kas, stok barang & sisa utang/piutang dipertahankan.', 'success');
+            if (syncRes && syncRes.ok) {
+                showToast('Tutup buku selesai & tersinkron ke semua perangkat! Riwayat transaksi dikosongkan, saldo kas, stok & sisa utang/piutang dipertahankan.', 'success');
+            } else {
+                showToast('Tutup buku selesai (tersimpan lokal). Sinkronisasi ke perangkat lain akan berjalan otomatis saat terhubung.', 'info');
+            }
         }
 
         // =========================================================================
@@ -13708,6 +13954,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 await step('logout-screen', showLoggedOutScreen);
             } else {
                 hideLoggedOutScreen();
+                await step('sync', initialCloudSync);
                 await step('offer-shared', offerSharedProof);
             }
         });
