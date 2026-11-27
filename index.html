@@ -472,8 +472,8 @@
                 <span id="local-db-status-text">Lokal PC Sinkron</span>
             </div>
 
-            <!-- Status Supabase Cloud -->
-            <button onclick="openSettingsModal('supabase')" id="cloud-status-badge" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer" title="Klik untuk konfigurasi sinkronisasi Supabase Cloud">
+            <!-- Status Sinkronisasi Multi-Perangkat -->
+            <button onclick="onCloudBadgeClick()" id="cloud-status-badge" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer" title="Klik untuk sinkronisasi atau pengaturan multi-perangkat">
                 <span id="cloud-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
                 <span id="cloud-status-text">Mode Offline (Lokal)</span>
             </button>
@@ -2262,19 +2262,24 @@
                     </table>
                 </div>
 
-                <!-- PANE 3: SUPABASE CLOUD -->
+                <!-- PANE 3: SINKRON MULTI-PERANGKAT & SUPABASE CLOUD -->
                 <div id="settings-pane-supabase" class="hidden space-y-3">
+                    <div id="sync-diag-box" class="bg-sky-50 border border-sky-300 rounded p-2.5 text-[11px] space-y-1 text-slate-700"></div>
                     <div>
-                        <label class="block font-bold mb-1">Supabase Project URL</label>
+                        <label class="block font-bold mb-1">Supabase Project URL (Opsional untuk Cloud Lintas Link)</label>
                         <input type="text" id="set-sb-url" placeholder="https://xxxx.supabase.co" class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono">
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Supabase Anon Public Key</label>
                         <input type="password" id="set-sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." class="w-full border border-slate-300 rounded px-2.5 py-1.5 font-mono">
                     </div>
-                    <div id="sql-schema-box" class="hidden bg-slate-900 text-emerald-300 p-2.5 rounded font-mono text-[10.5px] overflow-x-auto">
-                        create table if not exists donet_cell_state (id text primary key, payload jsonb, updated_at timestamptz);
-                    </div>
+                    <div id="sql-schema-box" class="hidden bg-slate-900 text-emerald-300 p-2.5 rounded font-mono text-[10.5px] overflow-x-auto whitespace-pre-wrap">create table if not exists donet_cell_state (
+  id text primary key,
+  payload jsonb,
+  version bigint not null default 1,
+  updated_at timestamptz default now()
+);
+alter table donet_cell_state disable row level security;</div>
                     <div class="flex flex-wrap justify-between gap-2 pt-2">
                         <button type="button" onclick="showSqlSchemaHelp()" class="ipos-btn px-3 py-1.5 rounded font-semibold">Lihat SQL Tabel</button>
                         <div class="flex gap-2">
@@ -4956,6 +4961,8 @@
         const DB_VERSION = 1;
         const STORE_NAME = 'app_state_store';
 
+        const DEFAULT_SEED_ISO = '2026-11-23T08:00:00.000Z';
+        const DEFAULT_SEED_DUE = '2026-11-30';
         function createDefaultState(dbLabel = 'GROSIRDONET') {
             return {
                 settings: {
@@ -5003,7 +5010,7 @@
                 serviceTickets: [
                     {
                         id: 'SRV-20261122-001',
-                        date: new Date().toISOString(),
+                        date: DEFAULT_SEED_ISO,
                         customer: 'Bpk. Hendra',
                         phone: '0812-4455-6677',
                         device: 'Samsung Galaxy A52',
@@ -5020,8 +5027,8 @@
                     {
                         id: 'PIU-20261123-001',
                         type: 'PIUTANG',
-                        date: new Date().toISOString(),
-                        dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+                        date: DEFAULT_SEED_ISO,
+                        dueDate: DEFAULT_SEED_DUE,
                         party: 'Berkah Cell (Reseller)',
                         description: 'Kasbon Voucher Telkomsel 3GB (5 PCS)',
                         totalAmount: 62500,
@@ -5042,7 +5049,7 @@
                 transactions: [
                     {
                         id: 'TRX-20261123-001',
-                        date: new Date().toISOString(),
+                        date: DEFAULT_SEED_ISO,
                         module: 'BRILINK',
                         description: 'Transfer BRI ke 0012-01-045821-50-9 (An. Siti Aminah)',
                         customer: 'Pelanggan Umum',
@@ -5055,7 +5062,7 @@
                 ],
                 stockLedger: [
                     {
-                        date: new Date().toISOString(),
+                        date: DEFAULT_SEED_ISO,
                         ref: 'SALDO-AWAL',
                         code: 'VCR-TSEL-3',
                         name: 'Voucher Telkomsel 3GB / 5 Hari',
@@ -5280,6 +5287,15 @@
             }
         }
 
+        function getNormalizedSeedBase(dbName = activeDatabaseName) {
+            const seed = createDefaultState(dbName);
+            if (seed.settings) {
+                delete seed.settings.supabaseKey;
+                delete seed.settings.supabaseUrl;
+            }
+            return seed;
+        }
+
         function setCloudSyncStatus(ok, msg = '') {
             const badge = document.getElementById('cloud-status-badge');
             const dot = document.getElementById('cloud-dot');
@@ -5290,13 +5306,15 @@
                 badge.className = 'flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer';
                 dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
                 txt.textContent = modeLabel;
-                badge.title = 'Data otomatis tersinkronisasi antar perangkat secara real-time';
+                const timeInfo = syncLastAt ? ` (${new Date(syncLastAt).toLocaleTimeString('id-ID')})` : '';
+                badge.title = `Tersinkronisasi [${activeDatabaseName}] v${syncVersion}${timeInfo}`;
             } else {
                 badge.className = 'flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-0.5 rounded-full font-medium transition cursor-pointer';
                 dot.className = 'w-2 h-2 rounded-full bg-amber-500';
                 txt.textContent = navigator.onLine ? 'Sinkron Tertunda' : 'Mode Offline (Lokal)';
                 badge.title = msg || 'Menunggu koneksi untuk sinkronisasi otomatis';
             }
+            renderSyncDiagnosticsBox();
         }
 
         // =========================================================================
@@ -5305,7 +5323,9 @@
         // perangkat lain, perubahan digabung 3-arah + menghormati bookEpoch untuk Tutup Buku.
         // =========================================================================
         const SYNC_TABLE = 'donet_cell_state';
-        let syncBase = null, syncVersion = 0, syncBusy = false, syncAgain = false, syncTimer = null, syncChannel = null, syncChannelClient = null, syncEventSource = null, syncListenersBound = false;
+        let syncBase = null, syncVersion = 0, syncBusy = false, syncAgain = false, syncActivePromise = null;
+        let syncTimer = null, syncChannel = null, syncChannelClient = null, syncEventSource = null, syncListenersBound = false;
+        let syncDirty = false, syncLastAt = 0, syncLastError = '', syncServerBootId = '', supabaseHasVersionCol = true;
         const syncTid = () => `tenant_${activeDatabaseName}`;
         const syncClone = o => JSON.parse(JSON.stringify(o));
         const J = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)) ? Object.fromEntries(Object.keys(x).sort().map(q => [q, x[q]])) : x);
@@ -5313,7 +5333,10 @@
         function syncRecKey(coll, r) {
             if (!r || typeof r !== 'object') return J(r);
             if (SYNC_KEYS[coll]) return String(r[SYNC_KEYS[coll]]);
-            if (coll === 'stockLedger') return [r.date, r.ref, r.code, r.type, r.inQty, r.outQty].join('|');
+            if (coll === 'stockLedger') {
+                if (r.ref === 'SALDO-AWAL') return ['SALDO-AWAL', r.code, r.type].join('|');
+                return [r.date, r.ref, r.code, r.type, r.inQty, r.outQty].join('|');
+            }
             return String(r.id ?? r.code ?? J(r));
         }
         function syncMergeRecord(b, l, r) {
@@ -5372,33 +5395,80 @@
         const syncMetaKey = () => '__sync_' + getSyncMode() + '_' + activeDatabaseName;
         const syncPersistMeta = () => saveStateToIndexedDBForDb(syncMetaKey(), { version: syncVersion, base: syncBase }).catch(() => {});
 
+        function renderSyncDiagnosticsBox() {
+            const box = document.getElementById('sync-diag-box');
+            if (!box) return;
+            const mode = getSyncMode();
+            const modeText = mode === 'supabase' ? 'Supabase Cloud' : 'Sinkron Server Bawaan (/api/sync)';
+            const txCount = Array.isArray(appState.transactions) ? appState.transactions.length : 0;
+            const bookEpoch = Number(appState.settings?.bookEpoch) || 0;
+            const lastStr = syncLastAt ? new Date(syncLastAt).toLocaleTimeString('id-ID') : 'Belum pernah';
+            const hostStr = (typeof location !== 'undefined' && location.origin) ? location.origin : '-';
+            box.innerHTML = `
+                <div class="font-bold text-sky-950"><i class="fas fa-network-wired mr-1"></i> Status Sinkronisasi Multi-Perangkat</div>
+                <div>Mode: <b>${esc(modeText)}</b> &bull; Database Aktif: <b>${esc(activeDatabaseName)}</b> &bull; Versi: <b>v${syncVersion}</b> &bull; Periode Buku: <b>#${bookEpoch + 1}</b></div>
+                <div>Transaksi Lokal: <b>${txCount}</b> &bull; Sync Terakhir: <b>${esc(lastStr)}</b>${syncLastError ? ` &bull; <span class="text-red-700">Error: ${esc(syncLastError)}</span>` : ''}</div>
+                <div class="text-[10.5px] text-slate-600 pt-0.5 border-t border-sky-200">
+                    Alamat saat ini: <span class="font-mono">${esc(hostStr)}</span>. Tanpa Supabase, semua HP/PC harus membuka <b>alamat link &amp; nama database yang sama persis</b>. Untuk sinkron lintas link berbeda secara permanen di cloud, isi Supabase di bawah.
+                </div>`;
+        }
+
+        function onCloudBadgeClick() {
+            if (isCurrentUserAdmin()) openSettingsModal('supabase');
+            else syncNowWithSupabase();
+        }
+
         async function remoteFetchSyncRow(tid) {
             if (getSyncMode() === 'supabase') {
-                const { data: row, error } = await supabaseClient.from(SYNC_TABLE).select('payload,version').eq('id', tid).maybeSingle();
-                if (error) throw error;
-                return row && row.payload ? { payload: row.payload, version: Number(row.version) || 0 } : null;
+                if (supabaseHasVersionCol) {
+                    const { data: row, error } = await supabaseClient.from(SYNC_TABLE).select('payload,version').eq('id', tid).maybeSingle();
+                    if (!error) return row && row.payload ? { payload: row.payload, version: Number(row.version) || 1 } : null;
+                    if (!/version/i.test(error.message || '')) throw error;
+                    supabaseHasVersionCol = false;
+                }
+                const { data: row2, error: err2 } = await supabaseClient.from(SYNC_TABLE).select('payload,updated_at').eq('id', tid).maybeSingle();
+                if (err2) throw err2;
+                const verNum = row2 && row2.updated_at ? (Date.parse(row2.updated_at) || 1) : 1;
+                return row2 && row2.payload ? { payload: row2.payload, version: verNum } : null;
             }
             const res = await fetch('/api/sync/' + encodeURIComponent(tid), { cache: 'no-store' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
+            if (data && data.serverBootId) {
+                if (syncServerBootId && syncServerBootId !== data.serverBootId && !data.payload) {
+                    // Server restart sementara perangkat lokal masih menyimpan data
+                    syncVersion = 0;
+                }
+                syncServerBootId = data.serverBootId;
+            }
             return (data && data.payload) ? { payload: data.payload, version: Number(data.version) || 0 } : null;
         }
 
         async function remoteWriteSyncRow(tid, target, expectedVersion) {
             const now = new Date().toISOString();
             if (getSyncMode() === 'supabase') {
-                if (expectedVersion === 0) {
-                    const { error } = await supabaseClient.from(SYNC_TABLE).insert({ id: tid, payload: target, version: 1, updated_at: now });
-                    if (!error) return { ok: true, version: 1 };
-                    if (error.code === '23505') return { ok: false, conflict: true };
-                    throw error;
+                if (supabaseHasVersionCol) {
+                    if (expectedVersion === 0) {
+                        const { error } = await supabaseClient.from(SYNC_TABLE).insert({ id: tid, payload: target, version: 1, updated_at: now });
+                        if (!error) return { ok: true, version: 1 };
+                        if (error.code === '23505') return { ok: false, conflict: true };
+                        if (!/version/i.test(error.message || '')) throw error;
+                        supabaseHasVersionCol = false;
+                    } else {
+                        const { data, error } = await supabaseClient.from(SYNC_TABLE)
+                            .update({ payload: target, version: expectedVersion + 1, updated_at: now })
+                            .eq('id', tid).eq('version', expectedVersion).select('version');
+                        if (!error) {
+                            if (data && data.length) return { ok: true, version: Number(data[0].version) || (expectedVersion + 1) };
+                            return { ok: false, conflict: true };
+                        }
+                        if (!/version/i.test(error.message || '')) throw error;
+                        supabaseHasVersionCol = false;
+                    }
                 }
-                const { data, error } = await supabaseClient.from(SYNC_TABLE)
-                    .update({ payload: target, version: expectedVersion + 1, updated_at: now })
-                    .eq('id', tid).eq('version', expectedVersion).select('version');
-                if (error) throw error;
-                if (data && data.length) return { ok: true, version: Number(data[0].version) || (expectedVersion + 1) };
-                return { ok: false, conflict: true };
+                const { error: upErr } = await supabaseClient.from(SYNC_TABLE).upsert({ id: tid, payload: target, updated_at: now });
+                if (upErr) throw upErr;
+                return { ok: true, version: Date.parse(now) || (expectedVersion + 1) };
             }
             const res = await fetch('/api/sync/' + encodeURIComponent(tid), {
                 method: 'PUT',
@@ -5408,101 +5478,165 @@
             if (res.status === 409) return { ok: false, conflict: true };
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
+            if (data && data.serverBootId) syncServerBootId = data.serverBootId;
             return { ok: true, version: Number(data.version) || (expectedVersion + 1) };
+        }
+
+        async function runSingleSyncPass() {
+            const tid = syncTid();
+            for (let attempt = 0; attempt < 5; attempt++) {
+                const row = await remoteFetchSyncRow(tid);
+                const local = getSanitizedStateForExport();
+                if (row && row.payload && isPristineSeed(local) && !isPristineSeed(row.payload)) {
+                    syncVersion = row.version;
+                    syncApplyState(syncClone(row.payload));
+                    syncBase = syncClone(getSanitizedStateForExport());
+                    syncDirty = false; syncLastAt = Date.now(); syncLastError = '';
+                    syncPersistMeta(); setCloudSyncStatus(true);
+                    return { ok: true };
+                }
+                if (!row) {
+                    if (isPristineSeed(local)) {
+                        syncVersion = 0; syncBase = syncClone(local);
+                        syncDirty = false; syncLastAt = Date.now(); syncLastError = '';
+                        syncPersistMeta(); setCloudSyncStatus(true);
+                        return { ok: true };
+                    }
+                    const wr = await remoteWriteSyncRow(tid, local, 0);
+                    if (wr.ok) {
+                        syncVersion = wr.version; syncBase = syncClone(local);
+                        syncDirty = false; syncLastAt = Date.now(); syncLastError = '';
+                        syncPersistMeta(); setCloudSyncStatus(true);
+                        return { ok: true };
+                    }
+                    continue;
+                }
+                const remote = row.payload || {};
+                const changedRemote = row.version !== syncVersion;
+                const target = changedRemote ? syncMergeState(syncBase, local, remote) : local;
+                if (J(target) === J(remote)) {
+                    syncVersion = row.version;
+                    if (changedRemote && J(target) !== J(local)) {
+                        syncApplyState(target);
+                        syncBase = syncClone(getSanitizedStateForExport());
+                    } else {
+                        syncBase = syncClone(remote);
+                    }
+                    syncDirty = false; syncLastAt = Date.now(); syncLastError = '';
+                    syncPersistMeta(); setCloudSyncStatus(true);
+                    return { ok: true };
+                }
+                const wr = await remoteWriteSyncRow(tid, target, row.version);
+                if (wr.ok) {
+                    syncVersion = wr.version;
+                    if (J(target) !== J(local)) {
+                        syncApplyState(target);
+                        syncBase = syncClone(getSanitizedStateForExport());
+                    } else {
+                        syncBase = syncClone(target);
+                    }
+                    syncDirty = false; syncLastAt = Date.now(); syncLastError = '';
+                    syncPersistMeta(); setCloudSyncStatus(true);
+                    return { ok: true };
+                }
+            }
+            throw new Error('Terlalu banyak bentrok sinkron, akan dicoba lagi otomatis');
         }
 
         async function syncNow() {
             if (dataLocked) return { ok: false, error: 'Data lokal terkunci (gagal dibaca)' };
             if (syncBase === null) {
                 if (isLoggedIn) await initialCloudSync({ skipSyncNow: true });
-                if (syncBase === null) return { ok: true, queued: true };
+                if (syncBase === null) return { ok: false, error: 'Sinkronisasi belum siap' };
             }
-            if (syncBusy) { syncAgain = true; return { ok: true, queued: true }; }
+            if (syncActivePromise) {
+                syncAgain = true;
+                return await syncActivePromise;
+            }
             syncBusy = true;
-            try {
-                const tid = syncTid();
-                for (let attempt = 0; attempt < 5; attempt++) {
-                    const row = await remoteFetchSyncRow(tid);
-                    const local = getSanitizedStateForExport();
-                    if (row && row.payload && isPristineSeed(local) && !isPristineSeed(row.payload)) {
-                        syncVersion = row.version; syncBase = syncClone(row.payload); syncApplyState(syncClone(row.payload)); syncPersistMeta(); setCloudSyncStatus(true); return { ok: true };
-                    }
-                    if (!row) {
-                        if (isPristineSeed(local)) {
-                            syncVersion = 0; syncBase = syncClone(local); syncPersistMeta(); setCloudSyncStatus(true); return { ok: true };
-                        }
-                        const wr = await remoteWriteSyncRow(tid, local, 0);
-                        if (wr.ok) { syncVersion = wr.version; syncBase = syncClone(local); syncPersistMeta(); setCloudSyncStatus(true); return { ok: true }; }
-                        continue;
-                    }
-                    const remote = row.payload || {};
-                    const changedRemote = row.version !== syncVersion;
-                    const target = changedRemote ? syncMergeState(syncBase, local, remote) : local;
-                    if (J(target) === J(remote)) {
-                        syncVersion = row.version; syncBase = syncClone(remote);
-                        if (changedRemote && J(target) !== J(local)) syncApplyState(target);
-                        syncPersistMeta(); setCloudSyncStatus(true); return { ok: true };
-                    }
-                    const wr = await remoteWriteSyncRow(tid, target, row.version);
-                    if (wr.ok) {
-                        syncVersion = wr.version; syncBase = syncClone(target);
-                        if (J(target) !== J(local)) syncApplyState(target);
-                        syncPersistMeta(); setCloudSyncStatus(true); return { ok: true };
-                    }
+            syncActivePromise = (async () => {
+                let lastRes = { ok: true };
+                try {
+                    do {
+                        syncAgain = false;
+                        lastRes = await runSingleSyncPass();
+                    } while (syncAgain);
+                    return lastRes;
+                } catch (e) {
+                    const msg = (e && e.message) ? e.message : String(e);
+                    console.warn('Sync gagal:', e);
+                    syncLastError = msg;
+                    setCloudSyncStatus(false, msg);
+                    return { ok: false, error: msg };
+                } finally {
+                    syncBusy = false;
+                    syncActivePromise = null;
                 }
-                throw new Error('Terlalu banyak bentrok sinkron, akan dicoba lagi otomatis');
-            } catch (e) {
-                const msg = (e && e.message) ? e.message : String(e);
-                console.warn('Sync gagal:', e);
-                setCloudSyncStatus(false, msg);
-                return { ok: false, error: msg };
-            } finally {
-                syncBusy = false;
-                if (syncAgain) { syncAgain = false; setTimeout(syncNow, 50); }
-            }
+            })();
+            return await syncActivePromise;
         }
         const pushToSupabase = syncNow;
 
+        let initialSyncPromise = null;
         async function initialCloudSync(opts = {}) {
             if (!isLoggedIn) return;
-            const tid = syncTid();
-            try {
-                if (dataLocked) {
-                    const row = await remoteFetchSyncRow(tid);
-                    if (row && row.payload) {
-                        dataLocked = false; syncBase = syncClone(row.payload); syncVersion = row.version || 0;
-                        syncApplyState(syncClone(row.payload)); syncPersistMeta();
-                    } else return;
-                }
-                const meta = await loadStateFromIndexedDBForDb(syncMetaKey());
-                if (meta && meta.base) {
-                    syncBase = meta.base; syncVersion = meta.version || 0;
-                } else {
-                    const row = await remoteFetchSyncRow(tid);
-                    if (row && row.payload) {
-                        const rEpoch = Number(row.payload?.settings?.bookEpoch) || 0;
-                        const lEpoch = Number(appState?.settings?.bookEpoch) || 0;
-                        const useRemote = isPristineSeed(appState) || (rEpoch > lEpoch);
-                        if (useRemote) {
-                            syncBase = syncClone(row.payload);
-                            syncApplyState(syncClone(row.payload));
-                        } else if (lEpoch === rEpoch) {
-                            syncBase = createDefaultState(activeDatabaseName);
-                            delete syncBase.settings.supabaseKey; delete syncBase.settings.supabaseUrl;
-                        } else {
-                            syncBase = {};
-                        }
-                        syncVersion = row.version || 0;
-                    } else {
-                        syncBase = {}; syncVersion = 0;
-                    }
-                    syncPersistMeta();
-                }
+            if (initialSyncPromise) {
+                await initialSyncPromise;
                 if (!opts.skipSyncNow) await syncNow();
-            } catch (e) {
-                if (syncBase === null) syncBase = {};
-                setCloudSyncStatus(false, (e && e.message) || String(e));
+                return;
             }
+            const tid = syncTid();
+            initialSyncPromise = (async () => {
+                try {
+                    if (dataLocked) {
+                        const row = await remoteFetchSyncRow(tid);
+                        if (row && row.payload) {
+                            dataLocked = false; syncVersion = row.version || 0;
+                            syncApplyState(syncClone(row.payload));
+                            syncBase = syncClone(getSanitizedStateForExport());
+                            syncLastAt = Date.now(); syncLastError = '';
+                            syncPersistMeta();
+                        } else return;
+                    }
+                    const meta = await loadStateFromIndexedDBForDb(syncMetaKey());
+                    if (meta && meta.base && Object.keys(meta.base).length > 0) {
+                        syncBase = meta.base; syncVersion = meta.version || 0;
+                    } else {
+                        const row = await remoteFetchSyncRow(tid);
+                        if (row && row.payload) {
+                            const rEpoch = Number(row.payload?.settings?.bookEpoch) || 0;
+                            const lEpoch = Number(appState?.settings?.bookEpoch) || 0;
+                            const useRemote = isPristineSeed(appState) || (rEpoch > lEpoch);
+                            if (useRemote) {
+                                syncApplyState(syncClone(row.payload));
+                                syncBase = syncClone(getSanitizedStateForExport());
+                                syncVersion = row.version || 0;
+                            } else {
+                                syncBase = getNormalizedSeedBase(activeDatabaseName);
+                                syncVersion = 0;
+                            }
+                        } else {
+                            syncBase = getNormalizedSeedBase(activeDatabaseName);
+                            syncVersion = 0;
+                        }
+                        syncPersistMeta();
+                    }
+                    setCloudSyncStatus(true);
+                } catch (e) {
+                    if (syncBase === null || !Object.keys(syncBase).length) {
+                        syncBase = getNormalizedSeedBase(activeDatabaseName);
+                    }
+                    syncLastError = (e && e.message) || String(e);
+                    setCloudSyncStatus(false, syncLastError);
+                }
+            })();
+            try {
+                await initialSyncPromise;
+            } finally {
+                initialSyncPromise = null;
+            }
+            if (!opts.skipSyncNow) await syncNow();
+
             if (syncEventSource) { try { syncEventSource.close(); } catch (e) {} syncEventSource = null; }
             if (syncChannel && syncChannelClient) { try { syncChannelClient.removeChannel(syncChannel); } catch (e) {} syncChannel = null; }
             if (getSyncMode() === 'supabase') {
@@ -5510,7 +5644,7 @@
                     syncChannelClient = supabaseClient;
                     syncChannel = supabaseClient.channel('sync-' + activeDatabaseName)
                         .on('postgres_changes', { event: '*', schema: 'public', table: SYNC_TABLE, filter: `id=eq.${tid}` },
-                            p => { const v = p.new && p.new.version; if (v && v > syncVersion) syncNow(); })
+                            p => { const v = p.new && p.new.version; if (!v || v > syncVersion) syncNow(); })
                         .subscribe();
                 } catch (e) { console.warn('Realtime Supabase tidak aktif, memakai polling:', e); }
             } else if (typeof EventSource === 'function') {
@@ -5519,7 +5653,12 @@
                     const onRemotePing = ev => {
                         try {
                             const info = JSON.parse(ev.data || '{}');
-                            if (info.version && info.version > syncVersion) syncNow();
+                            if (info.serverBootId && syncServerBootId && info.serverBootId !== syncServerBootId) {
+                                syncServerBootId = info.serverBootId;
+                                syncNow();
+                                return;
+                            }
+                            if (info.version && info.version !== syncVersion) syncNow();
                         } catch (_) {}
                     };
                     syncEventSource.addEventListener('hello', onRemotePing);
@@ -5530,9 +5669,27 @@
                 syncListenersBound = true;
                 window.addEventListener('focus', () => { if (isLoggedIn && navigator.onLine) syncNow(); });
                 window.addEventListener('online', () => { if (isLoggedIn) syncNow(); });
-                document.addEventListener('visibilitychange', () => { if (!document.hidden && isLoggedIn && navigator.onLine) syncNow(); });
+                document.addEventListener('visibilitychange', () => {
+                    if (isLoggedIn && navigator.onLine) syncNow();
+                });
+                window.addEventListener('pagehide', () => {
+                    if (syncDirty && isLoggedIn && getSyncMode() === 'server' && typeof fetch === 'function') {
+                        try {
+                            const payload = getSanitizedStateForExport();
+                            const body = JSON.stringify({ payload, baseVersion: syncVersion });
+                            if (body.length < 60000) {
+                                fetch('/api/sync/' + encodeURIComponent(syncTid()), {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body,
+                                    keepalive: true
+                                }).catch(() => {});
+                            }
+                        } catch (_) {}
+                    }
+                });
             }
-            if (!syncTimer) syncTimer = setInterval(() => { if (isLoggedIn && navigator.onLine) syncNow(); }, 5000);
+            if (!syncTimer) syncTimer = setInterval(() => { if (isLoggedIn && navigator.onLine) syncNow(); }, 3000);
         }
 
         let lastSyncErrorToastAt = 0;
@@ -5540,6 +5697,7 @@
             await saveStateToIndexedDBForDb(activeDatabaseName, appState);
             refreshAllUI();
             if (isLoggedIn) {
+                syncDirty = true;
                 syncNow().then(r => {
                     if (r && !r.ok && Date.now() - lastSyncErrorToastAt > 60000) {
                         lastSyncErrorToastAt = Date.now();
@@ -6538,6 +6696,10 @@
                 setText('dash-last-trx-ref', lastTrx.id);
                 setText('dash-last-trx-amount', formatRp(lastTrx.total));
                 setText('dash-last-trx-desc', lastTrx.description);
+            } else {
+                setText('dash-last-trx-ref', '-');
+                setText('dash-last-trx-amount', '0');
+                setText('dash-last-trx-desc', 'Belum ada transaksi di periode berjalan');
             }
 
             setText('ppob-saldo-brilink', formatRp(appState.wallets['SALDO_BRILINK'] || 0));
@@ -12889,6 +13051,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             document.getElementById(`settings-pane-${tab}`)?.classList.remove('hidden');
             document.getElementById(`stab-${tab}`)?.classList.add('active');
             if (tab === 'users') renderSettingsUsersTable();
+            if (tab === 'supabase') { renderSyncDiagnosticsBox(); if (isLoggedIn && navigator.onLine) syncNow(); }
             if (tab === 'backup') renderSnapshotPanel();
         }
 
@@ -13877,8 +14040,21 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
 
         // Cache library CDN agar aplikasi tetap tampil normal saat offline (butuh sw.js di folder yang sama, via http/https)
         if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+            let swRefreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (swRefreshing) return;
+                try {
+                    if (sessionStorage.getItem('donet_sw_reloaded_v12')) return;
+                    sessionStorage.setItem('donet_sw_reloaded_v12', '1');
+                } catch (_) {}
+                swRefreshing = true;
+                window.location.reload();
+            });
             navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
-                if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
+                const checkSw = () => { if (reg && typeof reg.update === 'function') reg.update().catch(() => {}); };
+                checkSw();
+                window.addEventListener('focus', checkSw);
+                document.addEventListener('visibilitychange', () => { if (!document.hidden) checkSw(); });
             }).catch(e => console.warn('Service worker gagal didaftarkan:', e));
         }
 

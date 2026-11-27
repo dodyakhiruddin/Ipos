@@ -1,5 +1,5 @@
 // Service Worker DONET CELL: cache offline + menerima gambar dari menu "Bagikan" (WhatsApp, galeri, dll)
-const CACHE = 'donet-app-v11';
+const CACHE = 'donet-app-v12';
 const SHARE_CACHE = 'share-target-v1';
 const CACHEABLE_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'cdn.tailwindcss.com', 'code.jquery.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
@@ -15,7 +15,7 @@ self.addEventListener('activate', e => e.waitUntil((async () => {
 self.addEventListener('fetch', e => {
     const req = e.request;
     const url = new URL(req.url);
-    if (url.pathname.startsWith('/api/')) return;
+    if (url.pathname.startsWith('/api/') || url.hostname.endsWith('.supabase.co')) return;
     if (req.method === 'POST' && url.pathname.endsWith('/share-target')) {
         e.respondWith(handleShare(req));
         return;

@@ -13,6 +13,7 @@ const HOST = '0.0.0.0';
 const DATA_DIR = path.resolve(__dirname, '.data', 'tenants');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
+const SERVER_BOOT_ID = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 const tenantCache = new Map();
 const sseSubscribers = new Map();
 
@@ -54,7 +55,7 @@ function readTenantRecord(tid) {
 function writeTenantRecord(tid, rec) {
   const filePath = getTenantFilePath(tid);
   if (!filePath) throw new Error('Invalid tenant path');
-  const tmpPath = `${filePath}.${process.pid}.tmp`;
+  const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
   fs.writeFileSync(tmpPath, JSON.stringify(rec), 'utf8');
   fs.renameSync(tmpPath, filePath);
   tenantCache.set(tid, rec);
@@ -73,7 +74,7 @@ function broadcastTenantUpdate(tid, rec) {
   const subs = sseSubscribers.get(tid);
   if (!subs || subs.size === 0) return;
   const bookEpoch = Number(rec?.payload?.settings?.bookEpoch) || 0;
-  const msg = `event: update\ndata: ${JSON.stringify({ version: rec.version, bookEpoch, updatedAt: rec.updatedAt })}\n\n`;
+  const msg = `event: update\ndata: ${JSON.stringify({ version: rec.version, bookEpoch, updatedAt: rec.updatedAt, serverBootId: SERVER_BOOT_ID })}\n\n`;
   for (const res of subs) {
     try {
       res.write(msg);
@@ -108,7 +109,7 @@ app.get('/api/sync/:tenantId/events', (req, res) => {
 
   const rec = readTenantRecord(tid);
   const bookEpoch = Number(rec?.payload?.settings?.bookEpoch) || 0;
-  res.write(`event: hello\ndata: ${JSON.stringify({ version: rec.version, bookEpoch, updatedAt: rec.updatedAt })}\n\n`);
+  res.write(`event: hello\ndata: ${JSON.stringify({ version: rec.version, bookEpoch, updatedAt: rec.updatedAt, serverBootId: SERVER_BOOT_ID })}\n\n`);
 
   let subs = sseSubscribers.get(tid);
   if (!subs) {
@@ -132,7 +133,7 @@ app.get('/api/sync/:tenantId', (req, res) => {
   if (!tid) return res.status(400).json({ ok: false, error: 'Tenant ID tidak valid' });
   res.setHeader('Cache-Control', 'no-store');
   const rec = readTenantRecord(tid);
-  res.json({ ok: true, version: rec.version, updatedAt: rec.updatedAt, payload: rec.payload });
+  res.json({ ok: true, version: rec.version, updatedAt: rec.updatedAt, serverBootId: SERVER_BOOT_ID, payload: rec.payload });
 });
 
 app.put('/api/sync/:tenantId', (req, res) => {
@@ -155,6 +156,7 @@ app.put('/api/sync/:tenantId', (req, res) => {
       conflict: true,
       version: current.version,
       updatedAt: current.updatedAt,
+      serverBootId: SERVER_BOOT_ID,
       payload: current.payload
     });
   }
@@ -166,7 +168,7 @@ app.put('/api/sync/:tenantId', (req, res) => {
   };
   writeTenantRecord(tid, nextRec);
   broadcastTenantUpdate(tid, nextRec);
-  res.json({ ok: true, version: nextRec.version, updatedAt: nextRec.updatedAt });
+  res.json({ ok: true, version: nextRec.version, updatedAt: nextRec.updatedAt, serverBootId: SERVER_BOOT_ID });
 });
 
 app.post('/share-target', (_req, res) => {
