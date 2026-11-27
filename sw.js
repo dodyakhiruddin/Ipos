@@ -1,5 +1,5 @@
 // Service Worker DONET CELL: cache offline + menerima gambar dari menu "Bagikan" (WhatsApp, galeri, dll)
-const CACHE = 'donet-app-v9';
+const CACHE = 'donet-app-v10';
 const SHARE_CACHE = 'share-target-v1';
 const CACHEABLE_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'cdn.tailwindcss.com', 'code.jquery.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
