@@ -374,13 +374,24 @@
                     <div class="flex-1 space-y-2.5">
                         <div class="flex items-center gap-2">
                             <label class="w-20 text-right text-[12px] text-slate-700 font-medium">User :</label>
-                            <input type="text" id="ipos-login-user" value="admin" required autocomplete="off" autocapitalize="none" spellcheck="false" class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500 shadow-inner">
+                            <input type="text" id="ipos-login-user" value="admin" required autocomplete="off" autocapitalize="none" spellcheck="false" oninput="refreshLoginBiometricUI()" class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500 shadow-inner">
                         </div>
                         <div class="flex items-center gap-2">
                             <label class="w-20 text-right text-[12px] text-slate-700 font-medium">Password :</label>
                             <input type="password" id="ipos-login-pass" value="" required autocomplete="new-password" class="flex-1 bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:border-sky-500 shadow-inner">
                         </div>
                     </div>
+                </div>
+
+                <div id="login-biometric-box" class="hidden mt-3 space-y-2">
+                    <button type="button" id="btn-biometric-login" onclick="loginWithBiometric()" class="hidden w-full ipos-btn-success py-2 rounded text-xs font-bold shadow-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-fingerprint text-base"></i>
+                        <span id="btn-biometric-login-label">Masuk dengan Sidik Jari / Face ID</span>
+                    </button>
+                    <label id="login-enroll-biometric-row" class="hidden flex items-center gap-2 text-[11px] text-sky-900 bg-sky-50 border border-sky-200 rounded px-2.5 py-1.5 cursor-pointer select-none">
+                        <input type="checkbox" id="login-enroll-biometric">
+                        <span><i class="fas fa-fingerprint text-sky-600 mr-1"></i><b>Aktifkan Login Biometrik</b> (Sidik Jari / Face ID) di HP ini</span>
+                    </label>
                 </div>
 
                 <div id="ipos-login-error" class="hidden mt-2.5 text-[11px] text-red-600 bg-red-50 border border-red-200 rounded px-2.5 py-1 text-center font-medium">
@@ -2140,6 +2151,24 @@
                     </div>
                     <div class="flex justify-end pt-2">
                         <button type="button" onclick="saveStoreSettings()" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">Simpan Profil Toko</button>
+                    </div>
+                    <div id="settings-biometric-card" class="border border-sky-200 bg-sky-50/70 rounded p-3 space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="font-bold text-sky-900 flex items-center gap-1.5">
+                                <i class="fas fa-fingerprint text-base text-sky-700"></i>
+                                <span>Login Biometrik di HP (Sidik Jari / Face ID)</span>
+                            </div>
+                            <span id="set-bio-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700">Memeriksa...</span>
+                        </div>
+                        <div id="set-bio-desc" class="text-[11px] text-slate-600">Aktifkan agar akun ini bisa langsung masuk memakai sidik jari / Face ID di perangkat ini tanpa mengetik password ulang.</div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" id="set-bio-enroll-btn" onclick="enrollBiometricFromSettings()" class="ipos-btn-success px-3 py-1.5 rounded font-bold text-xs flex items-center gap-1.5">
+                                <i class="fas fa-fingerprint"></i> Aktifkan Sidik Jari / Face ID
+                            </button>
+                            <button type="button" id="set-bio-remove-btn" onclick="removeBiometricFromSettings()" class="hidden ipos-btn px-3 py-1.5 rounded font-semibold text-xs text-red-700">
+                                <i class="fas fa-trash-alt mr-1"></i> Hapus dari HP Ini
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -4130,6 +4159,355 @@
             openLoginModal();
         }
 
+        // ---------- LOGIN BIOMETRIK (WEBAUTHN: SIDIK JARI / FACE ID) ----------
+        const BIOMETRIC_STORAGE_KEY = 'donet_biometric_creds_v1';
+        let platformBioAvailableCache = null;
+
+        function b64uEncode(buf) {
+            const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+            let bin = '';
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+        function b64uDecode(str) {
+            const norm = String(str || '').replace(/-/g, '+').replace(/_/g, '/');
+            const pad = norm.length % 4 === 0 ? '' : '='.repeat(4 - (norm.length % 4));
+            const bin = atob(norm + pad);
+            const out = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+            return out;
+        }
+        function isWebAuthnApiSupported() {
+            return typeof window !== 'undefined'
+                && typeof window.PublicKeyCredential === 'function'
+                && !!window.isSecureContext
+                && !!navigator.credentials
+                && typeof navigator.credentials.create === 'function'
+                && typeof navigator.credentials.get === 'function';
+        }
+        async function isPlatformBiometricReady() {
+            if (!isWebAuthnApiSupported()) return false;
+            if (platformBioAvailableCache !== null) return platformBioAvailableCache;
+            try {
+                if (typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
+                    platformBioAvailableCache = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                } else {
+                    platformBioAvailableCache = true;
+                }
+            } catch (_) {
+                platformBioAvailableCache = false;
+            }
+            return platformBioAvailableCache;
+        }
+        function loadBiometricCredentials() {
+            try {
+                const raw = JSON.parse(localStorage.getItem(BIOMETRIC_STORAGE_KEY) || '[]');
+                if (!Array.isArray(raw)) return [];
+                return raw.filter(c => c && typeof c.credId === 'string' && typeof c.dbName === 'string' && typeof c.username === 'string');
+            } catch (_) {
+                return [];
+            }
+        }
+        function saveBiometricCredentials(list) {
+            try {
+                localStorage.setItem(BIOMETRIC_STORAGE_KEY, JSON.stringify(Array.isArray(list) ? list : []));
+            } catch (e) {
+                console.warn('Gagal menyimpan kredensial biometrik:', e);
+            }
+        }
+        function getEnrolledBiometricsForDb(dbName) {
+            const rpId = location.hostname;
+            return loadBiometricCredentials().filter(c => c.dbName === dbName && (!c.rpId || c.rpId === rpId));
+        }
+        function findEnrolledBiometric(dbName, username) {
+            const un = String(username || '').trim().toLowerCase();
+            return getEnrolledBiometricsForDb(dbName).find(c => c.username.trim().toLowerCase() === un) || null;
+        }
+        function derSigToP1363(der, partLen = 32) {
+            const b = der instanceof Uint8Array ? der : new Uint8Array(der);
+            if (b.length < 8 || b[0] !== 0x30) throw new Error('Format tanda tangan ECDSA tidak valid.');
+            let pos = 2;
+            if (b[1] & 0x80) pos = 2 + (b[1] & 0x7f);
+            if (b[pos] !== 0x02) throw new Error('Komponen R tanda tangan tidak valid.');
+            const rLen = b[pos + 1];
+            const rBytes = b.slice(pos + 2, pos + 2 + rLen);
+            pos = pos + 2 + rLen;
+            if (b[pos] !== 0x02) throw new Error('Komponen S tanda tangan tidak valid.');
+            const sLen = b[pos + 1];
+            const sBytes = b.slice(pos + 2, pos + 2 + sLen);
+            const copyPad = (src, target, offset) => {
+                const clean = src.length > partLen ? src.slice(src.length - partLen) : src;
+                target.set(clean, offset + (partLen - clean.length));
+            };
+            const out = new Uint8Array(partLen * 2);
+            copyPad(rBytes, out, 0);
+            copyPad(sBytes, out, partLen);
+            return out;
+        }
+        async function verifyWebAuthnAssertion(assertion, expectedChallenge, credRecord) {
+            const resp = assertion && assertion.response;
+            if (!resp || !resp.clientDataJSON || !resp.authenticatorData || !resp.signature) {
+                throw new Error('Respons biometrik tidak lengkap.');
+            }
+            const clientData = JSON.parse(new TextDecoder().decode(resp.clientDataJSON));
+            if (clientData.type !== 'webauthn.get') throw new Error('Tipe WebAuthn tidak valid.');
+            if (clientData.challenge !== b64uEncode(expectedChallenge)) throw new Error('Challenge biometrik tidak cocok.');
+            if (clientData.origin !== location.origin) throw new Error('Origin biometrik tidak cocok.');
+
+            const authData = new Uint8Array(resp.authenticatorData);
+            if (authData.length < 37) throw new Error('Data autentikator tidak valid.');
+            const expectedRpHash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(location.hostname)));
+            for (let i = 0; i < 32; i++) {
+                if (authData[i] !== expectedRpHash[i]) throw new Error('Domain autentikator tidak cocok.');
+            }
+            const flags = authData[32];
+            if ((flags & 0x05) !== 0x05) {
+                throw new Error('Verifikasi pengguna (sidik jari / Face ID) tidak terpenuhi.');
+            }
+
+            if (credRecord && credRecord.publicKeySpki && window.crypto?.subtle) {
+                const clientDataHash = new Uint8Array(await crypto.subtle.digest('SHA-256', resp.clientDataJSON));
+                const signedData = new Uint8Array(authData.length + clientDataHash.length);
+                signedData.set(authData, 0);
+                signedData.set(clientDataHash, authData.length);
+                const spkiBytes = b64uDecode(credRecord.publicKeySpki);
+                const alg = Number(credRecord.alg) || -7;
+                if (alg === -7) {
+                    const pubKey = await crypto.subtle.importKey('spki', spkiBytes, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+                    const rawSig = derSigToP1363(new Uint8Array(resp.signature), 32);
+                    const ok = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pubKey, rawSig, signedData);
+                    if (!ok) throw new Error('Tanda tangan biometrik tidak valid.');
+                } else if (alg === -257) {
+                    const pubKey = await crypto.subtle.importKey('spki', spkiBytes, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+                    const ok = await crypto.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, pubKey, resp.signature, signedData);
+                    if (!ok) throw new Error('Tanda tangan biometrik tidak valid.');
+                }
+            }
+            return true;
+        }
+        function formatBiometricError(err) {
+            const name = err?.name || '';
+            if (name === 'NotAllowedError') {
+                return 'Verifikasi sidik jari / Face ID dibatalkan atau diblokir oleh frame preview. Buka langsung alamat aplikasi di browser/PWA HP.';
+            }
+            if (name === 'SecurityError') {
+                return 'Login biometrik hanya dapat dipakai saat dibuka langsung melalui HTTPS (bukan di dalam preview frame).';
+            }
+            if (name === 'NotSupportedError') {
+                return 'Perangkat atau browser ini belum mendukung login biometrik.';
+            }
+            return err?.message || 'Gagal memproses login biometrik.';
+        }
+        async function enrollBiometricForAccount(dbName, username) {
+            if (!(await isPlatformBiometricReady())) {
+                throw new Error('Perangkat ini belum mengaktifkan sidik jari / Face ID / kunci layar biometrik.');
+            }
+            const cleanUser = String(username || '').trim();
+            if (!cleanUser) throw new Error('Username tidak valid.');
+            const challenge = crypto.getRandomValues(new Uint8Array(32));
+            const userIdBytes = new TextEncoder().encode(`${dbName}:${cleanUser.toLowerCase()}`).slice(0, 64);
+            const credential = await navigator.credentials.create({
+                publicKey: {
+                    challenge,
+                    rp: { name: 'DONET CELL', id: location.hostname },
+                    user: {
+                        id: userIdBytes,
+                        name: `${cleanUser} (${dbName})`,
+                        displayName: `${cleanUser} — ${dbName}`
+                    },
+                    pubKeyCredParams: [
+                        { type: 'public-key', alg: -7 },
+                        { type: 'public-key', alg: -257 }
+                    ],
+                    authenticatorSelection: {
+                        authenticatorAttachment: 'platform',
+                        userVerification: 'required',
+                        residentKey: 'preferred'
+                    },
+                    timeout: 60000
+                }
+            });
+            if (!credential || !credential.rawId) throw new Error('Pendaftaran biometrik tidak menghasilkan kredensial.');
+            const credId = b64uEncode(credential.rawId);
+            let publicKeySpki = '';
+            let alg = -7;
+            try {
+                if (typeof credential.response?.getPublicKey === 'function') {
+                    const spki = credential.response.getPublicKey();
+                    if (spki) publicKeySpki = b64uEncode(spki);
+                }
+                if (typeof credential.response?.getPublicKeyAlgorithm === 'function') {
+                    alg = credential.response.getPublicKeyAlgorithm() || -7;
+                }
+            } catch (_) {}
+
+            const existing = loadBiometricCredentials().filter(
+                c => !(c.dbName === dbName && c.username.trim().toLowerCase() === cleanUser.toLowerCase() && (!c.rpId || c.rpId === location.hostname))
+            );
+            existing.push({
+                dbName,
+                username: cleanUser,
+                credId,
+                publicKeySpki,
+                alg,
+                rpId: location.hostname,
+                createdAt: new Date().toISOString()
+            });
+            saveBiometricCredentials(existing);
+            return true;
+        }
+        async function refreshLoginBiometricUI() {
+            const box = document.getElementById('login-biometric-box');
+            const btn = document.getElementById('btn-biometric-login');
+            const lbl = document.getElementById('btn-biometric-login-label');
+            const enrollRow = document.getElementById('login-enroll-biometric-row');
+            const enrollChk = document.getElementById('login-enroll-biometric');
+            if (!box || !btn || !enrollRow) return;
+
+            const supported = await isPlatformBiometricReady();
+            if (!supported) {
+                box.classList.add('hidden');
+                return;
+            }
+            const typedUser = (document.getElementById('ipos-login-user')?.value || '').trim();
+            const matchedCred = typedUser ? findEnrolledBiometric(activeDatabaseName, typedUser) : null;
+            const anyDbCreds = getEnrolledBiometricsForDb(activeDatabaseName);
+            const activeCred = matchedCred || (anyDbCreds.length === 1 ? anyDbCreds[0] : null);
+
+            box.classList.remove('hidden');
+            if (anyDbCreds.length > 0) {
+                btn.classList.remove('hidden');
+                if (lbl) lbl.textContent = activeCred
+                    ? `Masuk dengan Sidik Jari / Face ID (${activeCred.username.toUpperCase()})`
+                    : 'Masuk dengan Sidik Jari / Face ID';
+            } else {
+                btn.classList.add('hidden');
+            }
+            // Tawarkan aktivasi jika user yang diketik belum terdaftar di HP ini
+            if (!matchedCred) {
+                enrollRow.classList.remove('hidden');
+            } else {
+                enrollRow.classList.add('hidden');
+                if (enrollChk) enrollChk.checked = false;
+            }
+        }
+        async function loginWithBiometric() {
+            const errEl = document.getElementById('ipos-login-error');
+            const btn = document.getElementById('btn-biometric-login');
+            const lbl = document.getElementById('btn-biometric-login-label');
+            const origLbl = lbl ? lbl.textContent : '';
+            if (errEl) errEl.classList.add('hidden');
+
+            const usersList = (Array.isArray(appState.users) && appState.users.length > 0)
+                ? appState.users
+                : getDefaultUsersSeed();
+            const typedUser = (document.getElementById('ipos-login-user')?.value || '').trim();
+            const typedCred = typedUser ? findEnrolledBiometric(activeDatabaseName, typedUser) : null;
+            const dbCreds = typedCred ? [typedCred] : getEnrolledBiometricsForDb(activeDatabaseName);
+            if (!dbCreds.length) {
+                if (errEl) {
+                    errEl.textContent = 'Belum ada sidik jari / Face ID yang didaftarkan untuk database ini di HP ini.';
+                    errEl.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (btn) btn.disabled = true;
+            if (lbl) lbl.textContent = 'Menunggu Sidik Jari / Face ID...';
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge,
+                        rpId: location.hostname,
+                        allowCredentials: dbCreds.map(c => ({
+                            type: 'public-key',
+                            id: b64uDecode(c.credId),
+                            transports: ['internal']
+                        })),
+                        userVerification: 'required',
+                        timeout: 60000
+                    }
+                });
+                const returnedId = b64uEncode(assertion.rawId);
+                const credRecord = dbCreds.find(c => c.credId === returnedId) || dbCreds[0];
+                await verifyWebAuthnAssertion(assertion, challenge, credRecord);
+
+                const matchedAccount = usersList.find(
+                    u => u && typeof u.username === 'string' && u.username.trim().toLowerCase() === credRecord.username.trim().toLowerCase()
+                );
+                if (!matchedAccount) {
+                    const remaining = loadBiometricCredentials().filter(c => c.credId !== credRecord.credId);
+                    saveBiometricCredentials(remaining);
+                    await refreshLoginBiometricUI();
+                    throw new Error(`Akun ${credRecord.username} sudah tidak ada di database ${activeDatabaseName}.`);
+                }
+                await completeAuthenticatedLogin(matchedAccount, { usedPassInput: null, enrollBiometric: false, viaBiometric: true });
+            } catch (err) {
+                if (errEl) {
+                    errEl.textContent = formatBiometricError(err);
+                    errEl.classList.remove('hidden');
+                }
+            } finally {
+                if (btn) btn.disabled = false;
+                if (lbl && !isLoggedIn) lbl.textContent = origLbl || 'Masuk dengan Sidik Jari / Face ID';
+            }
+        }
+        async function renderBiometricSettingsCard() {
+            const card = document.getElementById('settings-biometric-card');
+            const badge = document.getElementById('set-bio-status-badge');
+            const desc = document.getElementById('set-bio-desc');
+            const enrollBtn = document.getElementById('set-bio-enroll-btn');
+            const removeBtn = document.getElementById('set-bio-remove-btn');
+            if (!card || !badge || !desc || !enrollBtn || !removeBtn) return;
+
+            const ready = await isPlatformBiometricReady();
+            if (!ready) {
+                badge.textContent = 'Tidak Didukung';
+                badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-600';
+                desc.textContent = 'Perangkat/browser ini belum mendukung atau belum membuka halaman lewat HTTPS langsung.';
+                enrollBtn.classList.add('hidden');
+                removeBtn.classList.add('hidden');
+                return;
+            }
+            const curName = currentUser?.rawUsername || currentUser?.username || '';
+            const cred = findEnrolledBiometric(activeDatabaseName, curName);
+            if (cred) {
+                badge.textContent = 'Aktif di HP Ini';
+                badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800';
+                desc.textContent = `Sidik jari / Face ID aktif untuk akun ${curName.toUpperCase()} pada database ${activeDatabaseName}.`;
+                enrollBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Daftar Ulang Biometrik';
+                enrollBtn.classList.remove('hidden');
+                removeBtn.classList.remove('hidden');
+            } else {
+                badge.textContent = 'Belum Aktif';
+                badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800';
+                desc.textContent = `Aktifkan untuk akun ${curName.toUpperCase()} agar bisa login cepat memakai sidik jari / Face ID di perangkat ini.`;
+                enrollBtn.innerHTML = '<i class="fas fa-fingerprint"></i> Aktifkan Sidik Jari / Face ID';
+                enrollBtn.classList.remove('hidden');
+                removeBtn.classList.add('hidden');
+            }
+        }
+        async function enrollBiometricFromSettings() {
+            const curName = currentUser?.rawUsername || currentUser?.username || '';
+            try {
+                await enrollBiometricForAccount(activeDatabaseName, curName);
+                await renderBiometricSettingsCard();
+                showToast(`Login biometrik aktif untuk ${curName.toUpperCase()} di perangkat ini!`, 'success');
+            } catch (err) {
+                showToast(formatBiometricError(err), 'error');
+            }
+        }
+        async function removeBiometricFromSettings() {
+            const curName = (currentUser?.rawUsername || currentUser?.username || '').trim().toLowerCase();
+            const next = loadBiometricCredentials().filter(
+                c => !(c.dbName === activeDatabaseName && c.username.trim().toLowerCase() === curName && (!c.rpId || c.rpId === location.hostname))
+            );
+            saveBiometricCredentials(next);
+            await renderBiometricSettingsCard();
+            showToast('Login biometrik untuk perangkat ini dihapus.', 'info');
+        }
+
         let loginDbIsEmptyHere = false; // true = database ini belum punya data/akun tersimpan di browser PC ini
         async function openLoginModal() {
             const candidateState = await loadStateFromIndexedDBForDb(activeDatabaseName);
@@ -4146,7 +4524,10 @@
             const firstUser = appState.users[0] || { username: 'admin', password: '' };
             document.getElementById('ipos-login-user').value = firstUser.username;
             document.getElementById('ipos-login-pass').value = '';
+            const enrollChk = document.getElementById('login-enroll-biometric');
+            if (enrollChk) enrollChk.checked = false;
             document.getElementById('ipos-login-modal').classList.remove('hidden');
+            await refreshLoginBiometricUI();
             setTimeout(() => document.getElementById('ipos-login-user').focus(), 60);
         }
 
@@ -4154,6 +4535,57 @@
             document.getElementById('ipos-login-modal').classList.add('hidden');
             // Belum berhasil login: kembali ke pemilihan database, aplikasi tetap terkunci
             if (!isLoggedIn) openDbModal();
+        }
+
+        async function completeAuthenticatedLogin(matchedAccount, opts = {}) {
+            const usedPassInput = opts.usedPassInput;
+            const usingWeakPw = typeof usedPassInput === 'string' && usedPassInput.toLowerCase() === String(matchedAccount.username).toLowerCase();
+            isLoggedIn = true;
+            currentUser = {
+                username: matchedAccount.username.toUpperCase(),
+                rawUsername: matchedAccount.username,
+                role: matchedAccount.role || 'KASIR',
+                location: matchedAccount.location || 'UTM'
+            };
+
+            document.getElementById('ipos-login-modal').classList.add('hidden');
+            try { updateDatabaseIdentityUI(); } catch (err) { console.error('Identitas user gagal:', err); }
+
+            // Tiap langkah dibungkus sendiri-sendiri: error di satu langkah tidak boleh membuat user
+            // tertinggal sebagai TAMU (jendela login sudah tertutup).
+            const failedSteps = [];
+            const run = async (name, fn) => {
+                try { return await fn(); } catch (err) { console.error('Pasca-login gagal [' + name + ']:', err); failedSteps.push(name); }
+            };
+            await run('muat-data', loadDatabaseForActiveTenant);
+            await run('snapshot', () => takeSnapshot('login'));
+            let pwChanged = await run('migrasi-password', migrateLegacyPasswords) || false;
+            if (typeof usedPassInput === 'string') {
+                // Naikkan kekuatan hash lama memakai password yang baru saja diketik (hash yang sama = password yang sama)
+                await run('upgrade-hash', async () => {
+                    const liveUser = (appState.users || []).find(u => u && u.password === matchedAccount.password);
+                    if (liveUser && isPasswordHashWeak(liveUser.password)) {
+                        liveUser.password = await hashPassword(usedPassInput);
+                        pwChanged = true;
+                    }
+                });
+            }
+            if (pwChanged) await run('simpan', saveAppState);
+            await run('identitas', updateDatabaseIdentityUI);
+            await run('tampilan', refreshAllUI);
+            showToast(`Berhasil login ke [${activeDatabaseName}] sebagai ${currentUser.username} (${currentUser.role})${opts.viaBiometric ? ' (Biometrik)' : ''}`, 'success');
+            if (failedSteps.length) showToast('Login berhasil, tetapi sebagian data gagal dimuat (' + failedSteps.join(', ') + '). Buka Console (F12) untuk detail.', 'error');
+            if (usingWeakPw) showToast('Password Anda masih bawaan/mudah ditebak. Segera ganti di Pengaturan > Kelola User.', 'error');
+
+            if (opts.enrollBiometric) {
+                try {
+                    await enrollBiometricForAccount(activeDatabaseName, matchedAccount.username);
+                    showToast(`Login biometrik (Sidik Jari / Face ID) aktif untuk ${currentUser.username}!`, 'success');
+                } catch (bioErr) {
+                    showToast(formatBiometricError(bioErr), 'info');
+                }
+            }
+            offerSharedProof();
         }
 
         async function handleIposLogin(e) {
@@ -4203,42 +4635,8 @@
             }
 
             errEl.classList.add('hidden');
-            const usingWeakPw = usedPassInput.toLowerCase() === String(matchedAccount.username).toLowerCase();
-            isLoggedIn = true;
-            currentUser = {
-                username: matchedAccount.username.toUpperCase(),
-                rawUsername: matchedAccount.username,
-                role: matchedAccount.role || 'KASIR',
-                location: matchedAccount.location || 'UTM'
-            };
-
-            document.getElementById('ipos-login-modal').classList.add('hidden');
-            try { updateDatabaseIdentityUI(); } catch (err) { console.error('Identitas user gagal:', err); }
-
-            // Tiap langkah dibungkus sendiri-sendiri: error di satu langkah tidak boleh membuat user
-            // tertinggal sebagai TAMU (jendela login sudah tertutup).
-            const failedSteps = [];
-            const run = async (name, fn) => {
-                try { return await fn(); } catch (err) { console.error('Pasca-login gagal [' + name + ']:', err); failedSteps.push(name); }
-            };
-            await run('muat-data', loadDatabaseForActiveTenant);
-            await run('snapshot', () => takeSnapshot('login'));
-            let pwChanged = await run('migrasi-password', migrateLegacyPasswords) || false;
-            // Naikkan kekuatan hash lama memakai password yang baru saja diketik (hash yang sama = password yang sama)
-            await run('upgrade-hash', async () => {
-                const liveUser = (appState.users || []).find(u => u && u.password === matchedAccount.password);
-                if (liveUser && isPasswordHashWeak(liveUser.password)) {
-                    liveUser.password = await hashPassword(usedPassInput);
-                    pwChanged = true;
-                }
-            });
-            if (pwChanged) await run('simpan', saveAppState);
-            await run('identitas', updateDatabaseIdentityUI);
-            await run('tampilan', refreshAllUI);
-            showToast(`Berhasil login ke [${activeDatabaseName}] sebagai ${currentUser.username} (${currentUser.role})`, 'success');
-            if (failedSteps.length) showToast('Login berhasil, tetapi sebagian data gagal dimuat (' + failedSteps.join(', ') + '). Buka Console (F12) untuk detail.', 'error');
-            if (usingWeakPw) showToast('Password Anda masih bawaan/mudah ditebak. Segera ganti di Pengaturan > Kelola User.', 'error');
-            offerSharedProof();
+            const wantsEnroll = !!document.getElementById('login-enroll-biometric')?.checked;
+            await completeAuthenticatedLogin(matchedAccount, { usedPassInput, enrollBiometric: wantsEnroll });
         }
 
         function updateDatabaseIdentityUI() {
@@ -12099,6 +12497,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             renderStoreLogoPreview(appState.settings.storeLogo || '');
             const lNote = document.getElementById('set-logo-note');
             if (lNote) lNote.textContent = 'Logo tampil di kartu identitas toko Dashboard (maks. 512 px).';
+            renderBiometricSettingsCard();
             switchSettingsTab(tab);
             document.getElementById('settings-modal').classList.remove('hidden');
         }
