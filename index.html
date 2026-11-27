@@ -2761,7 +2761,7 @@ alter table donet_cell_state disable row level security;</div>
                         <button type="button" onclick="document.getElementById('item-import-file').click()" class="ipos-btn-success px-2.5 py-1 rounded text-[11px] font-bold"><i class="fas fa-file-import mr-1"></i> Import Excel/CSV</button>
                         <input type="file" id="item-import-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importItemsFromFile(event)">
                     </div>
-                    <div class="text-[10px] text-emerald-900">Kolom: No, Kode, Nama Item, Kategori, Satuan, HPP, Harga Eceran (Umum), Harga Grosir. Kode &amp; nama yang sama tidak dibuat ganda (hanya harga diperbarui). Kode kosong = dibuat otomatis.</div>
+                    <div class="text-[10px] text-emerald-900">Kolom: No, Kode, Nama Item, Kategori, Satuan, HPP, Harga Eceran (Umum), Harga Grosir. Patokan utama: <b>Kode Barang</b> — jika Kode sama, Nama Barang &amp; Harga ikut diperbarui (tidak dibuat ganda). Kode kosong = cocokkan nama / dibuat otomatis.</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -7751,8 +7751,8 @@ alter table donet_cell_state disable row level security;</div>
                 ['Petunjuk Pengisian'],
                 ['1. Jangan ubah nama kolom pada baris pertama sheet "Data Barang". Kolom No hanya nomor urut.'],
                 ['2. Kode boleh dikosongkan (dibuat otomatis). Nama Item wajib diisi.'],
-                ['3. Jika Kode dan Nama Item sama dengan data yang sudah ada, barang TIDAK dibuat ganda; hanya HPP/Harga yang diperbarui.'],
-                ['4. Jika Kode sama tetapi Nama Item berbeda, baris dilewati agar kode tidak bentrok.'],
+                ['3. Patokan import adalah Kode Barang. Jika Kode sama dengan data yang sudah ada, barang TIDAK dibuat ganda; Nama Item, Kategori, Satuan, dan HPP/Harga ikut diperbarui.'],
+                ['4. Jika Kode dikosongkan, pencocokan memakai Nama Item (atau dibuatkan kode otomatis jika barang baru).'],
                 ['5. Kategori baru otomatis ditambahkan. Satuan kosong = PCS. Stok tidak diimpor (barang baru stok 0).'],
                 ['6. HPP, Harga Eceran (Umum), Harga Grosir diisi angka tanpa titik/Rp.'],
                 ['7. Urutan kolom: No, Kode, Nama Item, Kategori, Satuan, HPP, Harga Eceran (Umum), Harga Grosir.']
@@ -7804,9 +7804,9 @@ alter table donet_cell_state disable row level security;</div>
             const map = {
                 kode: 'code', kodeitem: 'code', kodebarang: 'code', barcode: 'code', code: 'code', sku: 'code',
                 kategori: 'category', jenis: 'category', category: 'category',
-                namabarang: 'name', nama: 'name', namaitem: 'name', barang: 'name', name: 'name', produk: 'name',
+                namabarang: 'name', nama: 'name', namaitem: 'name', namaproduk: 'name', barang: 'name', name: 'name', produk: 'name', uraian: 'name',
                 satuan: 'unit', sat: 'unit', unit: 'unit',
-                hpp: 'cost', hargapokok: 'cost', modal: 'cost', cost: 'cost',
+                hpp: 'cost', hargapokok: 'cost', hargabeli: 'cost', hargamodal: 'cost', modal: 'cost', cost: 'cost',
                 hargaumum: 'price', hargajual: 'price', hargaeceran: 'price', harga: 'price', price: 'price',
                 hargagrosir: 'wholesale', grosir: 'wholesale', hargareseller: 'wholesale', wholesale: 'wholesale'
             };
@@ -7832,32 +7832,53 @@ alter table donet_cell_state disable row level security;</div>
                         Object.keys(r).forEach(h => { const key = itemIoKey(h); if (key) o[key] = r[h]; });
                         return o;
                     });
-                    if (!rows.some(r => 'name' in r)) {
-                        showToast('Kolom "Nama Item" tidak ditemukan. Gunakan template dari tombol "Unduh Template".', 'error');
+                    if (!rows.some(r => 'name' in r || 'code' in r)) {
+                        showToast('Kolom "Kode" / "Nama Item" tidak ditemukan. Gunakan template dari tombol "Unduh Template".', 'error');
                         return;
                     }
 
                     ensureCategoriesIntegrity();
                     const items = appState.items;
-                    const usedCodes = new Set(items.map(i => String(i.code).toUpperCase()));
+                    const itemsByCode = new Map();
+                    items.forEach(x => {
+                        const c = String(x.code ?? '').trim().toUpperCase();
+                        if (c && !itemsByCode.has(c)) itemsByCode.set(c, x);
+                    });
+                    const usedCodes = new Set(itemsByCode.keys());
                     const newCats = new Set();
-                    const parsed = new Map(); // kunci: kode|nama -> baris terakhir menang (harga boleh beda)
-                    let skippedEmpty = 0, skippedConflict = 0, mergedInFile = 0;
+                    const parsed = new Map(); // kunci utama: Kode Barang (atau Nama jika Kode kosong) -> baris terakhir menang
+                    let skippedEmpty = 0, mergedInFile = 0;
 
                     rows.forEach(r => {
-                        const name = String(r.name ?? '').trim().replace(/\s+/g, ' ');
-                        if (!name) { skippedEmpty++; return; }
                         const code = String(r.code ?? '').trim().toUpperCase();
-                        const category = String(r.category ?? '').trim() || (appState.categories[0] || 'Umum');
-                        const price = Math.max(0, itemIoNum(r.price));
+                        const name = String(r.name ?? '').trim().replace(/\s+/g, ' ');
+                        const existingByCode = code ? (itemsByCode.get(code) || null) : null;
+                        if (!name && !existingByCode) { skippedEmpty++; return; }
+
+                        const hasCategory = 'category' in r && String(r.category ?? '').trim() !== '';
+                        const hasUnit = 'unit' in r && String(r.unit ?? '').trim() !== '';
+                        const hasCost = 'cost' in r && String(r.cost ?? '').trim() !== '';
+                        const hasPrice = 'price' in r && String(r.price ?? '').trim() !== '';
+                        const hasWholesale = 'wholesale' in r && String(r.wholesale ?? '').trim() !== '';
+
+                        const category = hasCategory ? String(r.category).trim() : (appState.categories[0] || 'Umum');
+                        const price = hasPrice ? Math.max(0, itemIoNum(r.price)) : 0;
                         const obj = {
-                            code, category, name,
-                            unit: String(r.unit ?? '').trim().toUpperCase() || 'PCS',
-                            cost: Math.max(0, itemIoNum(r.cost)),
+                            code,
+                            name,
+                            category,
+                            unit: hasUnit ? String(r.unit).trim().toUpperCase() : 'PCS',
+                            cost: hasCost ? Math.max(0, itemIoNum(r.cost)) : 0,
                             price,
-                            wholesalePrice: Math.max(0, ('wholesale' in r && r.wholesale !== '') ? itemIoNum(r.wholesale) : price)
+                            wholesalePrice: hasWholesale ? Math.max(0, itemIoNum(r.wholesale)) : price,
+                            hasName: !!name,
+                            hasCategory,
+                            hasUnit,
+                            hasCost,
+                            hasPrice,
+                            hasWholesale
                         };
-                        const key = `${code}|${itemIoNameKey(name)}`;
+                        const key = code ? `C:${code}` : `N:${itemIoNameKey(name)}`;
                         if (parsed.has(key)) mergedInFile++;
                         parsed.set(key, obj);
                     });
@@ -7867,15 +7888,18 @@ alter table donet_cell_state disable row level security;</div>
                         const nk = itemIoNameKey(obj.name);
                         let existing = null;
                         if (obj.code) {
-                            const byCode = items.find(x => String(x.code).toUpperCase() === obj.code);
-                            if (byCode) {
-                                if (itemIoNameKey(byCode.name) !== nk) { skippedConflict++; return; }
-                                existing = byCode;
-                            }
+                            existing = itemsByCode.get(obj.code) || null; // patokan utama: Kode Barang
                         } else {
                             existing = items.find(x => itemIoNameKey(x.name) === nk) || null; // tanpa kode: cocokkan via nama
                         }
-                        if (existing) { toUpdate.push({ existing, obj }); return; }
+                        if (existing) {
+                            const nameChanged = obj.hasName && itemIoNameKey(existing.name) !== nk;
+                            if (obj.hasCategory && obj.category && !appState.categories.includes(obj.category)) {
+                                newCats.add(obj.category);
+                            }
+                            toUpdate.push({ existing, obj, nameChanged });
+                            return;
+                        }
                         if (!obj.code) {
                             const prefix = obj.category.slice(0, 3).toUpperCase();
                             let c;
@@ -7884,33 +7908,47 @@ alter table donet_cell_state disable row level security;</div>
                         }
                         usedCodes.add(obj.code);
                         if (!appState.categories.includes(obj.category)) newCats.add(obj.category);
-                        toAdd.push(Object.assign({ stock: 0 }, obj));
+                        toAdd.push({
+                            code: obj.code,
+                            category: obj.category,
+                            name: obj.name,
+                            unit: obj.unit,
+                            stock: 0,
+                            cost: obj.cost,
+                            price: obj.price,
+                            wholesalePrice: obj.wholesalePrice
+                        });
                     });
 
                     if (!toAdd.length && !toUpdate.length) {
-                        showToast('Tidak ada data baru. Semua baris sudah ada, kosong, atau bentrok kode.', 'info');
+                        showToast('Tidak ada data yang bisa diimpor (baris kosong).', 'info');
                         return;
                     }
+                    const updatedNameCount = toUpdate.filter(u => u.nameChanged).length;
                     const msg = `Import dari "${file.name}":\n` +
                         `• Barang baru: ${toAdd.length}\n` +
-                        `• Sudah ada (kode & nama sama) → hanya harga diperbarui: ${toUpdate.length}\n` +
+                        `• Kode barang sama → data & harga diperbarui: ${toUpdate.length}` +
+                        (updatedNameCount ? ` (${updatedNameCount} nama barang ikut berubah)` : '') + `\n` +
                         `• Dilewati (nama kosong): ${skippedEmpty}\n` +
-                        `• Dilewati (kode sama, nama beda): ${skippedConflict}\n` +
                         `• Baris ganda dalam file digabung: ${mergedInFile}\n` +
                         (newCats.size ? `• Kategori baru: ${[...newCats].join(', ')}\n` : '') + `\nLanjutkan?`;
                     if (!confirm(msg)) { showToast('Import dibatalkan.', 'info'); return; }
 
                     newCats.forEach(c => appState.categories.push(c));
                     toUpdate.forEach(({ existing, obj }) => {
-                        existing.cost = obj.cost;
-                        existing.price = obj.price;
-                        existing.wholesalePrice = obj.wholesalePrice;
+                        if (obj.hasName) existing.name = obj.name;
+                        if (obj.hasCategory) existing.category = obj.category;
+                        if (obj.hasUnit) existing.unit = obj.unit;
+                        if (obj.hasCost) existing.cost = obj.cost;
+                        if (obj.hasPrice) existing.price = obj.price;
+                        if (obj.hasWholesale) existing.wholesalePrice = obj.wholesalePrice;
+                        else if (existing.wholesalePrice === undefined) existing.wholesalePrice = existing.price;
                     });
                     toAdd.forEach(o => items.unshift(o));
 
                     closeModal('item-modal');
                     await saveAppState();
-                    showToast(`Import selesai: ${toAdd.length} barang baru, ${toUpdate.length} harga diperbarui.`, 'success');
+                    showToast(`Import selesai: ${toAdd.length} barang baru, ${toUpdate.length} barang diperbarui${updatedNameCount ? ` (${updatedNameCount} ganti nama)` : ''}.`, 'success');
                 } catch (err) {
                     console.error(err);
                     showToast('Gagal memproses file: ' + (err.message || err), 'error');
@@ -14535,8 +14573,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (swRefreshing) return;
                 try {
-                    if (sessionStorage.getItem('donet_sw_reloaded_v17')) return;
-                    sessionStorage.setItem('donet_sw_reloaded_v17', '1');
+                    if (sessionStorage.getItem('donet_sw_reloaded_v18')) return;
+                    sessionStorage.setItem('donet_sw_reloaded_v18', '1');
                 } catch (_) {}
                 swRefreshing = true;
                 window.location.reload();
