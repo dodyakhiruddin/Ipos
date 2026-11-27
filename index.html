@@ -5339,11 +5339,19 @@ alter table donet_cell_state disable row level security;</div>
             }
             return String(r.id ?? r.code ?? J(r));
         }
+        function syncMergeNum(hasB, bv, lv, rv) {
+            if (!hasB) return rv !== undefined && lv !== undefined ? lv : (rv !== undefined ? rv : lv);
+            if (lv === bv) return rv;
+            if (rv === bv || rv === lv) return lv;
+            return rv + (lv - bv);
+        }
         function syncMergeRecord(b, l, r) {
             if (J(l) === J(b)) return r;
             if (J(r) === J(b) || J(r) === J(l)) return l;
             const out = { ...r, ...l };
-            if ([l.stock, b.stock, r.stock].every(n => typeof n === 'number')) out.stock = r.stock + (l.stock - b.stock);
+            if ([l.stock, b.stock, r.stock].every(n => typeof n === 'number')) {
+                out.stock = syncMergeNum(true, b.stock, l.stock, r.stock);
+            }
             return out;
         }
         function syncMergeColl(coll, b, l, r) {
@@ -5374,7 +5382,15 @@ alter table donet_cell_state disable row level security;</div>
             if (Array.isArray(out.stockLedger)) out.stockLedger.sort((x, y) => (Date.parse(y && y.date) || 0) - (Date.parse(x && x.date) || 0));
             const bw = b.wallets || {}, lw = l.wallets || {}, rw = r.wallets || {};
             out.wallets = {};
-            new Set([...Object.keys(lw), ...Object.keys(rw)]).forEach(k => { out.wallets[k] = (Number(rw[k]) || 0) + ((Number(lw[k]) || 0) - (Number(bw[k]) || 0)); });
+            new Set([...Object.keys(lw), ...Object.keys(rw)]).forEach(k => {
+                const hasB = Object.prototype.hasOwnProperty.call(bw, k);
+                out.wallets[k] = syncMergeNum(
+                    hasB,
+                    hasB ? (Number(bw[k]) || 0) : undefined,
+                    Object.prototype.hasOwnProperty.call(lw, k) ? (Number(lw[k]) || 0) : undefined,
+                    Object.prototype.hasOwnProperty.call(rw, k) ? (Number(rw[k]) || 0) : undefined
+                ) || 0;
+            });
             const bs = b.settings || {}, ls = l.settings || {}, rs = r.settings || {};
             out.settings = {};
             new Set([...Object.keys(ls), ...Object.keys(rs)]).forEach(k => { out.settings[k] = pick(bs[k], ls[k], rs[k]); });
@@ -14044,8 +14060,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (swRefreshing) return;
                 try {
-                    if (sessionStorage.getItem('donet_sw_reloaded_v12')) return;
-                    sessionStorage.setItem('donet_sw_reloaded_v12', '1');
+                    if (sessionStorage.getItem('donet_sw_reloaded_v13')) return;
+                    sessionStorage.setItem('donet_sw_reloaded_v13', '1');
                 } catch (_) {}
                 swRefreshing = true;
                 window.location.reload();
