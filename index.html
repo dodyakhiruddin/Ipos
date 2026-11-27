@@ -212,24 +212,59 @@
         .table-grid th { background:linear-gradient(180deg,#eef5fd 0%,#d6e5f7 100%); border-bottom:2px solid #fdba74; }
         .table-grid tr:hover { background-color:#fff1e3; }
 
-        /* ===================== TAMPILAN DESKTOP: MENU DI ATAS ===================== */
+        /* ===================== TAMPILAN DESKTOP: MENU UTAMA TAB + RIBBON ICON (IPOS 5) ===================== */
         @media (min-width: 640px) {
             body > .flex.flex-1.overflow-hidden { flex-direction:column; }
             .ipos-sidebar { width:100% !important; flex-direction:row !important; align-items:stretch;
-                border-bottom:2px solid var(--orange); box-shadow:0 2px 8px rgba(11,37,87,.25); }
-            /* Satu baris, digeser ke kiri/kanan (scroll, roda mouse, atau tarik dengan mouse) */
+                background:linear-gradient(180deg,#1b4b91 0%,#0d2b5e 100%);
+                border-bottom:1px solid #9dbce0; box-shadow:none; }
+            /* Tab menu utama 1 baris penuh tanpa icon agar muat satu baris */
             .ipos-sidebar > div:first-child { flex:1; min-width:0; overflow-x:auto !important; overflow-y:hidden !important;
-                scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.35) transparent; cursor:grab; }
-            .ipos-sidebar > div:first-child.dragging { cursor:grabbing; user-select:none; }
-            .ipos-sidebar > div:first-child::-webkit-scrollbar { height:6px; }
-            .ipos-sidebar > div:first-child::-webkit-scrollbar-thumb { background:rgba(255,255,255,.35); border-radius:3px; }
+                scrollbar-width:none; cursor:default; }
+            .ipos-sidebar > div:first-child::-webkit-scrollbar { display:none; }
             .ipos-sidebar > div:first-child > div:first-child { display:none; }
-            .ipos-sidebar .space-y-0\.5 { display:flex; flex-wrap:nowrap; width:max-content; gap:2px; padding:4px 8px 0; }
-            .ipos-sidebar-item { flex-shrink:0; width:auto !important; white-space:nowrap; padding:8px 12px !important; margin:0 !important;
-                gap:7px !important; border-left:0 !important; border-bottom:3px solid transparent; border-radius:6px 6px 0 0; }
-            .ipos-sidebar-item.active { border-bottom-color:#ffd8b0; }
-            .ipos-sidebar > div:last-child { flex-shrink:0; gap:10px; padding:6px 10px !important; border-top:0 !important;
-                border-left:1px solid rgba(255,255,255,.15); }
+            .ipos-sidebar .space-y-0\.5 { display:flex; flex-wrap:nowrap; align-items:flex-end; width:max-content; min-width:100%;
+                gap:2px; padding:4px 8px 0; }
+            .ipos-sidebar-item { flex-shrink:0; width:auto !important; white-space:nowrap; padding:6px 9px !important; margin:0 !important;
+                gap:0 !important; font-size:11.5px !important; font-weight:600; color:#e2eeff !important;
+                border-left:0 !important; border-top:2px solid transparent; border-bottom:0 !important;
+                border-radius:5px 5px 0 0; transition:background-color .12s ease,color .12s ease; }
+            .ipos-sidebar-item:hover { background:rgba(255,255,255,.14); color:#ffffff !important; }
+            .ipos-sidebar-item > i { display:none !important; }
+            .ipos-sidebar-item.active { background:linear-gradient(180deg,#ffffff 0%,#f7faff 100%) !important;
+                color:#0b2557 !important; font-weight:700 !important; border-top:2.5px solid var(--orange) !important;
+                box-shadow:0 -1px 4px rgba(11,37,87,.18); position:relative; z-index:2;
+                margin-bottom:-1px !important; padding-bottom:7px !important; }
+            #nav-logout { display:none !important; }
+            .ipos-sidebar > div:last-child { flex-shrink:0; gap:6px; padding:4px 10px !important; border-top:0 !important;
+                border-left:1px solid rgba(255,255,255,.18); background:rgba(8,22,50,.45); }
+            .ipos-sidebar > div:last-child .sm\:block { max-width:118px; }
+
+            /* Sub-Menu Ribbon Bar bergaya desktop iPos 5 */
+            #desktop-ipos-ribbon {
+                background:linear-gradient(180deg,#ffffff 0%,#eef5fc 55%,#dce9f8 100%);
+                border-bottom:2px solid var(--orange);
+                box-shadow:inset 0 1px 0 #ffffff, 0 2px 5px rgba(15,23,42,.08);
+                min-height:76px;
+                scrollbar-width:thin;
+            }
+            .ipos-rib-group { display:flex; align-items:stretch; gap:3px; padding-right:8px; margin-right:4px; border-right:1px solid #bfd3ea; }
+            .ipos-rib-group:last-child { border-right:0; padding-right:0; margin-right:0; }
+            .ipos-rib-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+                min-width:74px; max-width:98px; padding:5px 7px; border-radius:5px; border:1px solid transparent;
+                color:#1e293b; font-size:11px; font-weight:600; line-height:1.15; text-align:center;
+                cursor:pointer; transition:background .12s ease,border-color .12s ease,transform .1s ease; }
+            .ipos-rib-btn:hover { background:linear-gradient(180deg,#ffffff 0%,#dbeafe 100%); border-color:#93c5fd;
+                box-shadow:0 1px 3px rgba(30,64,175,.12); }
+            .ipos-rib-btn:active { transform:translateY(1px); }
+            .ipos-rib-btn.active { background:linear-gradient(180deg,#fff8ed 0%,#fde4be 100%); border-color:#f59e0b;
+                color:#9a3412; font-weight:700; box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 1px 3px rgba(217,119,6,.18); }
+            .ipos-rib-ico { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+                font-size:16px; color:#ffffff; border:1px solid rgba(0,0,0,.14); position:relative; overflow:hidden;
+                box-shadow:inset 0 1px 0 rgba(255,255,255,.45), 0 2px 4px rgba(15,23,42,.2); }
+            .ipos-rib-ico::after { content:''; position:absolute; inset:0 0 50% 0;
+                background:linear-gradient(180deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,.06) 100%); pointer-events:none; }
+            .ipos-rib-lbl { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
         }
 
         /* ===================== TAMPILAN HP ===================== */
@@ -551,9 +586,9 @@
                         <span class="hidden sm:inline">Service HP</span>
                     </button>
 
-                    <button onclick="switchTab('cetakvoucher')" id="nav-cetakvoucher" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="switchTab('cetakvoucher')" id="nav-cetakvoucher" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left" title="Pembuatan Voucher Fisik">
                         <i class="fas fa-sim-card w-4 text-center text-cyan-300"></i>
-                        <span class="hidden sm:inline">Pembuatan Voucher Fisik</span>
+                        <span class="hidden sm:inline">Voucher Fisik</span>
                     </button>
 
                     <button onclick="switchTab('sumberdana')" id="nav-sumberdana" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
@@ -563,12 +598,12 @@
 
                     <button onclick="switchTab('utangpiutang')" id="nav-utangpiutang" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-hand-holding-usd w-4 text-center text-amber-300"></i>
-                        <span class="hidden sm:inline">Utang & Piutang</span>
+                        <span class="hidden sm:inline">Utang Piutang</span>
                     </button>
 
                     <button onclick="switchTab('akuntansi')" id="nav-akuntansi" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
                         <i class="fas fa-balance-scale w-4 text-center text-purple-300"></i>
-                        <span class="hidden sm:inline">Akutansi</span>
+                        <span class="hidden sm:inline">Akuntansi</span>
                     </button>
 
                     <button onclick="switchTab('laporan')" id="nav-laporan" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
@@ -576,14 +611,14 @@
                         <span class="hidden sm:inline">Laporan</span>
                     </button>
 
-                    <button onclick="openSettingsModal('general')" id="nav-pengaturan" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="openPengaturanTab()" id="nav-pengaturan" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left" title="Pengaturan Sistem & Cloud">
                         <i class="fas fa-cogs w-4 text-center text-slate-300"></i>
-                        <span class="hidden sm:inline">Pengaturan dan lainnya</span>
+                        <span class="hidden sm:inline">Pengaturan</span>
                     </button>
 
-                    <button onclick="switchTab('petunjuk')" id="nav-petunjuk" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left">
+                    <button onclick="switchTab('petunjuk')" id="nav-petunjuk" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left" title="Petunjuk dan Penggunaan">
                         <i class="fas fa-book-open w-4 text-center text-lime-300"></i>
-                        <span class="hidden sm:inline">Petunjuk dan pengunaan</span>
+                        <span class="hidden sm:inline">Petunjuk</span>
                     </button>
 
                     <button type="button" onclick="logoutUser()" id="nav-logout" class="ipos-sidebar-item w-full flex items-center gap-3 px-3.5 py-2 text-left text-rose-200 hover:text-white" title="Logout / Keluar Akun">
@@ -615,7 +650,10 @@
 
         <!-- RIGHT CONTENT AREA (TABBED MDI DESKTOP WORKSPACE) -->
         <main class="flex-1 flex flex-col overflow-hidden">
-            
+
+            <!-- Sub-Menu Ribbon Desktop iPos 5 (ikon gambar di bawah menu utama tab) -->
+            <div id="desktop-ipos-ribbon" class="hidden sm:flex items-stretch gap-1 px-2.5 py-1.5 shrink-0 select-none overflow-x-auto"></div>
+
             <!-- MDI Tab Bar -->
             <div id="mdi-tab-bar" class="bg-[#d0e1f2] border-b border-[#b5cbe2] px-2 pt-1.5 flex items-center gap-1 overflow-x-auto shrink-0">
                 <button onclick="switchTab('dashboard')" id="tab-dashboard" class="ipos-tab active px-3 py-1 rounded-t text-xs flex items-center gap-2 shrink-0">
@@ -845,7 +883,7 @@
                                 <i class="fas fa-database text-orange-600"></i>
                                 <h2 class="font-bold text-sm text-slate-800">Master Data Barang, Supplier, Pelanggan & Kartu Stok</h2>
                             </div>
-                            <div class="flex flex-wrap gap-1.5 text-xs">
+                            <div class="flex sm:hidden flex-wrap gap-1.5 text-xs">
                                 <button type="button" onclick="switchMasterSubTab('items')" id="msub-items" class="ipos-tab active px-3 py-1 rounded-t font-bold">Daftar Barang & Harga</button>
                                 <button type="button" onclick="switchMasterSubTab('suppliers')" id="msub-suppliers" class="ipos-tab px-3 py-1 rounded-t font-bold">Supplier</button>
                                 <button type="button" onclick="switchMasterSubTab('customers')" id="msub-customers" class="ipos-tab px-3 py-1 rounded-t font-bold">Pelanggan</button>
@@ -1060,16 +1098,16 @@
                                 <h2 class="font-bold text-sm text-slate-800">Manajemen Pesanan (PO), Pembelian, Retur Pembelian & Cashback</h2>
                             </div>
                             <div class="flex flex-wrap items-center gap-1.5 text-xs">
-                                <button type="button" onclick="switchPurchaseSubTab('po')" id="psub-po" class="ipos-tab active px-3 py-1 rounded-t font-bold">
+                                <button type="button" onclick="switchPurchaseSubTab('po')" id="psub-po" class="sm:hidden ipos-tab active px-3 py-1 rounded-t font-bold">
                                     <i class="fas fa-clipboard-list text-amber-600 mr-1"></i> Pesanan (PO)
                                 </button>
-                                <button type="button" onclick="switchPurchaseSubTab('pembelian')" id="psub-pembelian" class="ipos-tab px-3 py-1 rounded-t font-bold">
+                                <button type="button" onclick="switchPurchaseSubTab('pembelian')" id="psub-pembelian" class="sm:hidden ipos-tab px-3 py-1 rounded-t font-bold">
                                     <i class="fas fa-file-invoice text-indigo-600 mr-1"></i> Pembelian
                                 </button>
-                                <button type="button" onclick="switchPurchaseSubTab('retur')" id="psub-retur" class="ipos-tab px-3 py-1 rounded-t font-bold">
+                                <button type="button" onclick="switchPurchaseSubTab('retur')" id="psub-retur" class="sm:hidden ipos-tab px-3 py-1 rounded-t font-bold">
                                     <i class="fas fa-undo-alt text-rose-600 mr-1"></i> Retur Pembelian
                                 </button>
-                                <button type="button" onclick="switchPurchaseSubTab('cashback')" id="psub-cashback" class="ipos-tab px-3 py-1 rounded-t font-bold">
+                                <button type="button" onclick="switchPurchaseSubTab('cashback')" id="psub-cashback" class="sm:hidden ipos-tab px-3 py-1 rounded-t font-bold">
                                     <i class="fas fa-hand-holding-usd text-emerald-600 mr-1"></i> Cashback
                                 </button>
                                 <button type="button" onclick="openOcrScannerModal('pembelian')" class="ipos-btn-primary px-2.5 py-1 rounded text-xs font-bold shadow ml-1">
@@ -1300,7 +1338,7 @@
                                 <i class="fas fa-shopping-cart text-emerald-600"></i>
                                 <h2 class="font-bold text-sm text-slate-800">Manajemen Pesanan (SO), Penjualan & Retur Penjualan</h2>
                             </div>
-                            <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                            <div class="flex sm:hidden flex-wrap items-center gap-1.5 text-xs">
                                 <button type="button" onclick="switchSalesSubTab('so')" id="ssub-so" class="ipos-tab active px-3 py-1 rounded-t font-bold">
                                     <i class="fas fa-clipboard-list text-amber-600 mr-1"></i> Pesanan (SO)
                                 </button>
@@ -1569,7 +1607,11 @@
                 <section id="view-ppob" class="hidden p-3 sm:p-4 max-w-6xl mx-auto space-y-3">
                     <div class="ipos-panel rounded-lg overflow-hidden">
                         <div class="ipos-panel-header px-4 py-2 flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex flex-wrap gap-1.5 text-xs">
+                            <div class="hidden sm:flex items-center gap-2">
+                                <i class="fas fa-bolt text-amber-500"></i>
+                                <h2 class="font-bold text-sm text-slate-800">Transaksi PPOB &amp; Agen BRILink</h2>
+                            </div>
+                            <div class="flex sm:hidden flex-wrap gap-1.5 text-xs">
                                 <button type="button" onclick="setPpobMode('pulsa')" id="ppob-tab-pulsa" class="ppob-mode-btn ipos-tab active px-3 py-1 rounded-t font-bold">Pulsa & Paket Data</button>
                                 <button type="button" onclick="setPpobMode('transfer')" id="ppob-tab-transfer" class="ppob-mode-btn ipos-tab px-3 py-1 rounded-t font-bold">Transfer Bank (BRILink)</button>
                                 <button type="button" onclick="setPpobMode('tarik')" id="ppob-tab-tarik" class="ppob-mode-btn ipos-tab px-3 py-1 rounded-t font-bold">Tarik Tunai ATM/PKH</button>
@@ -1869,7 +1911,7 @@
                         <i class="fas fa-chart-bar text-sky-700"></i>
                         <h2 class="font-bold text-sm text-slate-800">Laporan</h2>
                     </div>
-                    <div id="rpt-tabs" class="flex gap-1 text-xs overflow-x-auto whitespace-nowrap -mb-px">
+                    <div id="rpt-tabs" class="flex sm:hidden gap-1 text-xs overflow-x-auto whitespace-nowrap -mb-px">
                         <button type="button" onclick="switchReportSubTab('master')" id="rsub-master" class="ipos-tab active px-3 py-1 rounded-t font-bold"><i class="fas fa-database mr-1.5"></i>Laporan Master Data</button>
                         <button type="button" onclick="switchReportSubTab('pembelian')" id="rsub-pembelian" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-file-invoice mr-1.5"></i>Laporan Pembelian</button>
                         <button type="button" onclick="switchReportSubTab('penjualan')" id="rsub-penjualan" class="ipos-tab px-3 py-1 rounded-t font-bold"><i class="fas fa-cash-register mr-1.5"></i>Laporan Penjualan</button>
@@ -1957,7 +1999,7 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <div class="flex flex-wrap gap-1">
+                        <div class="flex sm:hidden flex-wrap gap-1">
                             <button onclick="switchAccSubTab('ringkasan')" id="acc-tab-ringkasan" class="ipos-tab active px-3 py-1 rounded-t font-bold">Ringkasan</button>
                             <button onclick="switchAccSubTab('kas')" id="acc-tab-kas" class="ipos-tab px-3 py-1 rounded-t font-bold">Alur Kas</button>
                             <button onclick="switchAccSubTab('labarugi')" id="acc-tab-labarugi" class="ipos-tab px-3 py-1 rounded-t font-bold">Laba Rugi</button>
@@ -1965,6 +2007,7 @@
                             <button onclick="switchAccSubTab('neraca')" id="acc-tab-neraca" class="ipos-tab px-3 py-1 rounded-t font-bold">Neraca</button>
                             <button onclick="switchAccSubTab('saldoawal')" id="acc-tab-saldoawal" class="ipos-tab px-3 py-1 rounded-t font-bold">Saldo Awal</button>
                         </div>
+                        <div class="hidden sm:block text-xs font-bold text-slate-700">Periode Laporan Akuntansi:</div>
                         <select id="acc-period" onchange="renderAccounting()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold">
                             <option value="HARI_INI">Hari Ini</option>
                             <option value="BULAN_INI" selected>Bulan Ini</option>
@@ -2007,8 +2050,8 @@
                                 <h2 class="font-bold text-sm text-slate-800">Buku Besar Utang Usaha & Piutang Pelanggan</h2>
                             </div>
                             <div class="flex items-center gap-2 text-xs">
-                                <button onclick="switchUpSubTab('piutang')" id="upsub-piutang" class="ipos-tab active px-3 py-1 rounded-t font-bold">Daftar Piutang (Kasbon)</button>
-                                <button onclick="switchUpSubTab('utang')" id="upsub-utang" class="ipos-tab px-3 py-1 rounded-t font-bold">Daftar Utang Supplier</button>
+                                <button onclick="switchUpSubTab('piutang')" id="upsub-piutang" class="sm:hidden ipos-tab active px-3 py-1 rounded-t font-bold">Daftar Piutang (Kasbon)</button>
+                                <button onclick="switchUpSubTab('utang')" id="upsub-utang" class="sm:hidden ipos-tab px-3 py-1 rounded-t font-bold">Daftar Utang Supplier</button>
                                 <button onclick="openDebtModal('PIUTANG')" class="ipos-btn-primary px-3 py-1 rounded font-bold"><i class="fas fa-plus mr-1"></i> Catat Manual</button>
                             </div>
                         </div>
@@ -4937,6 +4980,7 @@ alter table donet_cell_state disable row level security;</div>
         function applyRoleVisibility() {
             const admin = isCurrentUserAdmin();
             ADMIN_ONLY_SETTINGS_TABS.forEach(t => document.getElementById('stab-' + t)?.classList.toggle('hidden', !admin));
+            if (typeof renderDesktopRibbon === 'function') renderDesktopRibbon();
         }
 
         // =========================================================================
@@ -5072,12 +5116,22 @@ alter table donet_cell_state disable row level security;</div>
             kasir: 'Penjualan',
             ppob: 'Transaksi PPOB',
             servicehp: 'Service HP',
-            cetakvoucher: 'Pembuatan Voucher Fisik',
+            cetakvoucher: 'Voucher Fisik',
             sumberdana: 'Sumber Dana',
-            utangpiutang: 'Utang & Piutang',
-            akuntansi: 'Akutansi',
+            utangpiutang: 'Utang Piutang',
+            akuntansi: 'Akuntansi',
             laporan: 'Laporan',
             petunjuk: 'Petunjuk & Penggunaan'
+        };
+        let activeRibbonTab = 'dashboard';
+        const activeSubState = {
+            masterdata: 'items',
+            pembelian: 'po',
+            kasir: 'so',
+            ppob: 'pulsa',
+            utangpiutang: 'piutang',
+            akuntansi: 'ringkasan',
+            laporan: 'master'
         };
 
         // =========================================================================
@@ -5827,6 +5881,7 @@ alter table donet_cell_state disable row level security;</div>
             if (!openTabs.includes(tabId)) {
                 openTabs.push(tabId);
             }
+            activeRibbonTab = tabId;
             renderMdiTabs(tabId);
 
             document.querySelectorAll('main section[id^="view-"]').forEach(sec => sec.classList.add('hidden'));
@@ -5842,6 +5897,10 @@ alter table donet_cell_state disable row level security;</div>
             if (tabId === 'masterdata' && subOpt) switchMasterSubTab(subOpt);
             if (tabId === 'pembelian' && subOpt) switchPurchaseSubTab(subOpt);
             if (tabId === 'kasir' && subOpt) switchSalesSubTab(subOpt);
+            if (tabId === 'utangpiutang' && subOpt) switchUpSubTab(subOpt);
+            if (tabId === 'akuntansi' && subOpt) switchAccSubTab(subOpt);
+            if (tabId === 'laporan' && subOpt) switchReportSubTab(subOpt);
+            renderDesktopRibbon();
         }
 
 
@@ -6565,68 +6624,227 @@ alter table donet_cell_state disable row level security;</div>
         }
         document.addEventListener('DOMContentLoaded', initCloseButtons);
 
-        // ---------- Sub menu dropdown (panah kecil, khusus desktop) ----------
-        function isDesktopDevice() {
-            // Desktop = layar fisik >= 1024px dan bukan perangkat sentuh utama (HP/tablet, termasuk "situs desktop")
-            return screen.width >= 1024 && !(navigator.maxTouchPoints > 0 && window.matchMedia('(pointer:coarse)').matches);
+        // ---------- Sub-Menu Ribbon Desktop bergaya iPos 5 (gambar icon di bawah tab utama) ----------
+        let _ribbonHandlers = [];
+        function triggerRibbonAction(idx) {
+            const fn = _ribbonHandlers[idx];
+            if (typeof fn === 'function') fn();
         }
-        function initSidebarSubmenus() {
-            const mk = (fn, arr) => arr.map(([l, k]) => [l, () => fn(k)]);
-            const SUB = {
-                masterdata: mk(switchMasterSubTab, [['Daftar Barang & Harga', 'items'], ['Supplier', 'suppliers'], ['Pelanggan', 'customers'], ['Kartu Stok', 'kartustok'], ['Stok Opname', 'opname'], ['Cetak Opname Voucher', 'opnamecetak'], ['Daftar Harga', 'daftarharga']]),
-                pembelian: mk(switchPurchaseSubTab, [['Pesanan (PO)', 'po'], ['Pembelian', 'pembelian'], ['Retur Pembelian', 'retur'], ['Cashback', 'cashback']]),
-                kasir: mk(switchSalesSubTab, [['Pesanan (SO)', 'so'], ['Penjualan', 'jual'], ['Retur Penjualan', 'retur'], ['Kasir Cepat', 'kasir']]),
-                ppob: mk(setPpobMode, [['Pulsa & Paket Data', 'pulsa'], ['Transfer Bank', 'transfer'], ['Tarik Tunai', 'tarik'], ['E-Wallet & Token PLN', 'ewallet']]),
-                utangpiutang: mk(switchUpSubTab, [['Daftar Piutang', 'piutang'], ['Daftar Utang', 'utang']]),
-                akuntansi: mk(switchAccSubTab, [['Ringkasan', 'ringkasan'], ['Alur Kas', 'kas'], ['Laba Rugi', 'labarugi'], ['Biaya Operasional', 'biaya'], ['Neraca', 'neraca'], ['Saldo Awal', 'saldoawal']]),
-                laporan: mk(switchReportSubTab, [['Master Data', 'master'], ['Pembelian', 'pembelian'], ['Penjualan', 'penjualan'], ['Hutang Usaha', 'hutang'], ['Piutang Usaha', 'piutang'], ['Rugi/Laba', 'labarugi'], ['Kas', 'kas']])
-            };
-            const st = document.createElement('style');
-            st.textContent = '#sub-flyout{display:none;position:fixed;z-index:60;min-width:240px;max-height:80vh;overflow:auto;background:#fff;border:1px solid #9aa7b8;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:12.5px;color:#1e293b}#sub-flyout.open{display:block}'
-                + '#sub-flyout .sf-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:6px 14px 6px 10px}#sub-flyout .sf-item:hover{background:#dbeafe}'
-                + '#sub-flyout .sf-foot{display:flex;justify-content:flex-end;padding:6px 8px;border-top:1px solid #cbd5e1;background:#f1f5f9}';
-            document.head.appendChild(st);
-            const fly = document.createElement('div');
-            fly.id = 'sub-flyout';
-            document.body.appendChild(fly);
-            const close = () => fly.classList.remove('open');
-            const open = (tab, btn) => {
-                fly.innerHTML = SUB[tab].map(([l], i) => `<button type="button" class="sf-item" data-i="${i}"><i class="far fa-file-alt" style="color:#e0a030"></i><span>${esc(l)}</span></button>`).join('')
-                    + '<div class="sf-foot"><button type="button" class="ipos-btn px-4 py-1 rounded text-xs font-bold sf-close"><i class="fas fa-times mr-1"></i> Tutup</button></div>';
-                fly.dataset.tab = tab;
-                fly.classList.add('open');
-                const r = btn.getBoundingClientRect();
-                fly.style.left = Math.round(Math.max(4, Math.min(r.left + 12, window.innerWidth - fly.offsetWidth - 8))) + 'px';
-                fly.style.top = Math.round(Math.max(4, Math.min(r.bottom, window.innerHeight - fly.offsetHeight - 8))) + 'px';
-                fly.querySelectorAll('.sf-item').forEach(b => b.onclick = () => { const i = Number(b.dataset.i); close(); switchTab(tab); SUB[tab][i][1](); });
-                fly.querySelector('.sf-close').onclick = close;
-            };
-            document.addEventListener('click', ev => { if (fly.classList.contains('open') && !fly.contains(ev.target)) close(); });
-            document.addEventListener('keydown', ev => { if (ev.key === 'Escape') close(); });
-            const arrows = [];
-            Object.keys(SUB).forEach(tab => {
-                const btn = document.getElementById('nav-' + tab);
-                if (!btn) return;
-                const arrow = document.createElement('span');
-                arrow.className = 'sub-arrow ml-auto px-1.5 rounded hover:bg-white/20';
-                arrow.title = 'Sub menu';
-                arrow.innerHTML = '<i class="fas fa-caret-down"></i>';
-                arrow.onclick = ev => {
-                    ev.stopPropagation();
-                    if (fly.classList.contains('open') && fly.dataset.tab === tab) close(); else open(tab, btn);
-                };
-                arrows.push({ btn, arrow });
-            });
-            // Panah hanya DIPASANG di desktop; di HP/tablet tidak ada sama sekali di halaman
-            const sync = () => {
-                const d = isDesktopDevice();
-                arrows.forEach(({ btn, arrow }) => { if (d && !arrow.isConnected) btn.appendChild(arrow); else if (!d && arrow.isConnected) arrow.remove(); });
-                if (!d) close();
-            };
-            sync();
-            window.addEventListener('resize', sync);
+        function openPengaturanTab() {
+            const isDesktop = window.matchMedia && window.matchMedia('(min-width: 640px)').matches;
+            if (!isDesktop) { openSettingsModal('general'); return; }
+            activeRibbonTab = 'pengaturan';
+            document.querySelectorAll('.ipos-sidebar-item').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('nav-pengaturan')?.classList.add('active');
+            renderDesktopRibbon();
         }
-        document.addEventListener('DOMContentLoaded', initSidebarSubmenus);
+        function getDesktopRibbonGroups(tabId) {
+            const admin = isCurrentUserAdmin();
+            const g = (bg, ic, label, fn, active = false) => ({ bg, ic, label, fn, active });
+            const C = {
+                blue: 'linear-gradient(180deg,#3b82f6 0%,#1d4ed8 100%)',
+                sky: 'linear-gradient(180deg,#38bdf8 0%,#0284c7 100%)',
+                orange: 'linear-gradient(180deg,#fb923c 0%,#ea580c 100%)',
+                amber: 'linear-gradient(180deg,#fbbf24 0%,#d97706 100%)',
+                emerald: 'linear-gradient(180deg,#34d399 0%,#059669 100%)',
+                teal: 'linear-gradient(180deg,#2dd4bf 0%,#0f766e 100%)',
+                indigo: 'linear-gradient(180deg,#818cf8 0%,#4338ca 100%)',
+                purple: 'linear-gradient(180deg,#a78bfa 0%,#6d28d9 100%)',
+                rose: 'linear-gradient(180deg,#fb7185 0%,#e11d48 100%)',
+                cyan: 'linear-gradient(180deg,#22d3ee 0%,#0e7490 100%)',
+                slate: 'linear-gradient(180deg,#64748b 0%,#334155 100%)'
+            };
+            switch (tabId) {
+                case 'dashboard':
+                    return [
+                        [
+                            g(C.emerald, 'fa-cash-register', 'Kasir Cepat (F2)', () => switchTab('kasir', 'kasir')),
+                            g(C.amber, 'fa-bolt', 'Transaksi PPOB', () => switchTab('ppob', 'pulsa')),
+                            g(C.blue, 'fa-university', 'Transfer BRILink', () => switchTab('ppob', 'transfer')),
+                            g(C.sky, 'fa-camera', 'Scan Bukti (F4)', () => openOcrScannerModal('ppob'))
+                        ],
+                        [
+                            g(C.orange, 'fa-boxes', 'Daftar Barang', () => switchTab('masterdata', 'items')),
+                            g(C.indigo, 'fa-file-invoice', 'Pembelian Stok', () => switchTab('pembelian', 'pembelian')),
+                            g(C.rose, 'fa-tools', 'Service HP', () => switchTab('servicehp')),
+                            g(C.teal, 'fa-chart-line', 'Lap. Rugi/Laba', () => switchTab('laporan', 'labarugi'))
+                        ]
+                    ];
+                case 'masterdata':
+                    return [
+                        [
+                            g(C.orange, 'fa-boxes', 'Daftar Barang', () => switchMasterSubTab('items'), activeSubState.masterdata === 'items'),
+                            g(C.blue, 'fa-truck', 'Daftar Supplier', () => switchMasterSubTab('suppliers'), activeSubState.masterdata === 'suppliers'),
+                            g(C.emerald, 'fa-users', 'Daftar Pelanggan', () => switchMasterSubTab('customers'), activeSubState.masterdata === 'customers')
+                        ],
+                        [
+                            g(C.indigo, 'fa-clipboard-list', 'Kartu Stok', () => switchMasterSubTab('kartustok'), activeSubState.masterdata === 'kartustok'),
+                            g(C.amber, 'fa-tasks', 'Stok Opname', () => switchMasterSubTab('opname'), activeSubState.masterdata === 'opname'),
+                            g(C.cyan, 'fa-print', 'Cetak Opname', () => switchMasterSubTab('opnamecetak'), activeSubState.masterdata === 'opnamecetak'),
+                            g(C.purple, 'fa-tags', 'Daftar Harga', () => switchMasterSubTab('daftarharga'), activeSubState.masterdata === 'daftarharga')
+                        ],
+                        [
+                            g(C.teal, 'fa-plus-circle', 'Barang Baru', () => { switchMasterSubTab('items'); openItemModal(-1); })
+                        ]
+                    ];
+                case 'pembelian':
+                    return [
+                        [
+                            g(C.amber, 'fa-clipboard-list', 'Pesanan (PO)', () => switchPurchaseSubTab('po'), activeSubState.pembelian === 'po'),
+                            g(C.indigo, 'fa-file-invoice', 'Daftar Pembelian', () => switchPurchaseSubTab('pembelian'), activeSubState.pembelian === 'pembelian'),
+                            g(C.rose, 'fa-undo-alt', 'Retur Beli', () => switchPurchaseSubTab('retur'), activeSubState.pembelian === 'retur'),
+                            g(C.emerald, 'fa-hand-holding-usd', 'Cashback', () => switchPurchaseSubTab('cashback'), activeSubState.pembelian === 'cashback')
+                        ],
+                        [
+                            g(C.teal, 'fa-coins', 'Deposit Agen', () => openDepositModal()),
+                            g(C.sky, 'fa-camera', 'Scan Nota', () => openOcrScannerModal('pembelian'))
+                        ]
+                    ];
+                case 'kasir':
+                    return [
+                        [
+                            g(C.amber, 'fa-clipboard-list', 'Pesanan (SO)', () => switchSalesSubTab('so'), activeSubState.kasir === 'so'),
+                            g(C.emerald, 'fa-file-invoice-dollar', 'Faktur Penjualan', () => switchSalesSubTab('jual'), activeSubState.kasir === 'jual'),
+                            g(C.rose, 'fa-undo-alt', 'Retur Jual', () => switchSalesSubTab('retur'), activeSubState.kasir === 'retur'),
+                            g(C.blue, 'fa-cash-register', 'Kasir Cepat (F2)', () => switchSalesSubTab('kasir'), activeSubState.kasir === 'kasir')
+                        ],
+                        [
+                            g(C.teal, 'fa-plus-circle', 'Faktur Baru', () => { switchSalesSubTab('jual'); openSaleFormModal(-1); }),
+                            g(C.sky, 'fa-search', 'Cari Barang (F3)', () => openItemPickerModal())
+                        ]
+                    ];
+                case 'ppob':
+                    return [
+                        [
+                            g(C.orange, 'fa-mobile-alt', 'Pulsa & Data', () => setPpobMode('pulsa'), activeSubState.ppob === 'pulsa'),
+                            g(C.blue, 'fa-exchange-alt', 'Transfer BRILink', () => setPpobMode('transfer'), activeSubState.ppob === 'transfer'),
+                            g(C.emerald, 'fa-money-bill-wave', 'Tarik Tunai', () => setPpobMode('tarik'), activeSubState.ppob === 'tarik'),
+                            g(C.purple, 'fa-bolt', 'E-Wallet & PLN', () => setPpobMode('ewallet'), activeSubState.ppob === 'ewallet')
+                        ],
+                        [
+                            g(C.sky, 'fa-camera', 'Scan Bukti (OCR)', () => openOcrScannerModal('ppob')),
+                            g(C.teal, 'fa-wallet', 'Cek Sumber Dana', () => switchTab('sumberdana'))
+                        ]
+                    ];
+                case 'servicehp':
+                    return [
+                        [
+                            g(C.rose, 'fa-tools', 'Tiket Service', () => document.getElementById('srv-cust-name')?.focus(), true),
+                            g(C.blue, 'fa-receipt', 'Input Service Baru', () => document.getElementById('srv-cust-name')?.focus())
+                        ],
+                        [
+                            g(C.emerald, 'fa-users', 'Data Pelanggan', () => switchTab('masterdata', 'customers')),
+                            g(C.amber, 'fa-coins', 'Alur Kas Service', () => switchTab('akuntansi', 'kas'))
+                        ]
+                    ];
+                case 'cetakvoucher':
+                    return [
+                        [
+                            g(C.cyan, 'fa-sim-card', 'Rakit Voucher', () => document.getElementById('vf-zero-item')?.focus(), true),
+                            g(C.purple, 'fa-tags', 'Daftar Harga', () => switchTab('masterdata', 'daftarharga')),
+                            g(C.amber, 'fa-print', 'Opname Voucher', () => switchTab('masterdata', 'opnamecetak')),
+                            g(C.indigo, 'fa-clipboard-list', 'Kartu Stok', () => switchTab('masterdata', 'kartustok'))
+                        ]
+                    ];
+                case 'sumberdana':
+                    return [
+                        [
+                            g(C.teal, 'fa-wallet', 'Daftar Dompet', () => renderDynamicWalletsUI(), true),
+                            g(C.blue, 'fa-plus-circle', 'Tambah Dompet', () => openWalletModal()),
+                            g(C.orange, 'fa-exchange-alt', 'Mutasi Saldo', () => document.getElementById('sd-amount')?.focus())
+                        ],
+                        [
+                            g(C.emerald, 'fa-book', 'Saldo Awal', () => switchTab('akuntansi', 'saldoawal')),
+                            g(C.sky, 'fa-chart-bar', 'Laporan Kas', () => switchTab('laporan', 'kas'))
+                        ]
+                    ];
+                case 'utangpiutang':
+                    return [
+                        [
+                            g(C.amber, 'fa-hand-holding-usd', 'Daftar Piutang', () => switchUpSubTab('piutang'), activeSubState.utangpiutang === 'piutang'),
+                            g(C.rose, 'fa-file-invoice-dollar', 'Daftar Utang', () => switchUpSubTab('utang'), activeSubState.utangpiutang === 'utang')
+                        ],
+                        [
+                            g(C.blue, 'fa-plus-circle', 'Catat Piutang', () => openDebtModal('PIUTANG')),
+                            g(C.indigo, 'fa-plus-square', 'Catat Utang', () => openDebtModal('UTANG'))
+                        ],
+                        [
+                            g(C.sky, 'fa-chart-bar', 'Lap. Piutang', () => switchTab('laporan', 'piutang')),
+                            g(C.slate, 'fa-file-alt', 'Lap. Hutang', () => switchTab('laporan', 'hutang'))
+                        ]
+                    ];
+                case 'akuntansi':
+                    return [
+                        [
+                            g(C.purple, 'fa-chart-pie', 'Ringkasan', () => switchAccSubTab('ringkasan'), activeSubState.akuntansi === 'ringkasan'),
+                            g(C.emerald, 'fa-exchange-alt', 'Alur Kas', () => switchAccSubTab('kas'), activeSubState.akuntansi === 'kas'),
+                            g(C.blue, 'fa-balance-scale', 'Laba Rugi', () => switchAccSubTab('labarugi'), activeSubState.akuntansi === 'labarugi'),
+                            g(C.rose, 'fa-receipt', 'Biaya Ops', () => switchAccSubTab('biaya'), activeSubState.akuntansi === 'biaya'),
+                            g(C.indigo, 'fa-landmark', 'Neraca', () => switchAccSubTab('neraca'), activeSubState.akuntansi === 'neraca'),
+                            g(C.amber, 'fa-coins', 'Saldo Awal', () => switchAccSubTab('saldoawal'), activeSubState.akuntansi === 'saldoawal')
+                        ]
+                    ];
+                case 'laporan':
+                    return [
+                        [
+                            g(C.orange, 'fa-database', 'Lap. Master', () => switchReportSubTab('master'), activeSubState.laporan === 'master'),
+                            g(C.indigo, 'fa-file-invoice', 'Lap. Beli', () => switchReportSubTab('pembelian'), activeSubState.laporan === 'pembelian'),
+                            g(C.emerald, 'fa-cash-register', 'Lap. Jual', () => switchReportSubTab('penjualan'), activeSubState.laporan === 'penjualan'),
+                            g(C.rose, 'fa-file-invoice-dollar', 'Lap. Hutang', () => switchReportSubTab('hutang'), activeSubState.laporan === 'hutang'),
+                            g(C.amber, 'fa-hand-holding-usd', 'Lap. Piutang', () => switchReportSubTab('piutang'), activeSubState.laporan === 'piutang'),
+                            g(C.purple, 'fa-balance-scale', 'Rugi / Laba', () => switchReportSubTab('labarugi'), activeSubState.laporan === 'labarugi'),
+                            g(C.teal, 'fa-wallet', 'Lap. Kas', () => switchReportSubTab('kas'), activeSubState.laporan === 'kas')
+                        ],
+                        [
+                            g(C.blue, 'fa-file-excel', 'Export Excel', () => exportReportExcel())
+                        ]
+                    ];
+                case 'pengaturan': {
+                    const row = [g(C.blue, 'fa-store', 'Profil Toko', () => openSettingsModal('general'))];
+                    if (admin) {
+                        row.push(g(C.indigo, 'fa-users-cog', 'Kelola User', () => openSettingsModal('users')));
+                        row.push(g(C.emerald, 'fa-cloud', 'Cloud & Sync', () => openSettingsModal('supabase')));
+                        row.push(g(C.orange, 'fa-book', 'Backup & Tutup Buku', () => openSettingsModal('backup')));
+                    }
+                    return [
+                        row,
+                        [
+                            g(C.sky, 'fa-database', 'Ganti Database', () => openDbModal()),
+                            g(C.amber, 'fa-user-shield', 'Ganti User', () => openLoginModal())
+                        ]
+                    ];
+                }
+                case 'petunjuk':
+                    return [
+                        [
+                            g(C.teal, 'fa-book-open', 'Panduan Sistem', () => {}, true),
+                            g(C.emerald, 'fa-cash-register', 'Kasir Cepat (F2)', () => switchTab('kasir', 'kasir')),
+                            g(C.blue, 'fa-search', 'Cari Barang (F3)', () => openItemPickerModal()),
+                            g(C.sky, 'fa-camera', 'Scan OCR (F4)', () => openOcrScannerModal('ppob'))
+                        ]
+                    ];
+                default:
+                    return [];
+            }
+        }
+        function renderDesktopRibbon() {
+            const bar = document.getElementById('desktop-ipos-ribbon');
+            if (!bar) return;
+            const groups = getDesktopRibbonGroups(activeRibbonTab);
+            _ribbonHandlers = [];
+            bar.innerHTML = groups.map(grp => {
+                const btns = grp.map(item => {
+                    const idx = _ribbonHandlers.length;
+                    _ribbonHandlers.push(item.fn);
+                    return `<button type="button" onclick="triggerRibbonAction(${idx})" class="ipos-rib-btn ${item.active ? 'active' : ''}" title="${esc(item.label)}">
+                        <span class="ipos-rib-ico" style="background:${item.bg}"><i class="fas ${item.ic}"></i></span>
+                        <span class="ipos-rib-lbl">${esc(item.label)}</span>
+                    </button>`;
+                }).join('');
+                return `<div class="ipos-rib-group">${btns}</div>`;
+            }).join('');
+        }
+        document.addEventListener('DOMContentLoaded', renderDesktopRibbon);
 
         function closeMdiTab(e, tabId) {
             e.stopPropagation();
@@ -7028,6 +7246,7 @@ alter table donet_cell_state disable row level security;</div>
         // 4. MASTER DATA (BARANG, SUPPLIER, PELANGGAN)
         // =========================================================================
         function switchMasterSubTab(sub) {
+            activeSubState.masterdata = sub;
             ['items', 'suppliers', 'customers', 'kartustok', 'opname', 'opnamecetak', 'daftarharga'].forEach(s => {
                 document.getElementById(`mpane-${s}`)?.classList.add('hidden');
                 document.getElementById(`msub-${s}`)?.classList.remove('active');
@@ -7038,6 +7257,7 @@ alter table donet_cell_state disable row level security;</div>
             if (sub === 'opname') renderStockOpname();
             if (sub === 'opnamecetak') renderOpnameCetak(true);
             if (sub === 'daftarharga') renderPriceList();
+            if (typeof renderDesktopRibbon === 'function') renderDesktopRibbon();
         }
 
         function renderMasterItemsTable() {
@@ -8326,6 +8546,7 @@ alter table donet_cell_state disable row level security;</div>
         }
 
         function switchPurchaseSubTab(sub) {
+            activeSubState.pembelian = sub;
             ['po', 'pembelian', 'retur', 'cashback'].forEach(s => {
                 document.getElementById(`ppane-${s}`)?.classList.add('hidden');
                 document.getElementById(`psub-${s}`)?.classList.remove('active');
@@ -8337,6 +8558,7 @@ alter table donet_cell_state disable row level security;</div>
             renderPurchasesTable();
             renderPurchaseReturnsTable();
             renderPurchaseCashbacksTable();
+            if (typeof renderDesktopRibbon === 'function') renderDesktopRibbon();
         }
 
         function populatePurchaseDropdowns() {
@@ -10226,6 +10448,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
 
         function switchSalesSubTab(sub) {
             if (!['so', 'jual', 'retur', 'kasir'].includes(sub)) sub = 'so';
+            activeSubState.kasir = sub;
             ['so', 'jual', 'retur', 'kasir'].forEach(s => {
                 document.getElementById(`spane-${s}`)?.classList.add('hidden');
                 document.getElementById(`ssub-${s}`)?.classList.remove('active');
@@ -10240,6 +10463,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 renderPosCart();
                 renderPosQuickGrid();
             }
+            if (typeof renderDesktopRibbon === 'function') renderDesktopRibbon();
         }
 
         function populateSalesDropdowns() {
@@ -11300,6 +11524,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         };
 
         function setPpobMode(mode) {
+            activeSubState.ppob = mode;
             document.getElementById('ppob-mode').value = mode;
             document.querySelectorAll('.ppob-mode-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`ppob-tab-${mode}`)?.classList.add('active');
@@ -11331,6 +11556,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 document.getElementById('ppob-dest-wallet').value = 'KAS_TOKO';
             }
             applyPpobPreset(mode, 0);
+            if (typeof renderDesktopRibbon === 'function') renderDesktopRibbon();
         }
 
         function applyPpobPreset(mode, idx) {
@@ -11816,11 +12042,13 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
 
         function switchUpSubTab(sub) {
             activeUpSubTab = sub;
+            activeSubState.utangpiutang = sub;
             document.getElementById('upsub-piutang')?.classList.toggle('active', sub === 'piutang');
             document.getElementById('upsub-utang')?.classList.toggle('active', sub === 'utang');
             const colH = document.getElementById('up-party-col-header');
             if (colH) colH.textContent = sub === 'piutang' ? 'Nama Pelanggan' : 'Nama Supplier';
             renderUtangPiutangTable();
+            if (typeof renderDesktopRibbon === 'function') renderDesktopRibbon();
         }
 
         function renderUtangPiutangTable() {
@@ -12088,7 +12316,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         // =========================================================================
         let accSub = 'ringkasan';
         const ACC_CATS = ['Listrik & Air', 'Sewa Tempat', 'Gaji Karyawan', 'Internet & Pulsa Operasional', 'Transportasi', 'Perlengkapan / ATK', 'Lain-lain'];
-        function switchAccSubTab(k) { accSub = k; renderAccounting(); }
+        function switchAccSubTab(k) { accSub = k; activeSubState.akuntansi = k; renderAccounting(); if (typeof renderDesktopRibbon === 'function') renderDesktopRibbon(); }
         function accInRange(d) {
             const per = document.getElementById('acc-period')?.value || 'BULAN_INI';
             if (per === 'SEMUA') return true;
@@ -12329,8 +12557,10 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
 
         function switchReportSubTab(key) {
             activeReportTab = REPORT_KEYS.includes(key) ? key : 'master';
+            activeSubState.laporan = activeReportTab;
             REPORT_KEYS.forEach(k => document.getElementById('rsub-' + k)?.classList.toggle('active', k === activeReportTab));
             renderReport();
+            if (typeof renderDesktopRibbon === 'function') renderDesktopRibbon();
         }
 
         // ---------- 1. Laporan Master Data ----------
@@ -14041,8 +14271,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (swRefreshing) return;
                 try {
-                    if (sessionStorage.getItem('donet_sw_reloaded_v14')) return;
-                    sessionStorage.setItem('donet_sw_reloaded_v14', '1');
+                    if (sessionStorage.getItem('donet_sw_reloaded_v15')) return;
+                    sessionStorage.setItem('donet_sw_reloaded_v15', '1');
                 } catch (_) {}
                 swRefreshing = true;
                 window.location.reload();
