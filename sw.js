@@ -1,5 +1,5 @@
 // Service Worker DONET CELL: cache offline + menerima gambar dari menu "Bagikan" (WhatsApp, galeri, dll)
-const CACHE = 'donet-app-v2';
+const CACHE = 'donet-app-v4';
 const SHARE_CACHE = 'share-target-v1';
 const CACHEABLE_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'cdn.tailwindcss.com', 'code.jquery.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
@@ -22,7 +22,7 @@ self.addEventListener('fetch', e => {
     if (req.method !== 'GET') return;
     const sameOrigin = url.origin === self.location.origin;
     if (!sameOrigin && !CACHEABLE_HOSTS.includes(url.hostname)) return; // mis. Supabase: jangan di-cache
-    e.respondWith(networkFirst(req));
+    e.respondWith(networkFirst(req, sameOrigin));
 });
 
 async function handleShare(req) {
@@ -38,10 +38,10 @@ async function handleShare(req) {
     return Response.redirect(new URL('./?share-target=1', self.registration.scope).href, 303);
 }
 
-async function networkFirst(req) {
+async function networkFirst(req, sameOrigin) {
     const cache = await caches.open(CACHE);
     try {
-        const res = await fetch(req);
+        const res = await fetch(sameOrigin ? new Request(req, { cache: 'no-store' }) : req);
         if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
         return res;
     } catch (err) {

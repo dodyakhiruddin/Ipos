@@ -565,8 +565,9 @@
                         <!-- Kartu Informasi Identitas Perusahaan (Gaya Desktop iPos 5) -->
                         <div class="ipos-panel rounded-lg p-4 mb-4 bg-gradient-to-r from-white via-sky-50/40 to-white flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div class="flex items-center gap-3.5">
-                                <div class="w-12 h-12 rounded-lg bg-[#0063b1] text-white flex items-center justify-center text-2xl shadow shrink-0">
-                                    <i class="fas fa-store"></i>
+                                <div id="dash-company-logo-box" class="w-12 h-12 rounded-lg bg-[#0063b1] text-white flex items-center justify-center text-2xl shadow shrink-0 overflow-hidden">
+                                    <img id="dash-company-logo" src="" alt="Logo Toko" class="hidden w-full h-full object-contain bg-white p-0.5">
+                                    <i id="dash-company-logo-icon" class="fas fa-store"></i>
                                 </div>
                                 <div>
                                     <div id="dash-company-name" class="text-base sm:text-lg font-extrabold text-[#1e3a5f]">DONET CELL [GROSIRDONET]</div>
@@ -877,8 +878,21 @@
                                     <button type="button" onclick="ovExportExcel()" class="ipos-btn-success px-3 py-1.5 rounded font-bold"><i class="fas fa-file-excel mr-1"></i> Export Excel</button>
                                     <button type="button" onclick="ovPrint()" class="ipos-btn px-3 py-1.5 rounded font-bold"><i class="fas fa-print mr-1"></i> Cetak A4</button>
                                 </div>
-                                <div id="ov-info" class="text-xs font-bold text-slate-600"></div>
-                                <div class="border border-slate-300 rounded bg-slate-200 p-2 overflow-auto max-h-[62vh]"><div id="ov-preview" style="zoom:0.7;width:794px"></div></div>
+                                <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 text-xs">
+                                    <div class="xl:col-span-4 space-y-2">
+                                        <div class="flex flex-wrap gap-1.5 items-center">
+                                            <input type="text" id="ov-search" oninput="renderOpnameCetak()" placeholder="Cari item voucher..." class="bg-white border border-slate-300 rounded px-2.5 py-1.5 flex-1 min-w-[9rem]">
+                                            <button type="button" onclick="ovSelectAll(true)" class="ipos-btn px-2.5 py-1.5 rounded font-bold">Pilih Semua</button>
+                                            <button type="button" onclick="ovSelectAll(false)" class="ipos-btn px-2.5 py-1.5 rounded font-bold">Kosongkan</button>
+                                        </div>
+                                        <div id="ov-count" class="font-bold text-slate-600"></div>
+                                        <div id="ov-list" class="border border-slate-300 rounded bg-white max-h-[58vh] overflow-auto divide-y divide-slate-100"></div>
+                                    </div>
+                                    <div class="xl:col-span-8 space-y-2">
+                                        <div id="ov-info" class="text-xs font-bold text-slate-600"></div>
+                                        <div class="border border-slate-300 rounded bg-slate-200 p-2 overflow-auto max-h-[62vh]"><div id="ov-preview" style="zoom:0.85;width:794px"></div></div>
+                                    </div>
+                                </div>
                             </div>
                             <div id="mpane-daftarharga" class="hidden space-y-2.5">
                                 <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded p-2">Pilih item voucher (kategori berawalan <b>V</b>). Daftar harga <b>eceran</b> dibuat sebagai 1 gambar A4 (PNG/JPG/cetak), 2 provider per baris; awalan "V." otomatis dihapus. Item tiap provider otomatis diurutkan berdasarkan jumlah hari; harga <b>grosir</b> berupa teks untuk WhatsApp. Setiap harga diubah di Daftar Barang, buka tab ini lagi lalu cetak ulang.</div>
@@ -893,6 +907,7 @@
                                                 <div class="mt-2"><span class="block font-bold mb-0.5">Logo BRILink <span class="font-normal text-slate-500">(tampil 250 x 64 px)</span></span><input type="file" accept="image/*" onchange="plLogo(this, 'logoBri')" class="w-full"><div id="pl-bri-thumb" class="mt-1"></div><button type="button" onclick="plClearLogo('logoBri')" class="text-red-600 underline text-[11px]">Hapus logo BRILink</button></div>
                                                 <div class="text-[11px] text-slate-500 mt-1">Isi <b>3 logo e-wallet</b> agar selebar logo BRILink (3 x 80 = 240 px, simetris). Lebih dari 3 logo disusun 2 baris.</div>
                                             </div>
+                                        </div>
                                         <div class="flex flex-wrap gap-2 items-center">
                                             <input type="text" id="pl-search" oninput="renderPriceList()" placeholder="Cari item voucher..." class="bg-white border border-slate-300 rounded px-2.5 py-1.5 w-48">
                                             <button type="button" onclick="plSelectAll(true)" class="ipos-btn px-2.5 py-1.5 rounded font-bold">Pilih Semua</button>
@@ -922,27 +937,33 @@
                             <div id="mpane-kartustok" class="hidden space-y-2.5">
                                 <div class="flex flex-wrap gap-3 items-end">
                                     <label class="block">
-                                        <span class="block text-[11px] font-bold text-slate-600 mb-0.5">Kategori</span>
+                                        <span class="block text-[11px] font-bold text-slate-600 mb-0.5">Filter Kategori</span>
                                         <select id="kartustok-filter-category" onchange="onKartuStokCategoryChange()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold min-w-[11rem]"></select>
                                     </label>
                                     <label class="block">
-                                        <span class="block text-[11px] font-bold text-slate-600 mb-0.5">Item <span class="font-normal text-slate-500">(sesuai kategori)</span></span>
-                                        <select id="kartustok-filter-item" onchange="renderStockLedgerTable()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold min-w-[15rem]"></select>
+                                        <span class="block text-[11px] font-bold text-slate-600 mb-0.5">Filter Item <span class="font-normal text-slate-500">(sesuai kategori)</span></span>
+                                        <select id="kartustok-filter-item" onchange="onKartuStokItemChange()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold min-w-[14rem]"></select>
                                     </label>
+                                    <label class="block">
+                                        <span class="block text-[11px] font-bold text-slate-600 mb-0.5">Filter Kata Kunci</span>
+                                        <input type="text" id="kartustok-filter-search" oninput="renderStockLedgerTable()" placeholder="Cari nama barang, kode, atau no. ref..." class="bg-white border border-slate-300 rounded px-2.5 py-1.5 w-64">
+                                    </label>
+                                    <button type="button" id="kartustok-toggle-all-btn" onclick="toggleAllKartuStokHistory()" class="ipos-btn px-3 py-1.5 rounded font-semibold"><i class="fas fa-list-ul mr-1 text-sky-700"></i> Buka Semua Histori</button>
+                                    <button type="button" onclick="resetKartuStokFilter()" class="ipos-btn px-3 py-1.5 rounded font-semibold">Reset Filter</button>
                                 </div>
-                                <div class="overflow-x-auto border border-slate-300 rounded max-h-[58vh]">
+                                <div id="kartustok-summary" class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded px-3 py-1.5 font-medium"></div>
+                                <div class="overflow-x-auto border border-slate-300 rounded max-h-[60vh]">
                                     <table class="w-full table-grid border-collapse">
                                         <thead>
                                             <tr>
-                                                <th class="w-36 text-left">Waktu</th>
-                                                <th class="w-32 text-left">No. Ref</th>
-                                                <th class="w-32 text-left">Kategori</th>
-                                                <th class="w-28 text-left">Kode</th>
-                                                <th class="text-left">Item</th>
-                                                <th class="w-32 text-center">Jenis Mutasi</th>
-                                                <th class="w-20 text-right">Masuk</th>
-                                                <th class="w-20 text-right">Keluar</th>
-                                                <th class="w-24 text-right">Sisa Stok</th>
+                                                <th class="w-12 text-center">No</th>
+                                                <th class="text-left">Nama Barang</th>
+                                                <th class="w-24 text-right">Stok Awal</th>
+                                                <th class="w-24 text-right">Pembelian</th>
+                                                <th class="w-24 text-right">Penjualan</th>
+                                                <th class="w-28 text-right">Retur</th>
+                                                <th class="w-24 text-right">Saldo Akhir</th>
+                                                <th class="w-40 text-center">Histori Transaksi</th>
                                             </tr>
                                         </thead>
                                         <tbody id="kartustok-tbody"></tbody>
@@ -2079,6 +2100,21 @@
                     <div>
                         <label class="block font-bold mb-1">Catatan Kaki Struk Thermal (Footer)</label>
                         <input type="text" id="set-store-footer" class="w-full border border-slate-300 rounded px-2.5 py-1.5">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Logo Toko</label>
+                        <div class="flex items-center gap-3">
+                            <div id="set-logo-preview" class="w-12 h-12 rounded-lg bg-[#0063b1] text-white flex items-center justify-center text-xl shadow shrink-0 overflow-hidden border border-slate-300">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <div class="flex-1 min-w-0 space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <input type="file" id="set-logo-file" accept="image/*" onchange="handleStoreLogoSelect(event)" class="flex-1 min-w-0 text-[11px] bg-white border border-slate-300 rounded px-2 py-1">
+                                    <button type="button" onclick="resetStoreLogo()" class="ipos-btn px-2.5 py-1 rounded font-semibold shrink-0">Logo Default</button>
+                                </div>
+                                <div id="set-logo-note" class="text-[10.5px] text-slate-500">Logo tampil di kartu identitas toko Dashboard (maks. 512 px).</div>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Foto Banner Dashboard</label>
@@ -4811,6 +4847,8 @@
                 setPpobMode(subOpt);
             }
             refreshAllUI();
+            if (tabId === 'masterdata' && subOpt) switchMasterSubTab(subOpt);
+            if (tabId === 'pembelian' && subOpt) switchPurchaseSubTab(subOpt);
             if (tabId === 'kasir' && subOpt) switchSalesSubTab(subOpt);
         }
 
@@ -4841,7 +4879,7 @@
             }).join('') || '<tr><td colspan="7" class="text-center text-slate-400 py-3">Tidak ada barang.</td></tr>';
             renderOpnameSummary();
             const hist = appState.stockOpnames || [];
-            document.getElementById('opname-history').innerHTML = hist.slice(0, 20).map(o => `<details class="border border-slate-300 rounded bg-white"><summary class="px-2 py-1 cursor-pointer"><b class="font-mono">${esc(o.id)}</b> | ${rptFmtDay(o.date)} | ${o.items.length} barang | Nilai selisih <b class="font-mono ${o.totalValue < 0 ? 'text-red-700' : 'text-emerald-700'}">${formatNum(o.totalValue)}</b>${o.note ? ' | ' + esc(o.note) : ''}</summary>
+            document.getElementById('opname-history').innerHTML = hist.slice(0, 20).map(o => `<details data-opn-id="${esc(o.id)}" class="border border-slate-300 rounded bg-white"><summary class="px-2 py-1 cursor-pointer"><b class="font-mono">${esc(o.id)}</b> | ${rptFmtDay(o.date)} | ${o.items.length} barang | Nilai selisih <b class="font-mono ${o.totalValue < 0 ? 'text-red-700' : 'text-emerald-700'}">${formatNum(o.totalValue)}</b>${o.note ? ' | ' + esc(o.note) : ''}</summary>
                 <div class="px-2 pb-1">${o.items.map(x => `<div class="flex justify-between border-t border-slate-100 py-0.5"><span>${esc(x.code)} - ${esc(x.name)}</span><span class="font-mono">${formatNum(x.system)} → ${formatNum(x.physical)} (${x.diff > 0 ? '+' : ''}${formatNum(x.diff)})</span></div>`).join('')}</div></details>`).join('') || '<div class="text-slate-400">Belum ada riwayat opname.</div>';
         }
         function opnameCalc() {
@@ -5177,17 +5215,54 @@
         // Kolom: Kode voucher | Stok sistem (otomatis) | Stok fisik (diisi tangan)
         // =========================================================================
         let ovMeta = { total: 0, pages: 0, cols: 0 };
+        let ovSaveT = null;
+        function ovCfg() {
+            const st = appState.settings;
+            if (!st.opnameCetak || typeof st.opnameCetak !== 'object') st.opnameCetak = { custom: false, sel: [] };
+            if (!Array.isArray(st.opnameCetak.sel)) st.opnameCetak.sel = [];
+            return st.opnameCetak;
+        }
+        function ovPersist() { clearTimeout(ovSaveT); ovSaveT = setTimeout(() => saveAppState(), 700); }
+        function ovIsSelected(code) {
+            const c = ovCfg();
+            if (!c.custom) return true;
+            return c.sel.includes(code);
+        }
+        function ovToggle(code, on) {
+            const c = ovCfg();
+            const set = new Set(c.custom ? c.sel : plVItems().map(i => i.code));
+            c.custom = true;
+            if (on) set.add(code); else set.delete(code);
+            c.sel = [...set];
+            ovPersist();
+            renderOpnameCetak();
+        }
+        function ovSelectAll(on) {
+            const c = ovCfg();
+            const q = (document.getElementById('ov-search')?.value || '').trim().toLowerCase();
+            const set = new Set(c.custom ? c.sel : plVItems().map(i => i.code));
+            c.custom = true;
+            ovFilteredPool()
+                .filter(i => !q || String(i.name || '').toLowerCase().includes(q) || String(i.code || '').toLowerCase().includes(q) || String(i.category || '').toLowerCase().includes(q))
+                .forEach(i => on ? set.add(i.code) : set.delete(i.code));
+            c.sel = [...set];
+            ovPersist();
+            renderOpnameCetak();
+        }
         function ovRank(cat) {
             const n = plStripV(cat).toUpperCase();
             const r = [/AXIS/, /INDOSAT|IM3|ISAT/, /SIMPATI|TELKOMSEL|TSEL/, /SMART/, /THREE|THEE|^TRI$/, /^XL/].findIndex(x => x.test(n));
             return r < 0 ? 99 : r;
         }
-        function ovItems() {
+        function ovFilteredPool() {
             const cat = (document.getElementById('ov-cat') || {}).value || '';
             const hide0 = !!(document.getElementById('ov-hide0') || {}).checked;
             return plVItems()
                 .filter(i => (!cat || String(i.category || '').trim() === cat) && (!hide0 || (Number(i.stock) || 0) !== 0))
                 .sort((a, b) => ovRank(a.category) - ovRank(b.category) || String(a.category).localeCompare(String(b.category)) || (plDays(a) || 9999) - (plDays(b) || 9999) || (Number(a.price) || 0) - (Number(b.price) || 0));
+        }
+        function ovItems() {
+            return ovFilteredPool().filter(i => ovIsSelected(i.code));
         }
         function ovDateStr() {
             const v = (document.getElementById('ov-date') || {}).value || getTodayIsoDate();
@@ -5197,57 +5272,132 @@
         function ovPageHtmls() {
             const items = ovItems(), st = appState.settings, dateStr = ovDateStr();
             const pos = (document.getElementById('ov-pos') || {}).value === 'bawah' ? 'bawah' : 'atas';
-            const HALF = 561, PADX = 10, GAP = 8, SIS = 29, FIS = 32, SEL = 32, FONT = 'Tahoma,Verdana,Arial,sans-serif';
-            // lebar kode terpanjang diukur langsung dengan font yang dipakai
+            const HALF = 561, PADX = 10, GAP = 8, SIS = 34, FIS = 38, SEL = 38, FONT = 'Tahoma,Verdana,Arial,sans-serif';
             const ctx = document.createElement('canvas').getContext('2d');
             const codeWidth = fs => { ctx.font = `bold ${fs}px ${FONT}`; return items.reduce((m, i) => Math.max(m, ctx.measureText(String(i.code || '')).width), 0); };
             const innerW = 794 - PADX * 2;
-            // pakai 4 kotak sampai penuh; huruf 9 -> 7 px, ambil terbesar yang muat tanpa terpotong
-            let cols = 4, FS = 7;
+            let cols = 4, FS = 8;
             for (const c of [4, 3, 2, 1]) {
                 const gw = (innerW - GAP * (c - 1)) / c;
                 let ok = 0;
-                for (let f = 9; f >= 7; f -= 0.5) { if (codeWidth(f) + 8 <= gw - SIS - FIS - SEL) { ok = f; break; } }
+                for (let f = 9.5; f >= 8; f -= 0.5) {
+                    if (codeWidth(f) + 14 <= gw - SIS - FIS - SEL - 4) { ok = f; break; }
+                }
                 if (ok) { cols = c; FS = ok; break; }
-                if (c === 1) { cols = 1; FS = 7; }
+                if (c === 1) { cols = 1; FS = 8; }
             }
-            const RH = Math.round(FS * 1.55 * 2) / 2;
-            const rows = Math.floor((HALF - 20 - 40 - 28 - 14) / RH);
-            const per = cols * rows;
-            const pages = Math.max(1, Math.ceil(items.length / per));
-            ovMeta = { total: items.length, pages, cols, font: FS };
-            const cell = `padding:0 2px;white-space:nowrap;overflow:hidden;line-height:${RH - 2}px;height:${RH}px;box-sizing:border-box;border:0;border-bottom:1px solid #64748b`;
-            const group = (arr) => {
-                let prev = null;
-                const trs = arr.map(i => {
-                    const prov = plStripV(i.category), top = prev !== null && prov !== prev ? 'border-top:2px solid #0f3d7a;' : '';
-                    prev = prov;
-                    return `<tr><td style="${cell};${top}font-weight:700">${esc(i.code)}</td><td style="${cell};${top}text-align:right">${formatNum(Number(i.stock) || 0)}</td><td style="${cell};${top}"></td><td style="${cell};${top}"></td></tr>`;
-                }).join('');
-                const th = 'background:#0f3d7a;color:#fff;font-size:7px;font-weight:700;padding:0 2px;height:14px;border:0;box-sizing:border-box';
-                return `<table style="border-collapse:collapse;table-layout:fixed;width:100%;font-size:${FS}px;color:#111827"><colgroup><col><col style="width:${SIS}px"><col style="width:${FIS}px"><col style="width:${SEL}px"></colgroup><thead><tr><th style="${th};text-align:left">KODE VOUCHER</th><th style="${th};text-align:right">SISTEM</th><th style="${th};text-align:center">FISIK</th><th style="${th};text-align:center">SELISIH</th></tr></thead><tbody>${trs}</tbody></table>`;
+
+            const colW = (innerW - GAP * (cols - 1)) / cols;
+            const provName = i => (plStripV(i.category) || 'LAINNYA').toUpperCase();
+
+            const thCell = (txt, align, w) => `<div style="${w ? `width:${w}px;flex:none;` : 'flex:1;min-width:0;'}padding:4px 4px;text-align:${align};white-space:nowrap;overflow:hidden;${w !== SEL ? 'border-right:1px solid rgba(255,255,255,0.35);' : ''}box-sizing:border-box">${txt}</div>`;
+            const tblHeadHtml = `<div style="display:flex;align-items:stretch;width:100%;background:#0f3d7a;color:#ffffff;font-size:7.5px;font-weight:700;line-height:1.25;border-bottom:1.5px solid #0f3d7a">${thCell('KODE VOUCHER', 'left', 0)}${thCell('SISTEM', 'right', SIS)}${thCell('FISIK', 'center', SIS ? FIS : 38)}${thCell('SELISIH', 'center', SEL)}</div>`;
+
+            const provHtml = (name, isFirst) => `<div style="background:#e0ecff;color:#0f3d7a;font-size:${FS}px;font-weight:800;letter-spacing:0.3px;line-height:1.3;padding:3.5px 5px 4px;border-bottom:1.5px solid #0f3d7a;${isFirst ? '' : 'border-top:1px solid #0f3d7a;'}text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</div>`;
+
+            const itemHtml = (i, isLast) => `<div style="display:flex;align-items:stretch;width:100%;font-size:${FS}px;line-height:1.35;color:#0f172a;background:#ffffff;${isLast ? '' : 'border-bottom:1px solid #94a3b8;'}">`
+                + `<div style="flex:1;min-width:0;padding:3.5px 5px 4.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:1px solid #94a3b8;box-sizing:border-box">${esc(i.code)}</div>`
+                + `<div style="width:${SIS}px;flex:none;padding:3.5px 4px 4.5px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;border-right:1px solid #94a3b8;box-sizing:border-box">${formatNum(Number(i.stock) || 0)}</div>`
+                + `<div style="width:${FIS}px;flex:none;padding:3.5px 4px 4.5px;border-right:1px solid #94a3b8;box-sizing:border-box">&nbsp;</div>`
+                + `<div style="width:${SEL}px;flex:none;padding:3.5px 4px 4.5px;box-sizing:border-box">&nbsp;</div>`
+                + `</div>`;
+
+            // Ukur tinggi aktual header tabel, judul provider, dan 1 baris item
+            const probe = document.createElement('div');
+            probe.style.cssText = `position:fixed;left:-10000px;top:0;width:${colW}px;font-family:${FONT};border:1px solid #475569;box-sizing:border-box`;
+            probe.innerHTML = tblHeadHtml + provHtml('PROVIDER', false) + itemHtml({ code: 'SAMPLE', stock: 0 }, false);
+            document.body.appendChild(probe);
+            const hdrH = probe.children[0].offsetHeight + 2; // +2px border luar kotak
+            const provH = probe.children[1].offsetHeight;
+            const itemH = probe.children[2].offsetHeight;
+            probe.remove();
+
+            const MAX_COL_H = 470;
+            const chunkHeight = chunk => {
+                if (!chunk.length) return 0;
+                let h = hdrH, prev = null;
+                for (const it of chunk) {
+                    const p = provName(it);
+                    if (p !== prev) { h += provH; prev = p; }
+                    h += itemH;
+                }
+                return h;
             };
+            const splitBalanced = (slice) => {
+                const chunks = [];
+                const perCol = Math.max(1, Math.ceil(slice.length / cols));
+                for (let g = 0; g < cols; g++) {
+                    const ch = slice.slice(g * perCol, (g + 1) * perCol);
+                    if (ch.length) chunks.push(ch);
+                }
+                return chunks;
+            };
+            const fitsOnPage = slice => splitBalanced(slice).every(ch => chunkHeight(ch) <= MAX_COL_H);
+
+            // Bagi seluruh item menjadi beberapa halaman setengah A4 tanpa melebihi batas tinggi
+            const pageSlices = [];
+            let idx = 0;
+            while (idx < items.length) {
+                let lo = 1, hi = items.length - idx, best = 1;
+                while (lo <= hi) {
+                    const mid = Math.floor((lo + hi) / 2);
+                    if (fitsOnPage(items.slice(idx, idx + mid))) { best = mid; lo = mid + 1; }
+                    else hi = mid - 1;
+                }
+                pageSlices.push(items.slice(idx, idx + best));
+                idx += best;
+            }
+            if (!pageSlices.length) pageSlices.push([]);
+
+            const pages = pageSlices.length;
+            ovMeta = { total: items.length, pages, cols, font: FS };
+
+            const renderGroup = (arr) => {
+                let prev = null;
+                const rowsHtml = arr.map((it, rIdx) => {
+                    const p = provName(it);
+                    const head = p !== prev ? provHtml(p, prev === null) : '';
+                    prev = p;
+                    return head + itemHtml(it, rIdx === arr.length - 1);
+                }).join('');
+                return `<div style="border:1px solid #475569;background:#ffffff;box-sizing:border-box">${tblHeadHtml}${rowsHtml}</div>`;
+            };
+
             const out = [];
             for (let p = 0; p < pages; p++) {
-                const pageItems = items.slice(p * per, (p + 1) * per);
-                const gs = [];
-                const pc = Math.min(rows, Math.ceil(pageItems.length / cols)); // isi dibagi rata antar kotak
-                for (let g = 0; g < cols; g++) { const a = pageItems.slice(g * pc, (g + 1) * pc); if (a.length) gs.push(group(a)); }
-                const body = gs.length ? `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:${GAP}px;align-items:start">${gs.join('')}</div>` : '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:12px">Tidak ada item voucher.</div>';
-                const report = h => `<div style="height:${h}px;box-sizing:border-box;padding:10px ${PADX}px;overflow:hidden">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-end;height:40px;border-bottom:2px solid #0f3d7a;padding-bottom:3px;margin-bottom:4px;box-sizing:border-box">
-                        <div><div style="font-size:13px;font-weight:900;color:#0f3d7a;line-height:1.1">STOK OPNAME VOUCHER</div><div style="font-size:10px;font-weight:700;color:#475569">${esc(st.storeName || 'TOKO')}</div></div>
-                        <div style="text-align:right;font-size:10px;line-height:1.3"><div><b>Tanggal:</b> ${esc(dateStr)}</div><div style="color:#475569">Hal ${p + 1}/${pages} | ${items.length} item</div></div>
-                    </div>${body}
-                    <div style="display:flex;justify-content:space-between;font-size:9px;margin-top:5px;color:#334155"><span>Dihitung oleh: ____________________</span><span>Diperiksa oleh: ____________________</span></div>
+                const gs = splitBalanced(pageSlices[p]).map(renderGroup);
+                const body = gs.length
+                    ? `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:${GAP}px;align-items:start">${gs.join('')}</div>`
+                    : '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:12px">Tidak ada item voucher.</div>';
+                const report = h => `<div style="height:${h}px;box-sizing:border-box;padding:10px ${PADX}px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between">
+                    <div>
+                        <div style="display:flex;justify-content:space-between;align-items:flex-end;height:40px;border-bottom:2px solid #0f3d7a;padding-bottom:3px;margin-bottom:5px;box-sizing:border-box">
+                            <div><div style="font-size:13px;font-weight:900;color:#0f3d7a;line-height:1.1">STOK OPNAME VOUCHER</div><div style="font-size:10px;font-weight:700;color:#475569">${esc(st.storeName || 'TOKO')}</div></div>
+                            <div style="text-align:right;font-size:10px;line-height:1.3"><div><b>Tanggal:</b> ${esc(dateStr)}</div><div style="color:#475569">Hal ${p + 1}/${pages} | ${items.length} item</div></div>
+                        </div>${body}
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:9px;padding-top:4px;color:#334155"><span>Dihitung oleh: ____________________</span><span>Diperiksa oleh: ____________________</span></div>
                 </div>`;
                 const blank = h => `<div style="height:${h}px"></div>`;
-                // A4 dibagi 2, tetapi hanya 1 laporan yang dicetak (atas / bawah); setengah lainnya kosong untuk hari berikutnya
                 const top = pos === 'atas' ? report(HALF) : blank(HALF);
                 const bot = pos === 'bawah' ? report(1123 - HALF) : blank(1123 - HALF);
                 out.push(`<div class="ov-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;background:#fff;font-family:${FONT};overflow:hidden">${top}${bot}<div style="position:absolute;left:0;right:0;top:${HALF}px;border-top:1px dashed #64748b"></div></div>`);
             }
             return out;
+        }
+        function renderOpnameItemList() {
+            const pool = ovFilteredPool();
+            const q = (document.getElementById('ov-search')?.value || '').trim().toLowerCase();
+            const visible = pool.filter(i => !q || String(i.name || '').toLowerCase().includes(q) || String(i.code || '').toLowerCase().includes(q) || String(i.category || '').toLowerCase().includes(q));
+            const selectedCount = pool.filter(i => ovIsSelected(i.code)).length;
+            const cnt = document.getElementById('ov-count');
+            if (cnt) cnt.textContent = `Terpilih: ${selectedCount} dari ${pool.length}`;
+            const box = document.getElementById('ov-list');
+            if (!box) return;
+            box.innerHTML = visible.map(i => {
+                const on = ovIsSelected(i.code);
+                return `<div class="flex items-center gap-2 px-2 py-1 hover:bg-sky-50"><label class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"><input type="checkbox" ${on ? 'checked' : ''} onchange="ovToggle('${escJs(i.code)}', this.checked)"><span class="flex-1 truncate"><b class="font-mono text-[11px] text-sky-900">${esc(i.code)}</b> &ndash; ${esc(plStripV(i.name))} <span class="text-slate-400">(${esc(plStripV(i.category))})</span></span></label><span class="font-mono text-slate-600 shrink-0">${formatNum(Number(i.stock) || 0)}</span></div>`;
+            }).join('') || '<div class="p-3 text-slate-400 text-center">Tidak ada item voucher yang cocok.</div>';
         }
         function renderOpnameCetak(resetDate) {
             const sel = document.getElementById('ov-cat');
@@ -5257,14 +5407,16 @@
             sel.innerHTML = '<option value="">Semua Kategori Voucher (V)</option>' + cats.map(c => `<option value="${esc(c)}" ${c === cur ? 'selected' : ''}>${esc(c)}</option>`).join('');
             const d = document.getElementById('ov-date');
             if (d && (resetDate || !d.value)) d.value = getTodayIsoDate();
+            renderOpnameItemList();
             const el = document.getElementById('ov-preview');
             el.innerHTML = ovPageHtmls().map(h => `<div style="box-shadow:0 1px 6px rgba(0,0,0,.35);margin-bottom:12px">${h}</div>`).join('');
             const info = document.getElementById('ov-info');
-            if (info) info.textContent = `${ovMeta.total} item voucher | ${ovMeta.pages} lembar A4 (1 laporan per lembar, ${(document.getElementById('ov-pos') || {}).value === 'bawah' ? 'bawah' : 'atas'}) | ${ovMeta.cols} kolom`;
+            if (info) info.textContent = `${ovMeta.total} item voucher terpilih | ${ovMeta.pages} lembar A4 (1 laporan per lembar, ${(document.getElementById('ov-pos') || {}).value === 'bawah' ? 'bawah' : 'atas'}) | ${ovMeta.cols} kolom`;
         }
         async function ovCanvases() {
             if (typeof html2canvas === 'undefined') throw new Error('html2canvas belum termuat');
             if (!ovItems().length) throw new Error('Tidak ada item voucher untuk dicetak.');
+            if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (_) {} }
             const out = [];
             for (const html of ovPageHtmls()) {
                 const box = document.createElement('div');
@@ -5466,6 +5618,20 @@
             if (bannerImg) {
                 if (!bannerImg.dataset.def) bannerImg.dataset.def = bannerImg.src;
                 bannerImg.src = appState.settings.bannerImage || bannerImg.dataset.def;
+            }
+            const logoImg = document.getElementById('dash-company-logo');
+            const logoIcon = document.getElementById('dash-company-logo-icon');
+            if (logoImg && logoIcon) {
+                const customLogo = appState.settings.storeLogo || '';
+                if (customLogo) {
+                    logoImg.src = customLogo;
+                    logoImg.classList.remove('hidden');
+                    logoIcon.classList.add('hidden');
+                } else {
+                    logoImg.removeAttribute('src');
+                    logoImg.classList.add('hidden');
+                    logoIcon.classList.remove('hidden');
+                }
             }
 
             const walletTotal = appState.walletList.reduce((s, w) => s + (Number(appState.wallets[w.id]) || 0), 0);
@@ -5822,6 +5988,7 @@
             });
             document.getElementById(`mpane-${sub}`)?.classList.remove('hidden');
             document.getElementById(`msub-${sub}`)?.classList.add('active');
+            if (sub === 'kartustok') renderStockLedgerTable();
             if (sub === 'opname') renderStockOpname();
             if (sub === 'opnamecetak') renderOpnameCetak(true);
             if (sub === 'daftarharga') renderPriceList();
@@ -5875,7 +6042,7 @@
         function populateCategoryDropdowns(selectedCategory = null) {
             ensureCategoriesIntegrity();
             const cats = appState.categories || [];
-            const catHtml = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+            const catHtml = cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 
             const itemCatEl = document.getElementById('item-category');
             if (itemCatEl) {
@@ -5987,8 +6154,36 @@
                 price: Number(document.getElementById('item-price').value) || 0,
                 wholesalePrice: Number(document.getElementById('item-wholesale-price').value) || 0
             };
+            const nowIso = new Date().toISOString();
+            const oldItem = idx >= 0 ? appState.items[idx] : null;
+            const oldStock = oldItem ? (Number(oldItem.stock) || 0) : 0;
             if (idx >= 0) appState.items[idx] = itemObj;
             else appState.items.unshift(itemObj);
+            if (!Array.isArray(appState.stockLedger)) appState.stockLedger = [];
+            if (idx < 0 && itemObj.stock > 0) {
+                appState.stockLedger.unshift({
+                    date: nowIso,
+                    ref: 'SALDO-AWAL',
+                    code: itemObj.code,
+                    name: itemObj.name,
+                    type: 'STOK AWAL',
+                    inQty: itemObj.stock,
+                    outQty: 0,
+                    balance: itemObj.stock
+                });
+            } else if (oldItem && itemObj.stock !== oldStock) {
+                const diff = itemObj.stock - oldStock;
+                appState.stockLedger.unshift({
+                    date: nowIso,
+                    ref: 'EDIT-MASTER',
+                    code: itemObj.code,
+                    name: itemObj.name,
+                    type: 'KOREKSI STOK',
+                    inQty: diff > 0 ? diff : 0,
+                    outQty: diff < 0 ? Math.abs(diff) : 0,
+                    balance: itemObj.stock
+                });
+            }
 
             closeModal('item-modal');
             await saveAppState();
@@ -6416,6 +6611,8 @@
         }
 
         // Isi pilihan Item sesuai Kategori yang dipilih (Kategori -> Item)
+        const expandedKartuStokCodes = new Set();
+
         function refreshKartuStokItemOptions(resetItem) {
             const cat = document.getElementById('kartustok-filter-category')?.value || 'ALL';
             const itemSel = document.getElementById('kartustok-filter-item');
@@ -6432,40 +6629,628 @@
             renderStockLedgerTable();
         }
 
+        function onKartuStokItemChange() {
+            const itemCode = document.getElementById('kartustok-filter-item')?.value || 'ALL';
+            if (itemCode !== 'ALL') expandedKartuStokCodes.add(itemCode);
+            renderStockLedgerTable();
+        }
+
+        function toggleKartuStokHistory(code) {
+            if (!code) return;
+            if (expandedKartuStokCodes.has(code)) expandedKartuStokCodes.delete(code);
+            else expandedKartuStokCodes.add(code);
+            renderStockLedgerTable();
+        }
+
+        function resetKartuStokFilter() {
+            const catEl = document.getElementById('kartustok-filter-category');
+            const itemEl = document.getElementById('kartustok-filter-item');
+            const qEl = document.getElementById('kartustok-filter-search');
+            if (catEl) catEl.value = 'ALL';
+            refreshKartuStokItemOptions(true);
+            if (itemEl) itemEl.value = 'ALL';
+            if (qEl) qEl.value = '';
+            expandedKartuStokCodes.clear();
+            renderStockLedgerTable();
+        }
+
+        function buildKartuStokItemHistories() {
+            const itemMap = new Map();
+            const ensureEntry = (code, fallbackName, fallbackCat) => {
+                let key = String(code || '').trim();
+                let master = key ? (appState.items || []).find(i => i.code === key) : null;
+                if (!master && fallbackName) {
+                    const fn = String(fallbackName).trim().toLowerCase();
+                    master = (appState.items || []).find(i => String(i.name || '').trim().toLowerCase() === fn) || null;
+                    if (!key && master) key = master.code;
+                }
+                if (!key) return null;
+                if (!itemMap.has(key)) {
+                    itemMap.set(key, {
+                        code: key,
+                        name: (master && master.name) || fallbackName || key,
+                        category: (master && master.category) || fallbackCat || '-',
+                        unit: (master && master.unit) || 'PCS',
+                        hasMaster: Boolean(master),
+                        saldoAkhir: master ? (Number(master.stock) || 0) : 0,
+                        events: []
+                    });
+                }
+                return itemMap.get(key);
+            };
+
+            (appState.items || []).forEach(it => ensureEntry(it.code, it.name, it.category));
+
+            // 1. Pembelian
+            (appState.purchaseRecords || []).forEach(p => {
+                normalizeOrderItems(p).forEach(oi => {
+                    const qty = Number(oi.qty) || 0;
+                    if (!qty) return;
+                    const entry = ensureEntry(oi.code, oi.name);
+                    if (!entry) return;
+                    entry.events.push({
+                        date: p.date || '',
+                        ref: p.id || '',
+                        code: entry.code,
+                        name: entry.name,
+                        type: 'PEMBELIAN',
+                        bucket: 'pembelian',
+                        party: p.supplier ? `Supplier: ${p.supplier}` : 'Pembelian',
+                        inQty: qty,
+                        outQty: 0
+                    });
+                });
+            });
+
+            // 2. Retur Pembelian (mengurangi stok)
+            (appState.purchaseReturns || []).forEach(r => {
+                const qty = Number(r.qty) || 0;
+                if (!qty) return;
+                const entry = ensureEntry(r.itemCode, r.itemName);
+                if (!entry) return;
+                entry.events.push({
+                    date: r.date || '',
+                    ref: r.id || '',
+                    code: entry.code,
+                    name: entry.name,
+                    type: 'RETUR BELI',
+                    bucket: 'returBeli',
+                    party: r.supplier ? `Supplier: ${r.supplier}` : 'Retur ke Supplier',
+                    inQty: 0,
+                    outQty: qty
+                });
+            });
+
+            // 3. Penjualan & Service HP (dari transactions)
+            const seenServiceIds = new Set();
+            (appState.transactions || []).forEach(t => {
+                if (t.module === 'POS') {
+                    normalizeSalesItems(t).forEach(si => {
+                        const qty = Number(si.qty) || 0;
+                        if (!qty) return;
+                        const entry = ensureEntry(si.code, si.name);
+                        if (!entry) return;
+                        entry.events.push({
+                            date: t.date || '',
+                            ref: t.id || '',
+                            code: entry.code,
+                            name: entry.name,
+                            type: 'PENJUALAN',
+                            bucket: 'penjualan',
+                            party: t.customer ? `Pelanggan: ${t.customer}` : 'Penjualan',
+                            inQty: 0,
+                            outQty: qty
+                        });
+                    });
+                } else if (t.module === 'SERVICE') {
+                    seenServiceIds.add(t.id);
+                    (t.stockOut || []).forEach(so => {
+                        const qty = Number(so.qty) || 0;
+                        if (!qty) return;
+                        const entry = ensureEntry(so.code, so.name || so.code);
+                        if (!entry) return;
+                        entry.events.push({
+                            date: t.date || '',
+                            ref: t.id || '',
+                            code: entry.code,
+                            name: entry.name,
+                            type: 'SERVICE HP',
+                            bucket: 'penjualan',
+                            party: t.customer ? `Service: ${t.customer}` : 'Sparepart Service HP',
+                            inQty: 0,
+                            outQty: qty
+                        });
+                    });
+                }
+            });
+
+            // Fallback tiket service selesai bila belum ada di transactions
+            (appState.serviceTickets || []).forEach(st => {
+                if (st.status === 'SELESAI' && st.sparepartCode && (Number(st.sparepartQty) || 0) > 0 && !seenServiceIds.has(st.id)) {
+                    const entry = ensureEntry(st.sparepartCode, st.sparepartCode);
+                    if (!entry) return;
+                    entry.events.push({
+                        date: st.date || '',
+                        ref: st.id || '',
+                        code: entry.code,
+                        name: entry.name,
+                        type: 'SERVICE HP',
+                        bucket: 'penjualan',
+                        party: st.customer ? `Service: ${st.customer}` : 'Sparepart Service HP',
+                        inQty: 0,
+                        outQty: Number(st.sparepartQty) || 0
+                    });
+                }
+            });
+
+            // 4. Retur Penjualan (menambah stok kembali)
+            (appState.salesReturns || []).forEach(r => {
+                const qty = Number(r.qty) || 0;
+                if (!qty) return;
+                const entry = ensureEntry(r.itemCode, r.itemName);
+                if (!entry) return;
+                entry.events.push({
+                    date: r.date || '',
+                    ref: r.id || '',
+                    code: entry.code,
+                    name: entry.name,
+                    type: 'RETUR JUAL',
+                    bucket: 'returJual',
+                    party: r.customer ? `Pelanggan: ${r.customer}` : 'Retur dari Pelanggan',
+                    inQty: qty,
+                    outQty: 0
+                });
+            });
+
+            // 5. Stok Opname
+            (appState.stockOpnames || []).forEach(o => {
+                (o.items || []).forEach(oi => {
+                    const diff = Number(oi.diff) || ((Number(oi.physical) || 0) - (Number(oi.system) || 0));
+                    if (!diff) return;
+                    const entry = ensureEntry(oi.code, oi.name);
+                    if (!entry) return;
+                    entry.events.push({
+                        date: o.date || '',
+                        ref: o.id || '',
+                        code: entry.code,
+                        name: entry.name,
+                        type: 'OPNAME',
+                        bucket: 'opname',
+                        party: o.note ? `Opname: ${o.note}` : 'Penyesuaian Stok Opname',
+                        inQty: diff > 0 ? diff : 0,
+                        outQty: diff < 0 ? Math.abs(diff) : 0
+                    });
+                });
+            });
+
+            // 6. Perakitan Voucher
+            (appState.voucherProductions || []).forEach(v => {
+                const qty = Number(v.qty) || 0;
+                if (!qty) return;
+                const targetIt = v.targetCode
+                    ? (appState.items || []).find(i => i.code === v.targetCode)
+                    : (appState.items || []).find(i => i.name === v.targetName);
+                if (targetIt) {
+                    const entry = ensureEntry(targetIt.code, targetIt.name, targetIt.category);
+                    if (entry) {
+                        entry.events.push({
+                            date: v.date || '',
+                            ref: v.id || 'PERAKITAN-VCR',
+                            code: entry.code,
+                            name: entry.name,
+                            type: 'PERAKITAN VOUCHER',
+                            bucket: 'pembelian',
+                            party: 'Hasil perakitan voucher',
+                            inQty: qty,
+                            outQty: 0
+                        });
+                    }
+                }
+                if (v.zeroCode) {
+                    const zeroIt = (appState.items || []).find(i => i.code === v.zeroCode);
+                    const entry = ensureEntry(v.zeroCode, zeroIt && zeroIt.name, zeroIt && zeroIt.category);
+                    if (entry) {
+                        entry.events.push({
+                            date: v.date || '',
+                            ref: v.id || 'PERAKITAN-VCR',
+                            code: entry.code,
+                            name: entry.name,
+                            type: 'PERAKITAN VOUCHER',
+                            bucket: 'penjualan',
+                            party: `Bahan baku -> ${v.targetName || '-'}`,
+                            inQty: 0,
+                            outQty: qty
+                        });
+                    }
+                }
+            });
+
+            // 7. Koreksi stok manual dari stockLedger (bila admin ubah stok langsung di Master Barang)
+            (appState.stockLedger || []).forEach(r => {
+                if (r && r.type === 'KOREKSI STOK') {
+                    const entry = ensureEntry(r.code, r.name);
+                    if (!entry) return;
+                    entry.events.push({
+                        date: r.date || '',
+                        ref: r.ref || 'EDIT-MASTER',
+                        code: entry.code,
+                        name: entry.name,
+                        type: 'KOREKSI STOK',
+                        bucket: 'koreksi',
+                        party: 'Penyesuaian di Master Barang',
+                        inQty: Number(r.inQty) || 0,
+                        outQty: Number(r.outQty) || 0
+                    });
+                }
+            });
+
+            // Hitung ringkasan & running saldo untuk tiap barang
+            return [...itemMap.values()].map(entry => {
+                entry.events.sort((a, b) => (Date.parse(a.date) || 0) - (Date.parse(b.date) || 0));
+
+                let pembelian = 0, penjualan = 0, returJual = 0, returBeli = 0, opnameNet = 0, koreksiNet = 0;
+                entry.events.forEach(ev => {
+                    if (ev.bucket === 'pembelian') pembelian += ev.inQty;
+                    else if (ev.bucket === 'penjualan') penjualan += ev.outQty;
+                    else if (ev.bucket === 'returJual') returJual += ev.inQty;
+                    else if (ev.bucket === 'returBeli') returBeli += ev.outQty;
+                    else if (ev.bucket === 'opname') opnameNet += (ev.inQty - ev.outQty);
+                    else if (ev.bucket === 'koreksi') koreksiNet += (ev.inQty - ev.outQty);
+                });
+
+                const returNet = returJual - returBeli;
+                const netChange = pembelian - penjualan + returNet + opnameNet + koreksiNet;
+                const stokAwal = entry.saldoAkhir - netChange;
+
+                let running = stokAwal;
+                const timeline = entry.events.map(ev => {
+                    const before = running;
+                    running = before + (Number(ev.inQty) || 0) - (Number(ev.outQty) || 0);
+                    return { ...ev, stokAwal: before, stokAkhir: running };
+                });
+
+                return {
+                    ...entry,
+                    stokAwal,
+                    pembelian,
+                    penjualan,
+                    returJual,
+                    returBeli,
+                    returNet,
+                    opnameNet,
+                    koreksiNet,
+                    txCount: timeline.length,
+                    timeline
+                };
+            });
+        }
+
+        function getFilteredKartuStokRows() {
+            const catFilter = document.getElementById('kartustok-filter-category')?.value || 'ALL';
+            const itemFilter = document.getElementById('kartustok-filter-item')?.value || 'ALL';
+            const q = (document.getElementById('kartustok-filter-search')?.value || '').trim().toLowerCase();
+
+            return buildKartuStokItemHistories().filter(row => {
+                if (catFilter !== 'ALL' && row.category !== catFilter) return false;
+                if (itemFilter !== 'ALL' && row.code !== itemFilter) return false;
+                if (q) {
+                    const eventHay = row.timeline.map(ev => `${ev.ref} ${ev.type} ${ev.party}`).join(' ');
+                    const hay = `${row.name} ${row.code} ${row.category} ${eventHay}`.toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            });
+        }
+
+        function toggleAllKartuStokHistory() {
+            const rows = getFilteredKartuStokRows();
+            const withTx = rows.filter(r => r.txCount > 0);
+            const allOpen = withTx.length > 0 && withTx.every(r => expandedKartuStokCodes.has(r.code));
+            if (allOpen) {
+                withTx.forEach(r => expandedKartuStokCodes.delete(r.code));
+            } else {
+                rows.forEach(r => { if (r.txCount > 0 || rows.length === 1) expandedKartuStokCodes.add(r.code); });
+            }
+            renderStockLedgerTable();
+        }
+
         function renderStockLedgerTable() {
             const tbody = document.getElementById('kartustok-tbody');
             if (!tbody) return;
             refreshKartuStokItemOptions(false);
-            const catFilter = document.getElementById('kartustok-filter-category')?.value || 'ALL';
             const itemFilter = document.getElementById('kartustok-filter-item')?.value || 'ALL';
+            const q = (document.getElementById('kartustok-filter-search')?.value || '').trim().toLowerCase();
+            const rows = getFilteredKartuStokRows();
 
-            const rows = (appState.stockLedger || []).filter(r => {
-                const it = (appState.items || []).find(x => x.code === r.code);
-                if (catFilter !== 'ALL' && (!it || it.category !== catFilter)) return false;
-                if (itemFilter !== 'ALL' && r.code !== itemFilter) return false;
-                return true;
-            });
+            if (itemFilter !== 'ALL' && rows.length === 1) {
+                expandedKartuStokCodes.add(rows[0].code);
+            }
+
+            const toggleAllBtn = document.getElementById('kartustok-toggle-all-btn');
+            if (toggleAllBtn) {
+                const withTx = rows.filter(r => r.txCount > 0);
+                const allOpen = withTx.length > 0 && withTx.every(r => expandedKartuStokCodes.has(r.code));
+                toggleAllBtn.innerHTML = allOpen
+                    ? '<i class="fas fa-compress-alt mr-1 text-sky-700"></i> Tutup Semua Histori'
+                    : '<i class="fas fa-list-ul mr-1 text-sky-700"></i> Buka Semua Histori';
+            }
+
+            const summaryEl = document.getElementById('kartustok-summary');
+            if (summaryEl) {
+                let sumAwal = 0, sumBeli = 0, sumJual = 0, sumReturNet = 0, sumAkhir = 0, sumTx = 0;
+                rows.forEach(r => {
+                    sumAwal += r.stokAwal;
+                    sumBeli += r.pembelian;
+                    sumJual += r.penjualan;
+                    sumReturNet += r.returNet;
+                    sumAkhir += r.saldoAkhir;
+                    sumTx += r.txCount;
+                });
+                summaryEl.innerHTML = `Menampilkan <b>${formatNum(rows.length)}</b> barang (<b>${formatNum(sumTx)}</b> transaksi) &bull; `
+                    + `Stok Awal: <b>${formatNum(sumAwal)}</b> &bull; `
+                    + `Pembelian: <b class="text-emerald-700">+${formatNum(sumBeli)}</b> &bull; `
+                    + `Penjualan: <b class="text-red-700">-${formatNum(sumJual)}</b> &bull; `
+                    + `Retur Bersih: <b class="${sumReturNet >= 0 ? 'text-emerald-700' : 'text-red-700'}">${sumReturNet > 0 ? '+' : ''}${formatNum(sumReturNet)}</b> &bull; `
+                    + `Saldo Akhir: <b class="text-sky-900">${formatNum(sumAkhir)}</b>`;
+            }
 
             if (rows.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">Belum ada mutasi stok untuk pilihan ini.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Belum ada barang yang cocok dengan filter ini.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = rows.map(r => {
-                const it = (appState.items || []).find(x => x.code === r.code);
-                return `
-                <tr>
-                    <td class="font-mono text-[11px]">${new Date(r.date).toLocaleString('id-ID')}</td>
-                    <td class="font-mono font-bold">${esc(r.ref)}</td>
-                    <td>${esc((it && it.category) || '-')}</td>
-                    <td class="font-mono">${esc(r.code)}</td>
-                    <td>${esc(r.name)}</td>
-                    <td class="text-center"><span class="px-2 py-0.5 rounded bg-slate-100 font-bold text-[10.5px]">${esc(r.type)}</span></td>
-                    <td class="text-right font-mono text-emerald-700 font-bold">${r.inQty || 0}</td>
-                    <td class="text-right font-mono text-red-700 font-bold">${r.outQty || 0}</td>
-                    <td class="text-right font-mono font-extrabold">${r.balance}</td>
+            const badgeForType = (typeStr) => {
+                if (/RETUR BELI/.test(typeStr)) return 'bg-rose-100 text-rose-800';
+                if (/RETUR JUAL/.test(typeStr)) return 'bg-teal-100 text-teal-800';
+                if (/PEMBELIAN|PERAKITAN/.test(typeStr)) return 'bg-emerald-100 text-emerald-800';
+                if (/PENJUALAN|SERVICE/.test(typeStr)) return 'bg-sky-100 text-sky-800';
+                if (/OPNAME|KOREKSI/.test(typeStr)) return 'bg-amber-100 text-amber-800';
+                return 'bg-slate-100 text-slate-700';
+            };
+
+            tbody.innerHTML = rows.map((row, idx) => {
+                const matchByRef = Boolean(q && !(`${row.name} ${row.code} ${row.category}`.toLowerCase().includes(q)) && row.txCount > 0);
+                const isOpen = expandedKartuStokCodes.has(row.code) || matchByRef;
+
+                let returHtml = '<span class="text-slate-400">0</span>';
+                if (row.returJual > 0 && row.returBeli > 0) {
+                    returHtml = `<div class="text-teal-700">+${formatNum(row.returJual)} <span class="text-[10px] font-normal">Jual</span></div><div class="text-rose-700">-${formatNum(row.returBeli)} <span class="text-[10px] font-normal">Beli</span></div>`;
+                } else if (row.returJual > 0) {
+                    returHtml = `<span class="text-teal-700">+${formatNum(row.returJual)}</span><span class="block text-[10px] font-normal text-slate-500">Retur Jual</span>`;
+                } else if (row.returBeli > 0) {
+                    returHtml = `<span class="text-rose-700">-${formatNum(row.returBeli)}</span><span class="block text-[10px] font-normal text-slate-500">Retur Beli</span>`;
+                }
+
+                const extraNotes = [];
+                if (row.opnameNet) extraNotes.push(`Opname: ${row.opnameNet > 0 ? '+' : ''}${formatNum(row.opnameNet)}`);
+                if (row.koreksiNet) extraNotes.push(`Koreksi: ${row.koreksiNet > 0 ? '+' : ''}${formatNum(row.koreksiNet)}`);
+
+                const mainTr = `
+                <tr onclick="toggleKartuStokHistory('${escJs(row.code)}')" class="cursor-pointer hover:bg-sky-50/70 ${isOpen ? '!bg-sky-50 font-semibold' : ''}">
+                    <td class="text-center font-mono text-slate-600">${idx + 1}</td>
+                    <td>
+                        <div class="font-semibold text-slate-800">${esc(row.name)}</div>
+                        <div class="text-[10.5px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                            <span class="font-mono font-semibold text-sky-900">${esc(row.code)}</span>
+                            <span>&bull; ${esc(row.category)}</span>
+                            <span>&bull; ${esc(row.unit)}</span>
+                            <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${row.txCount > 0 ? 'bg-sky-100 text-sky-800' : 'bg-slate-100 text-slate-500'}">${row.txCount} transaksi</span>
+                            ${extraNotes.length ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800">${esc(extraNotes.join(', '))}</span>` : ''}
+                        </div>
+                    </td>
+                    <td class="text-right font-mono text-slate-700">${formatNum(row.stokAwal)}</td>
+                    <td class="text-right font-mono font-bold ${row.pembelian > 0 ? 'text-emerald-700' : 'text-slate-400'}">${row.pembelian > 0 ? '+' + formatNum(row.pembelian) : '0'}</td>
+                    <td class="text-right font-mono font-bold ${row.penjualan > 0 ? 'text-red-700' : 'text-slate-400'}">${row.penjualan > 0 ? '-' + formatNum(row.penjualan) : '0'}</td>
+                    <td class="text-right font-mono font-bold">${returHtml}</td>
+                    <td class="text-right font-mono font-extrabold text-slate-900">${formatNum(row.saldoAkhir)}</td>
+                    <td class="text-center" onclick="event.stopPropagation()">
+                        <button type="button" onclick="toggleKartuStokHistory('${escJs(row.code)}')" class="${row.txCount > 0 ? 'ipos-btn-primary' : 'ipos-btn'} px-2.5 py-1 rounded text-[11px] font-bold whitespace-nowrap">
+                            <i class="fas ${isOpen ? 'fa-chevron-up' : 'fa-history'} mr-1"></i>${isOpen ? 'Tutup Histori' : (row.txCount > 0 ? `Buka Histori (${row.txCount})` : 'Detail Stok')}
+                        </button>
+                    </td>
                 </tr>`;
+
+                if (!isOpen) return mainTr;
+
+                const ledgerStart = (appState.stockLedger || []).find(l => l && l.code === row.code && l.type === 'STOK AWAL');
+                const awalDateText = ledgerStart ? new Date(ledgerStart.date).toLocaleString('id-ID') : '-';
+                const awalRow = `
+                <tr class="bg-slate-50/90 text-[11px]">
+                    <td class="text-center font-mono text-slate-400">-</td>
+                    <td class="font-mono text-slate-500">${esc(awalDateText)}</td>
+                    <td class="font-mono font-semibold text-slate-600">SALDO-AWAL</td>
+                    <td><span class="px-1.5 py-0.2 rounded font-bold text-[10px] bg-slate-200 text-slate-700">STOK AWAL</span> <span class="text-slate-500 ml-1">Saldo awal periode</span></td>
+                    <td class="text-right font-mono font-semibold">${formatNum(row.stokAwal)}</td>
+                    <td class="text-right font-mono text-slate-400">0</td>
+                    <td class="text-right font-mono text-slate-400">0</td>
+                    <td class="text-right font-mono text-slate-400">0</td>
+                    <td class="text-right font-mono font-bold text-slate-800">${formatNum(row.stokAwal)}</td>
+                    <td class="text-center"><span class="text-[10.5px] text-slate-400">-</span></td>
+                </tr>`;
+
+                const timelineRows = row.timeline.map((ev, eIdx) => {
+                    const beliCell = ev.bucket === 'pembelian' ? `<span class="text-emerald-700 font-bold">+${formatNum(ev.inQty)}</span>` : '<span class="text-slate-400">0</span>';
+                    const jualCell = ev.bucket === 'penjualan' ? `<span class="text-red-700 font-bold">-${formatNum(ev.outQty)}</span>` : '<span class="text-slate-400">0</span>';
+                    let retCell = '<span class="text-slate-400">0</span>';
+                    if (ev.bucket === 'returJual') retCell = `<span class="text-teal-700 font-bold">+${formatNum(ev.inQty)}</span>`;
+                    else if (ev.bucket === 'returBeli') retCell = `<span class="text-rose-700 font-bold">-${formatNum(ev.outQty)}</span>`;
+                    else if (ev.bucket === 'opname' || ev.bucket === 'koreksi') {
+                        const d = ev.inQty - ev.outQty;
+                        retCell = `<span class="text-amber-700 font-bold">${d > 0 ? '+' : ''}${formatNum(d)}</span>`;
+                    }
+                    const dateTxt = ev.date ? new Date(ev.date).toLocaleString('id-ID') : '-';
+                    return `
+                    <tr class="hover:bg-sky-50/60 text-[11px]">
+                        <td class="text-center font-mono text-slate-500">${eIdx + 1}</td>
+                        <td class="font-mono text-slate-600 whitespace-nowrap">${esc(dateTxt)}</td>
+                        <td class="font-mono font-bold text-sky-900 whitespace-nowrap">${esc(ev.ref)}</td>
+                        <td>
+                            <span class="px-1.5 py-0.2 rounded font-bold text-[10px] ${badgeForType(ev.type)}">${esc(ev.type)}</span>
+                            <span class="text-slate-600 ml-1">${esc(ev.party || '')}</span>
+                        </td>
+                        <td class="text-right font-mono text-slate-700">${formatNum(ev.stokAwal)}</td>
+                        <td class="text-right font-mono">${beliCell}</td>
+                        <td class="text-right font-mono">${jualCell}</td>
+                        <td class="text-right font-mono">${retCell}</td>
+                        <td class="text-right font-mono font-extrabold text-slate-900">${formatNum(ev.stokAkhir)}</td>
+                        <td class="text-center">
+                            <button type="button" onclick="openLedgerTransaction('${escJs(ev.ref)}', '${escJs(ev.type)}', '${escJs(ev.code)}')" class="ipos-btn px-2 py-0.5 rounded text-[10.5px] font-bold text-sky-800 whitespace-nowrap">
+                                <i class="fas fa-external-link-alt mr-1"></i>Lihat Transaksi
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('');
+
+                const detailTr = `
+                <tr class="bg-slate-100/80">
+                    <td colspan="8" class="p-2.5">
+                        <div class="border border-sky-300 rounded bg-white overflow-x-auto shadow-inner">
+                            <div class="bg-[#e8f2fc] px-3 py-1.5 text-[11px] font-bold text-[#0f3d7a] flex flex-wrap items-center justify-between gap-2 border-b border-sky-200">
+                                <span><i class="fas fa-history mr-1"></i> Histori Transaksi: ${esc(row.code)} &ndash; ${esc(row.name)}</span>
+                                <span class="font-mono">Stok Awal: ${formatNum(row.stokAwal)} | Saldo Akhir: ${formatNum(row.saldoAkhir)} ${esc(row.unit)}</span>
+                            </div>
+                            <table class="w-full table-grid border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th class="w-10 text-center">No</th>
+                                        <th class="w-36 text-left">Tanggal / Jam</th>
+                                        <th class="w-36 text-left">No. Transaksi</th>
+                                        <th class="text-left">Keterangan</th>
+                                        <th class="w-20 text-right">Stok Awal</th>
+                                        <th class="w-20 text-right">Pembelian</th>
+                                        <th class="w-20 text-right">Penjualan</th>
+                                        <th class="w-20 text-right">Retur / Adj</th>
+                                        <th class="w-24 text-right">Saldo Akhir</th>
+                                        <th class="w-32 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${awalRow}
+                                    ${timelineRows || '<tr><td colspan="10" class="text-center py-3 text-slate-400">Belum ada transaksi pembelian, penjualan, atau retur untuk barang ini.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>`;
+
+                return mainTr + detailTr;
             }).join('');
+        }
+
+        function openLedgerTransaction(ref, type, code) {
+            const refId = String(ref || '').trim();
+            const mutType = String(type || '').toUpperCase();
+
+            if (mutType === 'PERAKITAN VOUCHER' || refId.startsWith('RKT-') || refId === 'PERAKITAN-VCR') {
+                switchTab('cetakvoucher');
+                return;
+            }
+
+            if (!refId || refId === 'SALDO-AWAL' || refId === 'EDIT-MASTER' || mutType === 'STOK AWAL' || mutType === 'KOREKSI STOK') {
+                switchTab('masterdata');
+                switchMasterSubTab('items');
+                const searchEl = document.getElementById('master-search-input');
+                if (searchEl) searchEl.value = code || '';
+                renderMasterItemsTable();
+                if (mutType === 'KOREKSI STOK') {
+                    const mIdx = (appState.items || []).findIndex(i => i.code === code);
+                    if (mIdx >= 0) openItemModal(mIdx);
+                } else {
+                    showToast('Catatan STOK AWAL berasal dari saldo awal / tutup buku pada Daftar Barang.', 'info');
+                }
+                return;
+            }
+
+            // 1. Pembelian (BLI)
+            const buyIdx = (appState.purchaseRecords || []).findIndex(p => p.id === refId);
+            if (buyIdx >= 0) {
+                switchTab('pembelian');
+                switchPurchaseSubTab('pembelian');
+                const inp = document.getElementById('beli-search-input');
+                if (inp) inp.value = refId;
+                selectPurchaseRow(buyIdx);
+                openPurchaseFormModal(buyIdx);
+                return;
+            }
+
+            // 2. Retur Pembelian (RBL)
+            const retBuyIdx = (appState.purchaseReturns || []).findIndex(r => r.id === refId);
+            if (retBuyIdx >= 0) {
+                switchTab('pembelian');
+                switchPurchaseSubTab('retur');
+                const inp = document.getElementById('retur-search-input');
+                if (inp) inp.value = refId;
+                selectReturnRow(retBuyIdx);
+                openReturnFormModal(retBuyIdx);
+                return;
+            }
+
+            // 3. Retur Penjualan (RJL)
+            const retSaleIdx = (appState.salesReturns || []).findIndex(r => r.id === refId);
+            if (retSaleIdx >= 0) {
+                switchTab('kasir', 'retur');
+                const inp = document.getElementById('sret-search-input');
+                if (inp) inp.value = refId;
+                selectSretRow(retSaleIdx);
+                openSretFormModal(retSaleIdx);
+                return;
+            }
+
+            // 4. Penjualan POS / PPOB / BRILink / Service HP selesai di transactions
+            const trxIdx = (appState.transactions || []).findIndex(t => t.id === refId);
+            if (trxIdx >= 0) {
+                const trx = appState.transactions[trxIdx];
+                if (trx.module === 'POS') {
+                    switchTab('kasir', 'jual');
+                    const inp = document.getElementById('jual-search-input');
+                    if (inp) inp.value = refId;
+                    selectSaleRow(trxIdx);
+                    openSaleFormModal(trxIdx);
+                    return;
+                }
+                if (trx.module === 'SERVICE') {
+                    switchTab('servicehp');
+                    const row = document.querySelector(`#service-hp-tbody tr[data-srv-id="${CSS.escape(refId)}"]`);
+                    if (row) {
+                        row.classList.add('!bg-sky-100');
+                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    showReceiptModal(trx);
+                    return;
+                }
+                switchTab('ppob', (trx.ppob && trx.ppob.mode) || (trx.module === 'BRILINK' ? 'transfer' : 'pulsa'));
+                showReceiptModal(trx);
+                return;
+            }
+
+            // 5. Service HP tiket (bila transaksi terpisah atau status proses/batal)
+            const srvTicket = (appState.serviceTickets || []).find(t => t.id === refId);
+            if (srvTicket) {
+                switchTab('servicehp');
+                const row = document.querySelector(`#service-hp-tbody tr[data-srv-id="${CSS.escape(refId)}"]`);
+                if (row) {
+                    row.classList.add('!bg-sky-100');
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                showServiceIntakeReceipt(srvTicket);
+                return;
+            }
+
+            // 6. Stok Opname (OPN)
+            const opn = (appState.stockOpnames || []).find(o => o.id === refId);
+            if (opn) {
+                switchTab('masterdata');
+                switchMasterSubTab('opname');
+                const det = document.querySelector(`#opname-history details[data-opn-id="${CSS.escape(refId)}"]`);
+                if (det) {
+                    det.open = true;
+                    det.classList.add('ring-2', 'ring-sky-500');
+                    det.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+
+            showToast(`Transaksi ${refId} sudah dibatalkan atau dihapus dari daftar transaksi.`, 'info');
         }
 
         // =========================================================================
@@ -9709,7 +10494,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             if (cntEl) cntEl.textContent = activeCount;
 
             tbody.innerHTML = appState.serviceTickets.map(t => `
-                <tr>
+                <tr data-srv-id="${esc(t.id)}">
                     <td class="font-mono font-bold text-rose-900">${esc(t.id)}</td>
                     <td class="font-mono text-[11px]">${new Date(t.date).toLocaleDateString('id-ID')}</td>
                     <td>
@@ -9906,12 +10691,20 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             targetIt.stock += qty;
             if (appState.wallets[srcWallet] !== undefined) appState.wallets[srcWallet] -= totalInject;
 
+            const rktId = generateInvoiceId('RKT');
+            const nowIso = new Date().toISOString();
             appState.voucherProductions.unshift({
-                date: new Date().toISOString(),
+                id: rktId,
+                date: nowIso,
+                zeroCode: zeroIt.code,
+                targetCode: targetIt.code,
                 targetName: targetIt.name,
                 qty,
                 totalModal: totalInject + (qty * zeroIt.cost)
             });
+            if (!Array.isArray(appState.stockLedger)) appState.stockLedger = [];
+            appState.stockLedger.unshift({ date: nowIso, ref: rktId, code: zeroIt.code, name: zeroIt.name, type: 'PERAKITAN VOUCHER', inQty: 0, outQty: qty, balance: zeroIt.stock });
+            appState.stockLedger.unshift({ date: nowIso, ref: rktId, code: targetIt.code, name: targetIt.name, type: 'PERAKITAN VOUCHER', inQty: qty, outQty: 0, balance: targetIt.stock });
 
             await saveAppState();
             showToast(`Berhasil merakit ${qty} PCS ${targetIt.name}!`, 'success');
@@ -11189,7 +11982,12 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             document.getElementById('set-sb-url').value = appState.settings.supabaseUrl || '';
             document.getElementById('set-sb-key').value = isCurrentUserAdmin() ? (appState.settings.supabaseKey || '') : ''; // key tidak dimuat ke form untuk non-admin
             pendingBannerImage = undefined;
+            pendingStoreLogo = undefined;
             const bf = document.getElementById('set-banner-file'); if (bf) bf.value = '';
+            const lf = document.getElementById('set-logo-file'); if (lf) lf.value = '';
+            renderStoreLogoPreview(appState.settings.storeLogo || '');
+            const lNote = document.getElementById('set-logo-note');
+            if (lNote) lNote.textContent = 'Logo tampil di kartu identitas toko Dashboard (maks. 512 px).';
             switchSettingsTab(tab);
             document.getElementById('settings-modal').classList.remove('hidden');
         }
@@ -11207,6 +12005,56 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         let pendingBannerImage; // undefined = tidak berubah, '' = kembali ke default
+        let pendingStoreLogo;   // undefined = tidak berubah, '' = kembali ke ikon default
+
+        function renderStoreLogoPreview(src) {
+            const box = document.getElementById('set-logo-preview');
+            if (!box) return;
+            box.replaceChildren();
+            if (src && /^data:image\//i.test(src)) {
+                const img = document.createElement('img');
+                img.src = src;
+                img.alt = 'Preview Logo Toko';
+                img.className = 'w-full h-full object-contain bg-white p-0.5';
+                box.appendChild(img);
+            } else {
+                const ic = document.createElement('i');
+                ic.className = 'fas fa-store';
+                box.appendChild(ic);
+            }
+        }
+
+        function handleStoreLogoSelect(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const note = document.getElementById('set-logo-note');
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const scale = Math.min(1, 512 / Math.max(img.width, img.height));
+                    const c = document.createElement('canvas');
+                    c.width = Math.max(1, Math.round(img.width * scale));
+                    c.height = Math.max(1, Math.round(img.height * scale));
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    pendingStoreLogo = c.toDataURL('image/png');
+                    renderStoreLogoPreview(pendingStoreLogo);
+                    if (note) note.textContent = `Logo baru siap (${Math.round(pendingStoreLogo.length * 0.75 / 1024)} KB). Klik "Simpan Profil Toko" untuk menerapkan.`;
+                };
+                img.onerror = () => showToast('File logo tidak dapat dibaca.', 'error');
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetStoreLogo() {
+            pendingStoreLogo = '';
+            const inp = document.getElementById('set-logo-file');
+            if (inp) inp.value = '';
+            renderStoreLogoPreview('');
+            const note = document.getElementById('set-logo-note');
+            if (note) note.textContent = 'Logo akan dikembalikan ke ikon default setelah klik "Simpan Profil Toko".';
+        }
 
         function handleBannerFileSelect(event) {
             const file = event.target.files?.[0];
@@ -11244,6 +12092,13 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             appState.settings.storePhone = document.getElementById('set-store-phone').value.trim();
             appState.settings.storeWebsite = document.getElementById('set-store-website').value.trim();
             appState.settings.storeFooter = document.getElementById('set-store-footer').value.trim();
+            if (pendingStoreLogo !== undefined) {
+                if (pendingStoreLogo) appState.settings.storeLogo = pendingStoreLogo;
+                else delete appState.settings.storeLogo;
+                pendingStoreLogo = undefined;
+                const lf = document.getElementById('set-logo-file');
+                if (lf) lf.value = '';
+            }
             if (pendingBannerImage !== undefined) {
                 if (pendingBannerImage) appState.settings.bannerImage = pendingBannerImage;
                 else delete appState.settings.bannerImage;
@@ -11976,7 +12831,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
 
         // Cache library CDN agar aplikasi tetap tampil normal saat offline (butuh sw.js di folder yang sama, via http/https)
         if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-            navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker gagal didaftarkan:', e));
+            navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+                if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
+            }).catch(e => console.warn('Service worker gagal didaftarkan:', e));
         }
 
         // Ikon pada sub menu (tab di dalam halaman)
