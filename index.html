@@ -194,6 +194,17 @@
             }
         }
 
+        /* Hilangkan panah spinner input angka pada Perakitan Voucher Fisik */
+        #view-cetakvoucher input[type=number]::-webkit-inner-spin-button,
+        #view-cetakvoucher input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #view-cetakvoucher input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
         /* ===================== TEMA BIRU - ORANYE ===================== */
         :root { --navy:#0b2557; --navy2:#143a7b; --blue:#1565c0; --orange:#f97316; --orange2:#ea580c; }
         body { background-color:#e6eef8; }
@@ -1875,7 +1886,7 @@
                 </section>
 
                 <!-- ==================== MENU 7: PEMBUATAN VOUCHER FISIK ==================== -->
-                <section id="view-cetakvoucher" class="hidden p-3 sm:p-4 max-w-6xl mx-auto">
+                <section id="view-cetakvoucher" class="hidden p-3 sm:p-4 max-w-7xl mx-auto">
                     <div class="ipos-panel rounded-lg overflow-hidden">
                         <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between">
                             <div class="flex items-center gap-2">
@@ -1884,46 +1895,111 @@
                             </div>
                         </div>
                         <div class="p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 text-xs">
-                            <form onsubmit="submitVoucherAssembly(event)" class="lg:col-span-5 border border-slate-300 rounded-lg p-3.5 bg-slate-50 space-y-3">
-                                <div class="font-bold text-sm text-cyan-900 border-b border-slate-300 pb-1.5">
-                                    Form Perakitan Voucher Fisik
+                            <div class="lg:col-span-7 border border-slate-300 rounded-lg p-3.5 bg-slate-50 space-y-3">
+                                <div class="font-bold text-sm text-cyan-900 border-b border-slate-300 pb-1.5 flex items-center justify-between gap-2">
+                                    <span>Form Perakitan Voucher Fisik (Multi-Item)</span>
+                                    <span class="text-[11px] font-mono text-slate-600">1 Nota = Banyak Voucher Jadi</span>
                                 </div>
-                                <div>
-                                    <label class="block font-bold mb-1">Bahan Baku Voucher Zero (Kosong)</label>
-                                    <select id="vf-zero-item" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
-                                </div>
-                                <div>
-                                    <label class="block font-bold mb-1">Produk Voucher Jadi (Tujuan Stok)</label>
-                                    <select id="vf-target-item" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2">
+
+                                <!-- 1. Header Nota & Keterangan -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white border border-slate-200 rounded p-2.5">
                                     <div>
-                                        <label class="block font-bold mb-1">Jumlah Perakitan (PCS)</label>
-                                        <input type="number" id="vf-qty" min="1" value="5" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                                        <label class="block font-bold mb-1">No. Nota Perakitan</label>
+                                        <input type="text" id="vf-note-no" readonly class="w-full bg-slate-100 border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-cyan-900 uppercase">
                                     </div>
                                     <div>
-                                        <label class="block font-bold mb-1">Biaya Inject per PCS (Rp)</label>
-                                        <input type="text" inputmode="decimal" data-money id="vf-inject-cost" data-min="0" value="18000" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                                        <label class="block font-bold mb-1">Sumber Saldo Inject</label>
+                                        <select id="vf-source-wallet" onchange="updateVoucherHeaderInfo()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                                        <div id="vf-wallet-info" class="text-[10.5px] text-slate-600 mt-0.5 font-mono"></div>
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <label class="block font-bold mb-1">Bahan Baku Voucher Zero (Kosong)</label>
+                                        <select id="vf-zero-item" onchange="onVoucherZeroChanged()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                                        <div id="vf-zero-info" class="text-[10.5px] text-cyan-900 mt-0.5 font-mono font-semibold"></div>
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <label class="block font-bold mb-1">Keterangan / Catatan</label>
+                                        <input type="text" id="vf-note" placeholder="Contoh: Perakitan etalase depan / shift pagi..." class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="block font-bold mb-1">Sumber Saldo Inject</label>
-                                    <select id="vf-source-wallet" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+
+                                <!-- 2. Form Input Item ke Keranjang -->
+                                <div class="bg-white border border-cyan-200 rounded p-2.5 space-y-2">
+                                    <div>
+                                        <label class="block font-bold mb-1">Kode Barang</label>
+                                        <input type="text" id="vf-target-code" placeholder="Ketik / scan kode barang lalu tekan Enter..." autocomplete="off" onkeydown="handleVoucherCodeKeydown(event)" onblur="syncVoucherTargetFromCode(false)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold uppercase focus:outline-none focus:border-cyan-600">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold mb-1">Produk Voucher Jadi (Tujuan Stok)</label>
+                                        <select id="vf-target-item" onchange="syncVoucherCodeFromTarget()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                                        <div class="sm:col-span-4">
+                                            <label class="block font-bold mb-1">Qty (PCS)</label>
+                                            <input type="number" id="vf-qty" min="1" step="1" value="5" onkeydown="if(event.key==='Enter'){event.preventDefault();addVoucherDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                                        </div>
+                                        <div class="sm:col-span-4">
+                                            <label class="block font-bold mb-1">Biaya Inject / PCS (Rp)</label>
+                                            <input type="text" inputmode="decimal" data-money id="vf-inject-cost" data-min="0" value="18000" onkeydown="if(event.key==='Enter'){event.preventDefault();addVoucherDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                                        </div>
+                                        <div class="sm:col-span-4">
+                                            <button type="button" onclick="addVoucherDraftItem()" class="w-full ipos-btn-success py-1.5 px-3 rounded font-bold shadow-sm">
+                                                <i class="fas fa-plus mr-1"></i> Tambah Item
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button type="submit" class="w-full ipos-btn-primary py-2 rounded font-bold shadow">
-                                    <i class="fas fa-cogs mr-1"></i> Proses Perakitan Voucher
-                                </button>
-                            </form>
-                            <div class="lg:col-span-7 space-y-2">
-                                <div class="font-bold text-slate-700">Riwayat Pembuatan / Perakitan Voucher Fisik</div>
-                                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-80">
+
+                                <!-- 3. Keranjang Multi-Item & Total Keseluruhan -->
+                                <div class="border border-slate-300 rounded bg-white overflow-x-auto max-h-60">
                                     <table class="w-full table-grid border-collapse">
                                         <thead>
                                             <tr>
-                                                <th class="text-left">Waktu</th>
-                                                <th class="text-left">Voucher Jadi</th>
+                                                <th class="text-left">Kode</th>
+                                                <th class="text-left">Nama Voucher</th>
                                                 <th class="text-right">Qty</th>
+                                                <th class="text-right">Biaya Inject</th>
+                                                <th class="text-right">Subtotal Modal</th>
+                                                <th class="text-center w-14">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vf-draft-tbody"></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="bg-cyan-50 border border-cyan-200 rounded p-2.5 grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <div class="text-[10.5px] text-slate-600 font-semibold">Total Qty Zero</div>
+                                        <div id="vf-total-qty" class="font-mono font-extrabold text-slate-800 text-xs sm:text-sm">0 PCS</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10.5px] text-slate-600 font-semibold">Total Biaya Inject</div>
+                                        <div id="vf-total-inject" class="font-mono font-extrabold text-amber-700 text-xs sm:text-sm">Rp 0</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10.5px] text-slate-600 font-semibold">Grand Total Modal</div>
+                                        <div id="vf-grand-total" class="font-mono font-extrabold text-cyan-900 text-xs sm:text-sm">Rp 0</div>
+                                    </div>
+                                </div>
+
+                                <button type="button" onclick="processVoucherAssembly()" class="w-full ipos-btn-primary py-2 rounded font-bold shadow">
+                                    <i class="fas fa-cogs mr-1"></i> Proses Perakitan Voucher
+                                </button>
+                            </div>
+
+                            <!-- 4. Riwayat Nota Perakitan -->
+                            <div class="lg:col-span-5 space-y-2">
+                                <div class="font-bold text-slate-700">Riwayat Nota Perakitan Voucher Fisik</div>
+                                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-[540px]">
+                                    <table class="w-full table-grid border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left">No. Nota</th>
+                                                <th class="text-left">Waktu</th>
+                                                <th class="text-left">Ringkasan Item / Qty</th>
                                                 <th class="text-right">Total Modal</th>
+                                                <th class="text-left">Keterangan</th>
+                                                <th class="text-center w-14">Detail</th>
                                             </tr>
                                         </thead>
                                         <tbody id="vf-history-tbody"></tbody>
@@ -3847,6 +3923,20 @@ alter table donet_cell_state disable row level security;</div>
                     <button type="submit" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">Simpan Retur</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL DETAIL NOTA PERAKITAN VOUCHER ==================== -->
+    <div id="vf-detail-modal" class="fixed inset-0 bg-slate-900/55 z-50 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-2xl overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between">
+                <span class="font-bold text-xs sm:text-sm"><i class="fas fa-sim-card mr-1.5 text-cyan-600"></i> Detail Nota Perakitan Voucher Fisik</span>
+                <button type="button" onclick="closeModal('vf-detail-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <div id="vf-detail-body" class="p-4 text-xs space-y-3 max-h-[75vh] overflow-y-auto"></div>
+            <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button type="button" onclick="closeModal('vf-detail-modal')" class="ipos-btn px-4 py-1.5 rounded text-xs font-bold">Tutup</button>
+            </div>
         </div>
     </div>
 
@@ -8020,7 +8110,12 @@ alter table donet_cell_state disable row level security;</div>
             add('Pesanan Penjualan', appState.salesOrders);
             add('Penjualan', appState.transactions);
             add('Retur Penjualan', appState.salesReturns);
-            const vp = (appState.voucherProductions || []).filter(v => v && name && v.targetName === name).length;
+            const vp = (appState.voucherProductions || []).filter(v => {
+                if (!v) return false;
+                if (v.zeroCode === code) return true;
+                if (Array.isArray(v.items)) return v.items.some(x => x && (x.targetCode === code || (name && x.targetName === name)));
+                return v.targetCode === code || (name && v.targetName === name);
+            }).length;
             if (vp) hits.push(`Perakitan Voucher (${vp})`);
             if (!hits.length) {
                 const liveRefs = new Set([].concat(appState.transactions || [], appState.purchaseRecords || [], appState.purchaseReturns || [],
@@ -8061,8 +8156,12 @@ alter table donet_cell_state disable row level security;</div>
                     && r.ref !== rec.id && liveRefs.has(r.ref));
                 if (out) return `barang ${it.name || it.code} sudah ada transaksinya (${out.type} ${out.ref})`;
                 const ownDate = ownIdx >= 0 ? new Date(ledger[ownIdx].date).getTime() : 0;
-                const vp = (appState.voucherProductions || []).find(v => v && v.targetName === it.name
-                    && (!ownDate || new Date(v.date).getTime() >= ownDate));
+                const vp = (appState.voucherProductions || []).find(v => {
+                    if (!v || (ownDate && new Date(v.date).getTime() < ownDate)) return false;
+                    if (v.zeroCode === it.code) return true;
+                    if (Array.isArray(v.items)) return v.items.some(x => x && (x.targetCode === it.code || x.targetName === it.name));
+                    return v.targetCode === it.code || v.targetName === it.name;
+                });
                 if (vp) return `barang ${it.name || it.code} sudah ada transaksinya (Perakitan Voucher)`;
             }
             return '';
@@ -8427,30 +8526,40 @@ alter table donet_cell_state disable row level security;</div>
                 });
             });
 
-            // 6. Perakitan Voucher
+            // 6. Perakitan Voucher (mendukung format lama tunggal & format baru multi-item per No. Nota)
             (appState.voucherProductions || []).forEach(v => {
-                const qty = Number(v.qty) || 0;
-                if (!qty) return;
-                const targetIt = v.targetCode
-                    ? (appState.items || []).find(i => i.code === v.targetCode)
-                    : (appState.items || []).find(i => i.name === v.targetName);
-                if (targetIt) {
-                    const entry = ensureEntry(targetIt.code, targetIt.name, targetIt.category);
-                    if (entry) {
-                        entry.events.push({
-                            date: v.date || '',
-                            ref: v.id || 'PERAKITAN-VCR',
-                            code: entry.code,
-                            name: entry.name,
-                            type: 'PERAKITAN VOUCHER',
-                            bucket: 'pembelian',
-                            party: 'Hasil perakitan voucher',
-                            inQty: qty,
-                            outQty: 0
-                        });
+                if (!v) return;
+                const subItems = Array.isArray(v.items) && v.items.length
+                    ? v.items
+                    : [{ targetCode: v.targetCode, targetName: v.targetName, qty: v.qty }];
+                let totalZeroOut = 0;
+                const targetLabels = [];
+                subItems.forEach(sub => {
+                    const qty = Number(sub.qty) || 0;
+                    if (!qty) return;
+                    totalZeroOut += qty;
+                    if (sub.targetName) targetLabels.push(`${sub.targetName} (${qty})`);
+                    const targetIt = sub.targetCode
+                        ? (appState.items || []).find(i => i.code === sub.targetCode)
+                        : (appState.items || []).find(i => i.name === sub.targetName);
+                    if (targetIt) {
+                        const entry = ensureEntry(targetIt.code, targetIt.name, targetIt.category);
+                        if (entry) {
+                            entry.events.push({
+                                date: v.date || '',
+                                ref: v.id || 'PERAKITAN-VCR',
+                                code: entry.code,
+                                name: entry.name,
+                                type: 'PERAKITAN VOUCHER',
+                                bucket: 'pembelian',
+                                party: v.note ? `Perakitan: ${v.note}` : 'Hasil perakitan voucher',
+                                inQty: qty,
+                                outQty: 0
+                            });
+                        }
                     }
-                }
-                if (v.zeroCode) {
+                });
+                if (v.zeroCode && totalZeroOut > 0) {
                     const zeroIt = (appState.items || []).find(i => i.code === v.zeroCode);
                     const entry = ensureEntry(v.zeroCode, zeroIt && zeroIt.name, zeroIt && zeroIt.category);
                     if (entry) {
@@ -8461,9 +8570,9 @@ alter table donet_cell_state disable row level security;</div>
                             name: entry.name,
                             type: 'PERAKITAN VOUCHER',
                             bucket: 'penjualan',
-                            party: `Bahan baku -> ${v.targetName || '-'}`,
+                            party: `Bahan baku -> ${targetLabels.join(', ') || '-'}`,
                             inQty: 0,
-                            outQty: qty
+                            outQty: totalZeroOut
                         });
                     }
                 }
@@ -12268,69 +12377,552 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         // =========================================================================
-        // 9. PEMBUATAN VOUCHER FISIK & MUTASI SUMBER DANA
+        // 9. PEMBUATAN VOUCHER FISIK (MULTI-ITEM PER NOTA, KODE BARANG & FIFO) & MUTASI SUMBER DANA
         // =========================================================================
+        let vfDraftItems = [];
+
+        function generateRktNoteNo() {
+            const d = new Date();
+            const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+            const re = new RegExp(`^RKT-${ymd}-(\\d+)`);
+            let maxSeq = 0;
+            (appState.voucherProductions || []).forEach(v => {
+                const m = re.exec(String((v && v.id) || '').trim().toUpperCase());
+                if (m) maxSeq = Math.max(maxSeq, parseInt(m[1], 10));
+            });
+            return `RKT-${ymd}-${String(maxSeq + 1).padStart(3, '0')}`;
+        }
+
+        function buildZeroFifoLayers(zeroCode) {
+            const zeroIt = (appState.items || []).find(i => i.code === zeroCode);
+            if (!zeroIt) return [];
+            const currentStock = Math.max(0, Number(zeroIt.stock) || 0);
+            const fallbackCost = Math.max(0, Number(zeroIt.cost) || 0);
+            if (currentStock <= 0) return [];
+
+            const inLots = [];
+            let totalIn = 0;
+            let totalOut = 0;
+
+            (appState.purchaseRecords || []).forEach(p => {
+                normalizeOrderItems(p).forEach(pi => {
+                    if (pi && pi.code === zeroCode && (Number(pi.qty) || 0) > 0) {
+                        const q = Number(pi.qty) || 0;
+                        inLots.push({ ts: Date.parse(p.date) || 0, qty: q, unitCost: Math.max(0, Number(pi.cost) || fallbackCost) });
+                        totalIn += q;
+                    }
+                });
+            });
+
+            (appState.voucherProductions || []).forEach(v => {
+                if (!v) return;
+                const subs = Array.isArray(v.items) && v.items.length
+                    ? v.items
+                    : [{ targetCode: v.targetCode, targetName: v.targetName, qty: v.qty, newHpp: v.qty ? (Number(v.totalModal) || 0) / Number(v.qty) : fallbackCost }];
+                subs.forEach(s => {
+                    const q = Number(s.qty) || 0;
+                    if (!q) return;
+                    if (s.targetCode === zeroCode || (!s.targetCode && s.targetName === zeroIt.name)) {
+                        inLots.push({ ts: Date.parse(v.date) || 0, qty: q, unitCost: Math.max(0, Number(s.newHpp) || fallbackCost) });
+                        totalIn += q;
+                    }
+                    if (v.zeroCode === zeroCode) totalOut += q;
+                });
+            });
+
+            (appState.salesReturns || []).forEach(sr => {
+                normalizeOrderItems(sr).forEach(si => {
+                    if (si && si.code === zeroCode && (Number(si.qty) || 0) > 0) {
+                        const q = Number(si.qty) || 0;
+                        inLots.push({ ts: Date.parse(sr.date) || 0, qty: q, unitCost: fallbackCost });
+                        totalIn += q;
+                    }
+                });
+            });
+
+            (appState.transactions || []).forEach(t => {
+                const outs = Array.isArray(t && t.stockOut) && t.stockOut.length ? t.stockOut : (Array.isArray(t && t.items) ? t.items : []);
+                outs.forEach(x => { if (x && x.code === zeroCode) totalOut += Number(x.qty) || 0; });
+            });
+            (appState.purchaseReturns || []).forEach(pr => {
+                normalizeOrderItems(pr).forEach(x => { if (x && x.code === zeroCode) totalOut += Number(x.qty) || 0; });
+            });
+            (appState.serviceTickets || []).forEach(st => {
+                if (st && st.sparepartCode === zeroCode) totalOut += Number(st.sparepartQty) || 0;
+            });
+
+            inLots.sort((a, b) => a.ts - b.ts);
+            const openingQty = currentStock - (totalIn - totalOut);
+            const layers = [];
+            if (openingQty > 0) layers.push({ qty: openingQty, unitCost: fallbackCost });
+            inLots.forEach(l => layers.push({ qty: l.qty, unitCost: l.unitCost }));
+
+            let remOut = Math.max(0, totalOut);
+            while (remOut > 0 && layers.length > 0) {
+                const take = Math.min(layers[0].qty, remOut);
+                layers[0].qty -= take;
+                remOut -= take;
+                if (layers[0].qty <= 0) layers.shift();
+            }
+
+            let layerSum = layers.reduce((s, l) => s + l.qty, 0);
+            while (layerSum > currentStock && layers.length > 0) {
+                const cut = Math.min(layers[0].qty, layerSum - currentStock);
+                layers[0].qty -= cut;
+                layerSum -= cut;
+                if (layers[0].qty <= 0) layers.shift();
+            }
+            if (layerSum < currentStock) {
+                layers.push({ qty: currentStock - layerSum, unitCost: fallbackCost });
+            }
+            return layers;
+        }
+
+        function previewVoucherFifoAllocation(zeroCode, draftItems) {
+            const zeroIt = (appState.items || []).find(i => i.code === zeroCode);
+            const fallbackCost = Math.max(0, Number(zeroIt && zeroIt.cost) || 0);
+            const layers = buildZeroFifoLayers(zeroCode).map(l => ({ ...l }));
+
+            let totalQty = 0, totalInject = 0, totalZeroCost = 0, grandTotal = 0;
+            const allocated = (draftItems || []).map(row => {
+                const qty = Math.max(1, Number(row.qty) || 1);
+                const injectCost = Math.max(0, Number(row.injectCost) || 0);
+                let need = qty;
+                let zeroCost = 0;
+                while (need > 0 && layers.length > 0) {
+                    const take = Math.min(layers[0].qty, need);
+                    zeroCost += take * layers[0].unitCost;
+                    layers[0].qty -= take;
+                    need -= take;
+                    if (layers[0].qty <= 0) layers.shift();
+                }
+                if (need > 0) zeroCost += need * fallbackCost;
+
+                const zeroUnitCost = qty > 0 ? zeroCost / qty : fallbackCost;
+                const injectSub = qty * injectCost;
+                const subtotalModal = Math.round(zeroCost + injectSub);
+                const newHpp = Math.round(zeroUnitCost + injectCost);
+
+                totalQty += qty;
+                totalInject += injectSub;
+                totalZeroCost += zeroCost;
+                grandTotal += subtotalModal;
+
+                return {
+                    ...row,
+                    qty,
+                    injectCost,
+                    zeroUnitCost: Math.round(zeroUnitCost),
+                    zeroCost: Math.round(zeroCost),
+                    injectSub: Math.round(injectSub),
+                    newHpp,
+                    subtotalModal
+                };
+            });
+            return {
+                allocated,
+                remainingLayers: layers,
+                totalQty,
+                totalInject: Math.round(totalInject),
+                totalZeroCost: Math.round(totalZeroCost),
+                grandTotal: Math.round(grandTotal)
+            };
+        }
+
+        function updateVoucherHeaderInfo() {
+            const zeroCode = document.getElementById('vf-zero-item')?.value || '';
+            const srcWallet = document.getElementById('vf-source-wallet')?.value || '';
+            const zeroInfo = document.getElementById('vf-zero-info');
+            const walletInfo = document.getElementById('vf-wallet-info');
+
+            const zeroIt = (appState.items || []).find(i => i.code === zeroCode);
+            if (zeroInfo) {
+                if (zeroIt) {
+                    const layers = buildZeroFifoLayers(zeroCode);
+                    const fifoFront = layers.length ? layers[0].unitCost : (Number(zeroIt.cost) || 0);
+                    zeroInfo.textContent = `Stok tersedia: ${formatNum(zeroIt.stock)} ${zeroIt.unit || 'PCS'} • HPP FIFO Zero: Rp ${formatRp(fifoFront)}/PCS`;
+                } else {
+                    zeroInfo.textContent = '';
+                }
+            }
+            if (walletInfo) {
+                if (srcWallet && appState.wallets[srcWallet] !== undefined) {
+                    const bal = Number(appState.wallets[srcWallet]) || 0;
+                    walletInfo.textContent = `Saldo tersedia: Rp ${formatRp(bal)}`;
+                    walletInfo.className = `text-[10.5px] mt-0.5 font-mono ${bal < 0 ? 'text-red-700 font-bold' : 'text-slate-600'}`;
+                } else {
+                    walletInfo.textContent = '';
+                }
+            }
+        }
+
+        function syncVoucherCodeFromTarget() {
+            const targetSel = document.getElementById('vf-target-item');
+            const codeEl = document.getElementById('vf-target-code');
+            if (!targetSel || !codeEl) return;
+            codeEl.value = targetSel.value || '';
+        }
+
+        function syncVoucherTargetFromCode(fromEnter = false) {
+            const codeEl = document.getElementById('vf-target-code');
+            const targetSel = document.getElementById('vf-target-item');
+            if (!codeEl || !targetSel) return false;
+            const raw = codeEl.value.trim().toUpperCase();
+            if (!raw) return false;
+            const matched = (appState.items || []).find(i => String(i.code || '').trim().toUpperCase() === raw);
+            if (matched) {
+                targetSel.value = matched.code;
+                codeEl.value = matched.code;
+                if (fromEnter) document.getElementById('vf-qty')?.focus();
+                return true;
+            }
+            if (fromEnter) showToast(`Kode barang "${raw}" tidak ditemukan di Master Data.`, 'error');
+            return false;
+        }
+
+        function handleVoucherCodeKeydown(ev) {
+            if (ev.key === 'Enter') {
+                ev.preventDefault();
+                syncVoucherTargetFromCode(true);
+            }
+        }
+
+        function onVoucherZeroChanged() {
+            updateVoucherHeaderInfo();
+            renderVoucherDraftTable();
+        }
+
         function populateVoucherAssemblyForm() {
+            const noteEl = document.getElementById('vf-note-no');
             const zeroSel = document.getElementById('vf-zero-item');
             const targetSel = document.getElementById('vf-target-item');
             if (!zeroSel || !targetSel) return;
-            const opts = appState.items.map(i => `<option value="${esc(i.code)}">${esc(i.code)} - ${esc(i.name)} (Stok: ${i.stock})</option>`).join('');
+
+            if (noteEl) noteEl.value = generateRktNoteNo();
+            const prevZero = zeroSel.value;
+            const prevTarget = targetSel.value;
+            const opts = (appState.items || []).map(i => `<option value="${esc(i.code)}">${esc(i.code)} - ${esc(i.name)} (Stok: ${i.stock})</option>`).join('');
             zeroSel.innerHTML = opts;
             targetSel.innerHTML = opts;
-            if (appState.items.length > 1) targetSel.selectedIndex = 1;
+
+            if (prevZero && (appState.items || []).some(i => i.code === prevZero)) zeroSel.value = prevZero;
+            if (prevTarget && (appState.items || []).some(i => i.code === prevTarget)) targetSel.value = prevTarget;
+            else if (appState.items.length > 1) targetSel.selectedIndex = 1;
+
+            syncVoucherCodeFromTarget();
+            updateVoucherHeaderInfo();
+            renderVoucherDraftTable();
         }
 
-        async function submitVoucherAssembly(e) {
-            e.preventDefault();
-            const zeroCode = document.getElementById('vf-zero-item').value;
-            const targetCode = document.getElementById('vf-target-item').value;
-            const qty = Number(document.getElementById('vf-qty').value) || 1;
-            const injectCost = Number(document.getElementById('vf-inject-cost').value) || 0;
-            const srcWallet = document.getElementById('vf-source-wallet').value;
+        function addVoucherDraftItem() {
+            const codeEl = document.getElementById('vf-target-code');
+            if (codeEl && codeEl.value.trim()) {
+                const typed = codeEl.value.trim().toUpperCase();
+                const selVal = document.getElementById('vf-target-item')?.value || '';
+                if (typed !== selVal.toUpperCase()) {
+                    if (!syncVoucherTargetFromCode(false)) {
+                        showToast(`Kode barang "${typed}" tidak ditemukan.`, 'error');
+                        codeEl.focus();
+                        return;
+                    }
+                }
+            }
 
-            const zeroIt = appState.items.find(i => i.code === zeroCode);
-            const targetIt = appState.items.find(i => i.code === targetCode);
-            if (!zeroIt || !targetIt) return;
-            if (zeroIt.stock < qty) {
-                showToast(`Stok bahan baku ${zeroIt.name} tidak cukup!`, 'error');
+            const zeroCode = document.getElementById('vf-zero-item')?.value || '';
+            const targetCode = document.getElementById('vf-target-item')?.value || '';
+            const qty = Math.max(0, Math.floor(Number(document.getElementById('vf-qty')?.value) || 0));
+            const injectCost = Math.max(0, Number(document.getElementById('vf-inject-cost')?.value) || 0);
+
+            const targetIt = (appState.items || []).find(i => i.code === targetCode);
+            if (!targetIt) { showToast('Pilih produk voucher jadi terlebih dahulu!', 'error'); return; }
+            if (targetCode === zeroCode) { showToast('Produk tujuan tidak boleh sama dengan bahan baku Voucher Zero!', 'error'); return; }
+            if (qty <= 0) { showToast('Qty perakitan minimal 1 PCS!', 'error'); document.getElementById('vf-qty')?.focus(); return; }
+
+            const existingRow = vfDraftItems.find(x => x.targetCode === targetIt.code && x.injectCost === injectCost);
+            if (existingRow) {
+                existingRow.qty += qty;
+                existingRow.targetName = targetIt.name;
+            } else {
+                vfDraftItems.push({
+                    targetCode: targetIt.code,
+                    targetName: targetIt.name,
+                    qty,
+                    injectCost
+                });
+            }
+
+            renderVoucherDraftTable();
+            if (codeEl) { codeEl.value = ''; codeEl.focus(); }
+        }
+
+        function removeVoucherDraftItem(idx) {
+            vfDraftItems.splice(idx, 1);
+            renderVoucherDraftTable();
+        }
+
+        function renderVoucherDraftTable() {
+            const tbody = document.getElementById('vf-draft-tbody');
+            const zeroCode = document.getElementById('vf-zero-item')?.value || '';
+            const sim = previewVoucherFifoAllocation(zeroCode, vfDraftItems);
+
+            if (tbody) {
+                if (!sim.allocated.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-slate-400">Belum ada item di nota. Pilih produk lalu klik <b>+ Tambah Item</b>.</td></tr>';
+                } else {
+                    tbody.innerHTML = sim.allocated.map((it, idx) => `
+                        <tr>
+                            <td class="font-mono font-bold text-slate-700">${esc(it.targetCode)}</td>
+                            <td class="font-semibold">${esc(it.targetName)}</td>
+                            <td class="text-right font-mono font-bold">${formatNum(it.qty)}</td>
+                            <td class="text-right font-mono">${formatRp(it.injectCost)}</td>
+                            <td class="text-right font-mono font-bold text-cyan-900">${formatRp(it.subtotalModal)}</td>
+                            <td class="text-center">
+                                <button type="button" onclick="removeVoucherDraftItem(${idx})" class="text-red-600 hover:text-red-800 font-bold px-1.5" title="Hapus item">&times;</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            const qtyEl = document.getElementById('vf-total-qty');
+            const injEl = document.getElementById('vf-total-inject');
+            const totEl = document.getElementById('vf-grand-total');
+            if (qtyEl) qtyEl.textContent = `${formatNum(sim.totalQty)} PCS`;
+            if (injEl) injEl.textContent = `Rp ${formatRp(sim.totalInject)}`;
+            if (totEl) totEl.textContent = `Rp ${formatRp(sim.grandTotal)}`;
+        }
+
+        async function processVoucherAssembly() {
+            if (!vfDraftItems.length) {
+                showToast('Tambahkan minimal 1 item ke keranjang nota terlebih dahulu!', 'error');
                 return;
             }
 
-            const totalInject = qty * injectCost;
-            zeroIt.stock -= qty;
-            targetIt.stock += qty;
-            if (appState.wallets[srcWallet] !== undefined) appState.wallets[srcWallet] -= totalInject;
+            const zeroCode = document.getElementById('vf-zero-item')?.value || '';
+            const srcWallet = document.getElementById('vf-source-wallet')?.value || '';
+            const note = (document.getElementById('vf-note')?.value || '').trim();
+            const zeroIt = (appState.items || []).find(i => i.code === zeroCode);
+            if (!zeroIt) { showToast('Bahan baku Voucher Zero tidak ditemukan!', 'error'); return; }
 
-            const rktId = generateInvoiceId('RKT');
+            const sim = previewVoucherFifoAllocation(zeroCode, vfDraftItems);
+            if ((Number(zeroIt.stock) || 0) < sim.totalQty) {
+                showToast(`Stok bahan baku ${zeroIt.name} tidak cukup (tersedia ${formatNum(zeroIt.stock)} PCS, butuh ${formatNum(sim.totalQty)} PCS)!`, 'error');
+                return;
+            }
+            if (sim.totalInject > 0 && !confirmIfInsufficient(srcWallet, sim.totalInject)) return;
+
+            // Potong stok Zero secara FIFO & perbarui HPP aktif Voucher Zero dari lapisan FIFO berikutnya
+            zeroIt.stock = Math.max(0, (Number(zeroIt.stock) || 0) - sim.totalQty);
+            if (sim.remainingLayers.length > 0) {
+                zeroIt.cost = Math.round(sim.remainingLayers[0].unitCost);
+            }
+
+            // Potong saldo inject
+            if (appState.wallets[srcWallet] !== undefined) {
+                appState.wallets[srcWallet] -= sim.totalInject;
+            }
+
+            // Tambah stok masing-masing Voucher Jadi & perbarui HPP barunya (HPP FIFO Zero + Biaya Inject/PCS)
+            let rktId = (document.getElementById('vf-note-no')?.value || '').trim().toUpperCase();
+            if (!rktId || (appState.voucherProductions || []).some(v => v && v.id === rktId)) {
+                rktId = generateRktNoteNo();
+            }
             const nowIso = new Date().toISOString();
+            if (!Array.isArray(appState.stockLedger)) appState.stockLedger = [];
+
+            const savedItems = [];
+            sim.allocated.forEach(row => {
+                const targetIt = (appState.items || []).find(i => i.code === row.targetCode);
+                if (!targetIt) return;
+                targetIt.stock = (Number(targetIt.stock) || 0) + row.qty;
+                targetIt.cost = row.newHpp;
+                savedItems.push({
+                    targetCode: targetIt.code,
+                    targetName: targetIt.name,
+                    qty: row.qty,
+                    injectCost: row.injectCost,
+                    zeroUnitCost: row.zeroUnitCost,
+                    zeroCost: row.zeroCost,
+                    newHpp: row.newHpp,
+                    subtotalModal: row.subtotalModal
+                });
+                appState.stockLedger.unshift({
+                    date: nowIso,
+                    ref: rktId,
+                    code: targetIt.code,
+                    name: targetIt.name,
+                    type: 'PERAKITAN VOUCHER',
+                    inQty: row.qty,
+                    outQty: 0,
+                    balance: targetIt.stock
+                });
+            });
+
+            appState.stockLedger.unshift({
+                date: nowIso,
+                ref: rktId,
+                code: zeroIt.code,
+                name: zeroIt.name,
+                type: 'PERAKITAN VOUCHER',
+                inQty: 0,
+                outQty: sim.totalQty,
+                balance: zeroIt.stock
+            });
+
+            if (!Array.isArray(appState.voucherProductions)) appState.voucherProductions = [];
             appState.voucherProductions.unshift({
                 id: rktId,
                 date: nowIso,
                 zeroCode: zeroIt.code,
-                targetCode: targetIt.code,
-                targetName: targetIt.name,
-                qty,
-                totalModal: totalInject + (qty * zeroIt.cost)
+                zeroName: zeroIt.name,
+                sourceWallet: srcWallet,
+                note,
+                totalQty: sim.totalQty,
+                totalInject: sim.totalInject,
+                totalZeroCost: sim.totalZeroCost,
+                totalModal: sim.grandTotal,
+                items: savedItems
             });
-            if (!Array.isArray(appState.stockLedger)) appState.stockLedger = [];
-            appState.stockLedger.unshift({ date: nowIso, ref: rktId, code: zeroIt.code, name: zeroIt.name, type: 'PERAKITAN VOUCHER', inQty: 0, outQty: qty, balance: zeroIt.stock });
-            appState.stockLedger.unshift({ date: nowIso, ref: rktId, code: targetIt.code, name: targetIt.name, type: 'PERAKITAN VOUCHER', inQty: qty, outQty: 0, balance: targetIt.stock });
+
+            vfDraftItems = [];
+            const noteInput = document.getElementById('vf-note');
+            if (noteInput) noteInput.value = '';
+            const codeInput = document.getElementById('vf-target-code');
+            if (codeInput) codeInput.value = '';
 
             await saveAppState();
-            showToast(`Berhasil merakit ${qty} PCS ${targetIt.name}!`, 'success');
+            showToast(`Nota ${rktId} selesai! ${savedItems.length} jenis voucher (${formatNum(sim.totalQty)} PCS) berhasil dirakit.`, 'success');
+        }
+
+        function normalizeVoucherNote(v) {
+            if (!v) return null;
+            if (Array.isArray(v.items) && v.items.length) {
+                const totalQty = Number(v.totalQty) || v.items.reduce((s, x) => s + (Number(x.qty) || 0), 0);
+                const totalModal = Number(v.totalModal) || v.items.reduce((s, x) => s + (Number(x.subtotalModal) || 0), 0);
+                const totalInject = Number(v.totalInject) || v.items.reduce((s, x) => s + ((Number(x.qty) || 0) * (Number(x.injectCost) || 0)), 0);
+                return {
+                    id: v.id || '-',
+                    date: v.date || '',
+                    zeroCode: v.zeroCode || '',
+                    zeroName: v.zeroName || '',
+                    sourceWallet: v.sourceWallet || '',
+                    note: v.note || '',
+                    totalQty,
+                    totalInject,
+                    totalZeroCost: Number(v.totalZeroCost) || Math.max(0, totalModal - totalInject),
+                    totalModal,
+                    items: v.items
+                };
+            }
+            const qty = Number(v.qty) || 0;
+            const totalModal = Number(v.totalModal) || 0;
+            return {
+                id: v.id || 'RKT-LAMA',
+                date: v.date || '',
+                zeroCode: v.zeroCode || '',
+                zeroName: v.zeroName || '',
+                sourceWallet: v.sourceWallet || '',
+                note: v.note || '',
+                totalQty: qty,
+                totalInject: 0,
+                totalZeroCost: totalModal,
+                totalModal,
+                items: [{
+                    targetCode: v.targetCode || '-',
+                    targetName: v.targetName || '-',
+                    qty,
+                    injectCost: 0,
+                    zeroUnitCost: qty > 0 ? Math.round(totalModal / qty) : 0,
+                    zeroCost: totalModal,
+                    newHpp: qty > 0 ? Math.round(totalModal / qty) : 0,
+                    subtotalModal: totalModal
+                }]
+            };
         }
 
         function renderVoucherAssemblyHistory() {
             const tbody = document.getElementById('vf-history-tbody');
             if (!tbody) return;
-            tbody.innerHTML = (appState.voucherProductions || []).map(v => `
-                <tr>
-                    <td class="font-mono text-[11px]">${new Date(v.date).toLocaleString('id-ID')}</td>
-                    <td class="font-semibold">${esc(v.targetName)}</td>
-                    <td class="text-right font-mono font-bold">${v.qty}</td>
-                    <td class="text-right font-mono">${formatRp(v.totalModal)}</td>
-                </tr>
-            `).join('');
+            const list = appState.voucherProductions || [];
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">Belum ada riwayat perakitan voucher fisik.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map((raw, idx) => {
+                const v = normalizeVoucherNote(raw);
+                const summary = v.items.map(it => `${it.targetName || it.targetCode} (${formatNum(it.qty)})`).join(', ');
+                return `
+                    <tr>
+                        <td class="font-mono font-bold text-[11px] text-cyan-900 whitespace-nowrap">${esc(v.id)}</td>
+                        <td class="font-mono text-[10.5px] whitespace-nowrap">${v.date ? new Date(v.date).toLocaleString('id-ID') : '-'}</td>
+                        <td class="text-[11px]">
+                            <div class="font-semibold text-slate-800">${esc(summary)}</div>
+                            <div class="text-[10px] text-slate-500">${v.items.length} item &bull; Total ${formatNum(v.totalQty)} PCS</div>
+                        </td>
+                        <td class="text-right font-mono font-bold whitespace-nowrap">${formatRp(v.totalModal)}</td>
+                        <td class="text-[11px] text-slate-600">${esc(v.note || '-')}</td>
+                        <td class="text-center">
+                            <button type="button" onclick="openVoucherAssemblyDetail(${idx})" class="ipos-btn px-2 py-0.5 rounded text-[10.5px] font-bold text-cyan-800" title="Lihat Detail Nota">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openVoucherAssemblyDetail(idx) {
+            const raw = (appState.voucherProductions || [])[idx];
+            const v = normalizeVoucherNote(raw);
+            const body = document.getElementById('vf-detail-body');
+            if (!v || !body) return;
+            const zeroItem = (appState.items || []).find(i => i.code === v.zeroCode);
+            const zeroLabel = v.zeroCode ? `${v.zeroCode}${v.zeroName || zeroItem?.name ? ' - ' + (v.zeroName || zeroItem.name) : ''}` : '-';
+            const walletLabel = v.sourceWallet ? getWalletNameById(v.sourceWallet) : '-';
+
+            body.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 border border-slate-200 rounded p-2.5">
+                    <div><span class="text-slate-500">No. Nota:</span> <b class="font-mono text-cyan-900">${esc(v.id)}</b></div>
+                    <div><span class="text-slate-500">Waktu:</span> <b class="font-mono">${v.date ? new Date(v.date).toLocaleString('id-ID') : '-'}</b></div>
+                    <div><span class="text-slate-500">Voucher Zero:</span> <b>${esc(zeroLabel)}</b></div>
+                    <div><span class="text-slate-500">Sumber Saldo:</span> <b>${esc(walletLabel)}</b></div>
+                    <div class="sm:col-span-2"><span class="text-slate-500">Keterangan:</span> <b>${esc(v.note || '-')}</b></div>
+                </div>
+                <div class="overflow-x-auto border border-slate-300 rounded">
+                    <table class="w-full table-grid border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="text-left">Kode</th>
+                                <th class="text-left">Nama Voucher Jadi</th>
+                                <th class="text-right">Qty</th>
+                                <th class="text-right">HPP Zero</th>
+                                <th class="text-right">Biaya Inject</th>
+                                <th class="text-right">HPP Baru</th>
+                                <th class="text-right">Subtotal Modal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${v.items.map(it => `
+                                <tr>
+                                    <td class="font-mono font-bold">${esc(it.targetCode || '-')}</td>
+                                    <td class="font-semibold">${esc(it.targetName || '-')}</td>
+                                    <td class="text-right font-mono">${formatNum(it.qty)}</td>
+                                    <td class="text-right font-mono">${formatRp(it.zeroUnitCost || 0)}</td>
+                                    <td class="text-right font-mono">${formatRp(it.injectCost || 0)}</td>
+                                    <td class="text-right font-mono font-bold text-emerald-700">${formatRp(it.newHpp || 0)}</td>
+                                    <td class="text-right font-mono font-bold text-cyan-900">${formatRp(it.subtotalModal || 0)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid grid-cols-3 gap-2 bg-cyan-50 border border-cyan-200 rounded p-2.5 text-center">
+                    <div><div class="text-[10.5px] text-slate-600">Total Qty Zero</div><div class="font-mono font-extrabold">${formatNum(v.totalQty)} PCS</div></div>
+                    <div><div class="text-[10.5px] text-slate-600">Total Biaya Inject</div><div class="font-mono font-extrabold text-amber-700">Rp ${formatRp(v.totalInject)}</div></div>
+                    <div><div class="text-[10.5px] text-slate-600">Grand Total Modal</div><div class="font-mono font-extrabold text-cyan-900">Rp ${formatRp(v.totalModal)}</div></div>
+                </div>
+            `;
+            document.getElementById('vf-detail-modal')?.classList.remove('hidden');
         }
 
         async function submitMutasiSumberDana(e) {
@@ -14704,8 +15296,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (swRefreshing) return;
                 try {
-                    if (sessionStorage.getItem('donet_sw_reloaded_v19')) return;
-                    sessionStorage.setItem('donet_sw_reloaded_v19', '1');
+                    if (sessionStorage.getItem('donet_sw_reloaded_v20')) return;
+                    sessionStorage.setItem('donet_sw_reloaded_v20', '1');
                 } catch (_) {}
                 swRefreshing = true;
                 window.location.reload();
