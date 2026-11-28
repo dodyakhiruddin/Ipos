@@ -194,13 +194,13 @@
             }
         }
 
-        /* Hilangkan panah spinner input angka pada Perakitan Voucher Fisik */
-        #view-cetakvoucher input[type=number]::-webkit-inner-spin-button,
-        #view-cetakvoucher input[type=number]::-webkit-outer-spin-button {
+        /* Hilangkan panah spinner pada semua input angka */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        #view-cetakvoucher input[type=number] {
+        input[type=number] {
             -moz-appearance: textfield;
             appearance: textfield;
         }
@@ -1777,15 +1777,15 @@
                                 <div class="grid grid-cols-3 gap-2.5">
                                     <div>
                                         <label class="block font-bold mb-1">Modal / Pokok (Rp)</label>
-                                        <input type="text" inputmode="decimal" data-money id="ppob-modal-amount" oninput="recalcPpobProfit()" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
+                                        <input type="text" inputmode="decimal" data-money id="ppob-modal-amount" oninput="recalcPpobProfit('modal')" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold">
                                     </div>
                                     <div>
                                         <label class="block font-bold mb-1">Harga Jual / Total (Rp)</label>
-                                        <input type="text" inputmode="decimal" data-money id="ppob-sell-amount" oninput="recalcPpobProfit()" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
+                                        <input type="text" inputmode="decimal" data-money id="ppob-sell-amount" oninput="recalcPpobProfit('sell')" required class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-blue-800">
                                     </div>
                                     <div>
                                         <label class="block font-bold mb-1">Fee / Laba Bersih</label>
-                                        <div id="ppob-profit-preview" class="bg-emerald-50 border border-emerald-300 rounded px-2.5 py-1.5 font-mono font-extrabold text-emerald-700">0</div>
+                                        <input type="text" inputmode="decimal" data-money id="ppob-profit-preview" oninput="recalcPpobProfit('fee')" value="0" class="w-full bg-emerald-50 border border-emerald-300 rounded px-2.5 py-1.5 font-mono font-extrabold text-emerald-700 focus:outline-none focus:border-emerald-600">
                                     </div>
                                 </div>
                                 <div id="ppob-accounting-info" class="bg-sky-50 border border-sky-200 rounded p-2 text-[11px] text-sky-900"></div>
@@ -1990,7 +1990,7 @@
                             <!-- 4. Riwayat Nota Perakitan -->
                             <div class="lg:col-span-5 space-y-2">
                                 <div class="font-bold text-slate-700">Riwayat Nota Perakitan Voucher Fisik</div>
-                                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-[540px]">
+                                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-[480px]">
                                     <table class="w-full table-grid border-collapse">
                                         <thead>
                                             <tr>
@@ -2004,6 +2004,28 @@
                                         </thead>
                                         <tbody id="vf-history-tbody"></tbody>
                                     </table>
+                                </div>
+                                <div class="flex flex-wrap items-center justify-between gap-2 border border-slate-300 bg-slate-50 rounded p-2">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <button type="button" onclick="openSelectedVoucherDetail()" class="ipos-btn px-2.5 py-1 rounded font-bold text-cyan-900 shadow-sm flex items-center gap-1">
+                                            <i class="fas fa-eye"></i> Detail
+                                        </button>
+                                        <button type="button" onclick="openSelectedVoucherEdit()" class="ipos-btn px-2.5 py-1 rounded font-bold text-sky-800 shadow-sm flex items-center gap-1">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button type="button" onclick="deleteSelectedVoucherAssembly()" class="ipos-btn-danger px-2.5 py-1 rounded font-bold shadow-sm flex items-center gap-1">
+                                            <i class="fas fa-trash-alt"></i> Hapus
+                                        </button>
+                                        <button type="button" onclick="printSelectedVoucherAssembly()" class="ipos-btn px-2.5 py-1 rounded font-bold text-emerald-800 shadow-sm flex items-center gap-1">
+                                            <i class="fas fa-print"></i> Cetak
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[11px] text-slate-600">Terpilih: <b id="selected-vf-label" class="font-mono text-cyan-900">Belum ada yang dipilih</b></span>
+                                        <button type="button" onclick="closeCurrentTab()" class="ipos-btn px-2.5 py-1 rounded font-bold text-slate-700 shadow-sm">
+                                            <i class="fas fa-times mr-1"></i> Tutup
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2633,17 +2655,21 @@ alter table donet_cell_state disable row level security;</div>
                 <div class="bg-amber-50/80 border border-amber-200 rounded p-2.5 space-y-2">
                     <div class="font-bold text-amber-950"><i class="fas fa-cart-plus mr-1"></i> Tambah Produk ke Daftar Pesanan (PO):</div>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                        <div class="sm:col-span-6">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold mb-0.5">Kode Barang</label>
+                            <input type="text" id="po-form-code" placeholder="Kode + Enter" autocomplete="off" onkeydown="handleTxItemCodeKeydown(event, 'po')" onblur="syncTxItemFromCode('po', false)" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold uppercase">
+                        </div>
+                        <div class="sm:col-span-4">
                             <label class="block text-[11px] font-semibold mb-0.5">Pilih Barang</label>
                             <select id="po-form-item" onchange="syncPoItemCost()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-semibold"></select>
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Qty</label>
-                            <input type="number" id="po-form-qty" min="1" value="10" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="number" id="po-form-qty" min="1" value="10" onkeydown="if(event.key==='Enter'){event.preventDefault();addPoDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Est. Harga (Rp)</label>
-                            <input type="text" inputmode="decimal" data-money id="po-form-cost" data-min="0" value="10000" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="text" inputmode="decimal" data-money id="po-form-cost" data-min="0" value="10000" onkeydown="if(event.key==='Enter'){event.preventDefault();addPoDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <button type="button" onclick="addPoDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
@@ -2746,17 +2772,21 @@ alter table donet_cell_state disable row level security;</div>
                 <div class="bg-indigo-50/80 border border-indigo-200 rounded p-2.5 space-y-2">
                     <div class="font-bold text-indigo-950"><i class="fas fa-cart-plus mr-1"></i> Tambah Produk ke Faktur Pembelian:</div>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                        <div class="sm:col-span-6">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold mb-0.5">Kode Barang</label>
+                            <input type="text" id="buy-item-code" placeholder="Kode + Enter" autocomplete="off" onkeydown="handleTxItemCodeKeydown(event, 'buy')" onblur="syncTxItemFromCode('buy', false)" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold uppercase">
+                        </div>
+                        <div class="sm:col-span-4">
                             <label class="block text-[11px] font-semibold mb-0.5">Pilih Item Barang</label>
                             <select id="buy-item-select" onchange="syncPurchaseItemCost()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-semibold"></select>
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Qty Masuk</label>
-                            <input type="number" id="buy-item-qty" min="1" value="10" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="number" id="buy-item-qty" min="1" value="10" onkeydown="if(event.key==='Enter'){event.preventDefault();addPurchaseDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Harga Beli (Rp)</label>
-                            <input type="text" inputmode="decimal" data-money id="buy-item-cost" data-min="0" value="18000" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="text" inputmode="decimal" data-money id="buy-item-cost" data-min="0" value="18000" onkeydown="if(event.key==='Enter'){event.preventDefault();addPurchaseDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <button type="button" onclick="addPurchaseDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
@@ -3324,14 +3354,20 @@ alter table donet_cell_state disable row level security;</div>
                     </div>
                     <div class="text-[11px] text-slate-600">Keluhan: <span id="sc-display-issue">-</span></div>
                 </div>
-                <div>
-                    <label class="block font-bold mb-1">Sparepart Terpakai (Opsional)</label>
-                    <select id="sc-sparepart-item" onchange="recalcServiceCompletion()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                    <div class="sm:col-span-4">
+                        <label class="block font-bold mb-1">Kode Barang</label>
+                        <input type="text" id="sc-sparepart-code" placeholder="Kode + Enter" autocomplete="off" onkeydown="handleTxItemCodeKeydown(event, 'service')" onblur="syncTxItemFromCode('service', false)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold uppercase">
+                    </div>
+                    <div class="sm:col-span-8">
+                        <label class="block font-bold mb-1">Sparepart Terpakai (Opsional)</label>
+                        <select id="sc-sparepart-item" onchange="onServiceSparepartChanged()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                    </div>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="block font-bold mb-1">Qty Part</label>
-                        <input type="number" id="sc-sparepart-qty" min="0" value="0" oninput="recalcServiceCompletion()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold">
+                        <input type="number" id="sc-sparepart-qty" min="0" value="0" oninput="onServiceSparepartQtyChanged()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold">
                     </div>
                     <div>
                         <label class="block font-bold mb-1">Modal Part (Rp)</label>
@@ -3702,17 +3738,21 @@ alter table donet_cell_state disable row level security;</div>
                 <div class="bg-amber-50/80 border border-amber-200 rounded p-2.5 space-y-2">
                     <div class="font-bold text-amber-950"><i class="fas fa-cart-plus mr-1"></i> Tambah Produk ke Daftar Pesanan (SO):</div>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                        <div class="sm:col-span-6">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold mb-0.5">Kode Barang</label>
+                            <input type="text" id="so-form-code" placeholder="Kode + Enter" autocomplete="off" onkeydown="handleTxItemCodeKeydown(event, 'so')" onblur="syncTxItemFromCode('so', false)" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold uppercase">
+                        </div>
+                        <div class="sm:col-span-4">
                             <label class="block text-[11px] font-semibold mb-0.5">Pilih Barang</label>
                             <select id="so-form-item" onchange="syncSoItemPrice()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-semibold"></select>
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Qty</label>
-                            <input type="number" id="so-form-qty" min="1" value="1" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="number" id="so-form-qty" min="1" value="1" onkeydown="if(event.key==='Enter'){event.preventDefault();addSoDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Harga Jual (Rp)</label>
-                            <input type="text" inputmode="decimal" data-money id="so-form-price" data-min="0" value="0" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="text" inputmode="decimal" data-money id="so-form-price" data-min="0" value="0" onkeydown="if(event.key==='Enter'){event.preventDefault();addSoDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <button type="button" onclick="addSoDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
@@ -3816,17 +3856,21 @@ alter table donet_cell_state disable row level security;</div>
                 <div class="bg-emerald-50/80 border border-emerald-200 rounded p-2.5 space-y-2">
                     <div class="font-bold text-emerald-950"><i class="fas fa-cart-plus mr-1"></i> Tambah Produk ke Faktur Penjualan:</div>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                        <div class="sm:col-span-6">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold mb-0.5">Kode Barang</label>
+                            <input type="text" id="sale-form-code" placeholder="Kode + Enter" autocomplete="off" onkeydown="handleTxItemCodeKeydown(event, 'sale')" onblur="syncTxItemFromCode('sale', false)" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold uppercase">
+                        </div>
+                        <div class="sm:col-span-4">
                             <label class="block text-[11px] font-semibold mb-0.5">Pilih Item Barang</label>
                             <select id="sale-form-item" onchange="syncSaleItemPrice()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-semibold"></select>
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Qty Keluar</label>
-                            <input type="number" id="sale-form-qty" min="1" value="1" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="number" id="sale-form-qty" min="1" value="1" onkeydown="if(event.key==='Enter'){event.preventDefault();addSaleDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-semibold mb-0.5">Harga Jual (Rp)</label>
-                            <input type="text" inputmode="decimal" data-money id="sale-form-price" data-min="0" value="0" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                            <input type="text" inputmode="decimal" data-money id="sale-form-price" data-min="0" value="0" onkeydown="if(event.key==='Enter'){event.preventDefault();addSaleDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
                         </div>
                         <div class="sm:col-span-2">
                             <button type="button" onclick="addSaleDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
@@ -3934,8 +3978,121 @@ alter table donet_cell_state disable row level security;</div>
                 <button type="button" onclick="closeModal('vf-detail-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
             </div>
             <div id="vf-detail-body" class="p-4 text-xs space-y-3 max-h-[75vh] overflow-y-auto"></div>
-            <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+            <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center gap-2">
+                <button type="button" id="vf-detail-print-btn" onclick="printVoucherAssemblyByIndex(selectedVfIndex)" class="ipos-btn px-3 py-1.5 rounded text-xs font-bold text-emerald-800">
+                    <i class="fas fa-print mr-1"></i> Cetak
+                </button>
                 <button type="button" onclick="closeModal('vf-detail-modal')" class="ipos-btn px-4 py-1.5 rounded text-xs font-bold">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL EDIT NOTA PERAKITAN VOUCHER ==================== -->
+    <div id="vf-edit-modal" class="fixed inset-0 bg-slate-900/55 z-50 hidden flex items-center justify-center p-3">
+        <div class="ipos-panel rounded-lg w-full max-w-3xl overflow-hidden shadow-2xl">
+            <div class="ipos-panel-header px-4 py-2.5 flex items-center justify-between bg-cyan-50">
+                <span class="font-bold text-xs sm:text-sm text-cyan-950">
+                    <i class="fas fa-edit mr-1.5 text-cyan-700"></i> Edit Perakitan : <span id="vfe-title-note" class="font-mono">-</span>
+                </span>
+                <button type="button" onclick="closeModal('vf-edit-modal')" class="text-slate-500 hover:text-red-600 font-bold px-2">&times;</button>
+            </div>
+            <div class="p-4 space-y-3 text-xs max-h-[82vh] overflow-y-auto">
+                <input type="hidden" id="vfe-edit-index" value="-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-slate-50 border border-slate-200 rounded p-2.5">
+                    <div>
+                        <label class="block font-bold mb-1">No. Nota Perakitan (Terkunci)</label>
+                        <input type="text" id="vfe-note-no" readonly class="w-full bg-slate-100 border border-slate-300 rounded px-2.5 py-1.5 font-mono font-bold text-cyan-900 uppercase">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Sumber Saldo Inject</label>
+                        <select id="vfe-source-wallet" onchange="updateVoucherEditHeaderInfo()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                        <div id="vfe-wallet-info" class="text-[10.5px] text-slate-600 mt-0.5 font-mono"></div>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block font-bold mb-1">Bahan Baku Voucher Zero (Kosong)</label>
+                        <select id="vfe-zero-item" onchange="onVoucherEditZeroChanged()" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold"></select>
+                        <div id="vfe-zero-info" class="text-[10.5px] text-cyan-900 mt-0.5 font-mono font-semibold"></div>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block font-bold mb-1">Keterangan / Catatan</label>
+                        <input type="text" id="vfe-note" placeholder="Keterangan nota perakitan..." class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5">
+                    </div>
+                </div>
+
+                <div class="bg-white border border-cyan-200 rounded p-2.5 space-y-2">
+                    <div class="font-bold text-cyan-900">Tambah Item Voucher Jadi ke Nota:</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                        <div class="sm:col-span-3">
+                            <label class="block text-[11px] font-semibold mb-0.5">Kode Barang</label>
+                            <input type="text" id="vfe-target-code" placeholder="Kode + Enter" autocomplete="off" onkeydown="handleVoucherEditCodeKeydown(event)" onblur="syncVoucherEditTargetFromCode(false)" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold uppercase">
+                        </div>
+                        <div class="sm:col-span-4">
+                            <label class="block text-[11px] font-semibold mb-0.5">Produk Voucher Jadi</label>
+                            <select id="vfe-target-item" onchange="syncVoucherEditCodeFromTarget()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-semibold"></select>
+                        </div>
+                        <div class="sm:col-span-1">
+                            <label class="block text-[11px] font-semibold mb-0.5">Qty</label>
+                            <input type="number" id="vfe-qty" min="1" step="1" value="5" onkeydown="if(event.key==='Enter'){event.preventDefault();addVoucherEditDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold mb-0.5">Inject / PCS</label>
+                            <input type="text" inputmode="decimal" data-money id="vfe-inject-cost" data-min="0" value="18000" onkeydown="if(event.key==='Enter'){event.preventDefault();addVoucherEditDraftItem();}" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono font-bold">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="button" onclick="addVoucherEditDraftItem()" class="w-full ipos-btn-success py-1.5 px-2 rounded font-bold shadow-sm">
+                                <i class="fas fa-plus mr-1"></i> Tambah
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-300 rounded bg-white max-h-56">
+                    <table class="w-full table-grid border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="text-left">Kode</th>
+                                <th class="text-left">Nama Voucher Jadi</th>
+                                <th class="text-center w-20">Qty</th>
+                                <th class="text-right w-28">Biaya Inject</th>
+                                <th class="text-right">HPP Baru</th>
+                                <th class="text-right">Subtotal Modal</th>
+                                <th class="text-center w-12">Hps</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vfe-draft-tbody"></tbody>
+                    </table>
+                </div>
+
+                <div class="bg-cyan-50 border border-cyan-200 rounded p-2.5 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                        <div class="text-[10.5px] text-slate-600 font-semibold">Total Qty Zero</div>
+                        <div id="vfe-total-qty" class="font-mono font-extrabold text-slate-800 text-xs sm:text-sm">0 PCS</div>
+                    </div>
+                    <div>
+                        <div class="text-[10.5px] text-slate-600 font-semibold">Total Biaya Inject</div>
+                        <div id="vfe-total-inject" class="font-mono font-extrabold text-amber-700 text-xs sm:text-sm">Rp 0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10.5px] text-slate-600 font-semibold">Grand Total Modal</div>
+                        <div id="vfe-grand-total" class="font-mono font-extrabold text-cyan-900 text-xs sm:text-sm">Rp 0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="deleteVoucherAssemblyByIndex(Number(document.getElementById('vfe-edit-index').value), true)" class="ipos-btn-danger px-3 py-1.5 rounded font-bold shadow-sm">
+                        <i class="fas fa-trash-alt mr-1"></i> Hapus
+                    </button>
+                    <button type="button" onclick="printVoucherAssemblyByIndex(Number(document.getElementById('vfe-edit-index').value))" class="ipos-btn px-3 py-1.5 rounded font-bold text-emerald-800 shadow-sm">
+                        <i class="fas fa-print mr-1"></i> Cetak
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeModal('vf-edit-modal')" class="ipos-btn px-3 py-1.5 rounded font-semibold">Tutup</button>
+                    <button type="button" onclick="saveVoucherAssemblyEdit()" class="ipos-btn-primary px-4 py-1.5 rounded font-bold shadow">
+                        <i class="fas fa-save mr-1"></i> Simpan
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -7457,6 +7614,7 @@ alter table donet_cell_state disable row level security;</div>
             syncSelect('ppob-source-wallet');
             syncSelect('ppob-dest-wallet', '', '<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>');
             syncSelect('vf-source-wallet');
+            syncSelect('vfe-source-wallet');
             syncSelect('sc-dest-wallet', '', '<option value="PIUTANG_TEMPO">TEMPO / KASBON (MASUK PIUTANG)</option>');
             syncSelect('dp-wallet-select');
             syncSelect('ret-form-wallet', '', '<option value="POTONG_UTANG">Potong Utang Supplier (Tanpa Kas Masuk)</option>');
@@ -9133,7 +9291,61 @@ alter table donet_cell_state disable row level security;</div>
             document.getElementById('po-draft-grand-total').textContent = formatRp(grandTotal);
         }
 
+        function syncTxCodeFromSelect(selectId, codeId) {
+            const sel = document.getElementById(selectId);
+            const codeEl = document.getElementById(codeId);
+            if (!sel || !codeEl) return;
+            codeEl.value = sel.value || '';
+        }
+
+        function syncTxItemFromCode(kind, fromEnter = false) {
+            const cfgMap = {
+                po:      { codeId: 'po-form-code',      selectId: 'po-form-item',      qtyId: 'po-form-qty',      allowEmpty: false, onMatch: syncPoItemCost },
+                buy:     { codeId: 'buy-item-code',     selectId: 'buy-item-select',   qtyId: 'buy-item-qty',     allowEmpty: false, onMatch: syncPurchaseItemCost },
+                so:      { codeId: 'so-form-code',      selectId: 'so-form-item',      qtyId: 'so-form-qty',      allowEmpty: false, onMatch: syncSoItemPrice },
+                sale:    { codeId: 'sale-form-code',    selectId: 'sale-form-item',    qtyId: 'sale-form-qty',    allowEmpty: false, onMatch: syncSaleItemPrice },
+                service: { codeId: 'sc-sparepart-code', selectId: 'sc-sparepart-item', qtyId: 'sc-sparepart-qty', allowEmpty: true,  onMatch: onServiceSparepartChanged }
+            };
+            const cfg = cfgMap[kind];
+            if (!cfg) return false;
+            const codeEl = document.getElementById(cfg.codeId);
+            const selEl = document.getElementById(cfg.selectId);
+            if (!codeEl || !selEl) return false;
+            const raw = codeEl.value.trim().toUpperCase();
+            if (!raw) {
+                if (cfg.allowEmpty && selEl.value !== '') {
+                    selEl.value = '';
+                    cfg.onMatch?.();
+                }
+                return cfg.allowEmpty;
+            }
+            const matched = (appState.items || []).find(i => String(i.code || '').trim().toUpperCase() === raw);
+            if (matched) {
+                selEl.value = matched.code;
+                codeEl.value = matched.code;
+                cfg.onMatch?.();
+                if (fromEnter && cfg.qtyId) {
+                    const q = document.getElementById(cfg.qtyId);
+                    if (q) { q.focus(); q.select?.(); }
+                }
+                return true;
+            }
+            if (fromEnter) showToast(`Kode barang "${raw}" tidak ditemukan di Master Data.`, 'error');
+            return false;
+        }
+
+        function handleTxItemCodeKeydown(ev, kind) {
+            if (ev.key === 'Enter') {
+                ev.preventDefault();
+                syncTxItemFromCode(kind, true);
+            }
+        }
+
         function addPoDraftItem() {
+            const codeEl = document.getElementById('po-form-code');
+            if (codeEl && codeEl.value.trim() && codeEl.value.trim().toUpperCase() !== (document.getElementById('po-form-item')?.value || '').toUpperCase()) {
+                if (!syncTxItemFromCode('po', false)) { showToast(`Kode barang "${codeEl.value.trim().toUpperCase()}" tidak ditemukan.`, 'error'); codeEl.focus(); return; }
+            }
             const code = document.getElementById('po-form-item').value;
             const qty = Math.max(1, Number(document.getElementById('po-form-qty').value) || 1);
             const cost = Math.max(0, Number(document.getElementById('po-form-cost').value) || 0);
@@ -9155,6 +9367,7 @@ alter table donet_cell_state disable row level security;</div>
                 });
             }
             renderPoDraftItemsTable();
+            if (codeEl) { codeEl.focus(); codeEl.select?.(); }
         }
 
         function updatePoDraftItem(idx, field, val) {
@@ -9172,6 +9385,7 @@ alter table donet_cell_state disable row level security;</div>
 
         function syncPoItemCost() {
             const code = document.getElementById('po-form-item')?.value;
+            syncTxCodeFromSelect('po-form-item', 'po-form-code');
             const it = appState.items.find(x => x.code === code);
             if (it) document.getElementById('po-form-cost').value = it.cost || 0;
         }
@@ -9188,6 +9402,7 @@ alter table donet_cell_state disable row level security;</div>
                 document.getElementById('po-form-supplier').value = p.supplier;
                 document.getElementById('po-form-note').value = p.note || '';
                 poDraftItems = JSON.parse(JSON.stringify(normalizeOrderItems(p)));
+                syncPoItemCost();
             } else {
                 document.getElementById('po-modal-title').innerHTML = `<i class="fas fa-clipboard-list mr-1.5 text-amber-600"></i> Tambah Pesanan Pembelian (PO)`;
                 document.getElementById('po-form-no').value = generateInvoiceId('PO');
@@ -9443,6 +9658,10 @@ alter table donet_cell_state disable row level security;</div>
         }
 
         function addPurchaseDraftItem() {
+            const codeEl = document.getElementById('buy-item-code');
+            if (codeEl && codeEl.value.trim() && codeEl.value.trim().toUpperCase() !== (document.getElementById('buy-item-select')?.value || '').toUpperCase()) {
+                if (!syncTxItemFromCode('buy', false)) { showToast(`Kode barang "${codeEl.value.trim().toUpperCase()}" tidak ditemukan.`, 'error'); codeEl.focus(); return; }
+            }
             const code = document.getElementById('buy-item-select').value;
             const qty = Math.max(1, Number(document.getElementById('buy-item-qty').value) || 1);
             const cost = Math.max(0, Number(document.getElementById('buy-item-cost').value) || 0);
@@ -9464,6 +9683,7 @@ alter table donet_cell_state disable row level security;</div>
                 });
             }
             renderPurchaseDraftItemsTable();
+            if (codeEl) { codeEl.focus(); codeEl.select?.(); }
         }
 
         function updatePurchaseDraftItem(idx, field, val) {
@@ -9497,6 +9717,7 @@ alter table donet_cell_state disable row level security;</div>
 
         function syncPurchaseItemCost() {
             const code = document.getElementById('buy-item-select')?.value;
+            syncTxCodeFromSelect('buy-item-select', 'buy-item-code');
             const it = appState.items.find(x => x.code === code);
             if (it) document.getElementById('buy-item-cost').value = it.cost || 0;
         }
@@ -9516,6 +9737,7 @@ alter table donet_cell_state disable row level security;</div>
                 document.getElementById('buy-due-date').value = p.dueDate || '';
                 document.getElementById('buy-linked-po-id').value = p.poRef || '';
                 purchaseDraftItems = JSON.parse(JSON.stringify(normalizeOrderItems(p)));
+                syncPurchaseItemCost();
             } else {
                 document.getElementById('purchase-modal-title').innerHTML = `<i class="fas fa-file-invoice mr-1.5 text-indigo-600"></i> Tambah Transaksi Pembelian`;
                 document.getElementById('buy-form-no').value = generateInvoiceId('BLI');
@@ -11037,6 +11259,10 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         function addSoDraftItem() {
+            const codeEl = document.getElementById('so-form-code');
+            if (codeEl && codeEl.value.trim() && codeEl.value.trim().toUpperCase() !== (document.getElementById('so-form-item')?.value || '').toUpperCase()) {
+                if (!syncTxItemFromCode('so', false)) { showToast(`Kode barang "${codeEl.value.trim().toUpperCase()}" tidak ditemukan.`, 'error'); codeEl.focus(); return; }
+            }
             const code = document.getElementById('so-form-item').value;
             const qty = Math.max(1, Number(document.getElementById('so-form-qty').value) || 1);
             const price = Math.max(0, Number(document.getElementById('so-form-price').value) || 0);
@@ -11051,6 +11277,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 soDraftItems.push({ code: master.code, name: master.name, qty, price, subtotal: qty * price });
             }
             renderSoDraftItemsTable();
+            if (codeEl) { codeEl.focus(); codeEl.select?.(); }
         }
 
         function updateSoDraftItem(idx, field, val) {
@@ -11068,6 +11295,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
 
         function syncSoItemPrice() {
             const code = document.getElementById('so-form-item')?.value;
+            syncTxCodeFromSelect('so-form-item', 'so-form-code');
             const it = appState.items.find(x => x.code === code);
             if (it) document.getElementById('so-form-price').value = getItemPriceForCustomer(it, document.getElementById('so-form-customer')?.value);
         }
@@ -11085,6 +11313,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 document.getElementById('so-form-customer').value = p.customer;
                 document.getElementById('so-form-note').value = p.note || '';
                 soDraftItems = JSON.parse(JSON.stringify(normalizeSalesItems(p)));
+                syncSoItemPrice();
             } else {
                 document.getElementById('so-modal-title').innerHTML = `<i class="fas fa-clipboard-list mr-1.5 text-amber-600"></i> Tambah Pesanan Penjualan (SO)`;
                 document.getElementById('so-form-no').value = generateInvoiceId('SO');
@@ -11330,6 +11559,10 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         function addSaleDraftItem() {
+            const codeEl = document.getElementById('sale-form-code');
+            if (codeEl && codeEl.value.trim() && codeEl.value.trim().toUpperCase() !== (document.getElementById('sale-form-item')?.value || '').toUpperCase()) {
+                if (!syncTxItemFromCode('sale', false)) { showToast(`Kode barang "${codeEl.value.trim().toUpperCase()}" tidak ditemukan.`, 'error'); codeEl.focus(); return; }
+            }
             const code = document.getElementById('sale-form-item').value;
             const qty = Math.max(1, Number(document.getElementById('sale-form-qty').value) || 1);
             const price = Math.max(0, Number(document.getElementById('sale-form-price').value) || 0);
@@ -11344,6 +11577,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 saleDraftItems.push({ code: master.code, name: master.name, qty, price, subtotal: qty * price, cost: Number(master.cost) || 0 });
             }
             renderSaleDraftItemsTable();
+            if (codeEl) { codeEl.focus(); codeEl.select?.(); }
         }
 
         function updateSaleDraftItem(idx, field, val) {
@@ -11361,6 +11595,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
 
         function syncSaleItemPrice() {
             const code = document.getElementById('sale-form-item')?.value;
+            syncTxCodeFromSelect('sale-form-item', 'sale-form-code');
             const it = appState.items.find(x => x.code === code);
             if (it) document.getElementById('sale-form-price').value = getItemPriceForCustomer(it, document.getElementById('sale-form-customer')?.value);
         }
@@ -11382,6 +11617,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 return it;
             });
             renderSaleDraftItemsTable();
+            syncSaleItemPrice();
             showToast(`Data Pesanan ${so.id} (${saleDraftItems.length} produk) berhasil dimuat ke Faktur Penjualan!`, 'success');
         }
 
@@ -11405,6 +11641,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 document.getElementById('sale-due-date').value = debt ? (debt.dueDate || '') : '';
                 document.getElementById('sale-linked-so-id').value = t.soRef || '';
                 saleDraftItems = JSON.parse(JSON.stringify(normalizeSalesItems(t)));
+                syncSaleItemPrice();
             } else {
                 document.getElementById('sale-modal-title').innerHTML = `<i class="fas fa-file-invoice-dollar mr-1.5 text-emerald-600"></i> Tambah Transaksi Penjualan`;
                 document.getElementById('sale-form-no').value = generateInvoiceId('JUA');
@@ -12006,25 +12243,59 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             if (typeof renderDesktopRibbon === 'function') renderDesktopRibbon();
         }
 
+        let ppobCalcDriver = 'sell';
+
         function applyPpobPreset(mode, idx) {
             const pr = PPOB_CONFIG[mode]?.presets[idx];
             if (!pr) return;
+            ppobCalcDriver = 'sell';
             document.getElementById('ppob-product-desc').value = pr.desc;
             document.getElementById('ppob-modal-amount').value = pr.modal;
             document.getElementById('ppob-sell-amount').value = pr.sell;
-            recalcPpobProfit();
+            recalcPpobProfit('sell');
         }
 
         function autoFillPpobPreset() {
             recalcPpobProfit();
         }
 
-        function recalcPpobProfit() {
-            const modal = Number(document.getElementById('ppob-modal-amount')?.value) || 0;
-            const sell = Number(document.getElementById('ppob-sell-amount')?.value) || 0;
-            const profit = sell - modal;
-            const prevEl = document.getElementById('ppob-profit-preview');
-            if (prevEl) prevEl.textContent = formatRp(profit);
+        function recalcPpobProfit(source = 'auto') {
+            const modalEl = document.getElementById('ppob-modal-amount');
+            const sellEl = document.getElementById('ppob-sell-amount');
+            const feeEl = document.getElementById('ppob-profit-preview');
+            const modal = Number(modalEl?.value) || 0;
+            let sell = Number(sellEl?.value) || 0;
+            let profit = Number(feeEl?.value) || 0;
+
+            if (source === 'fee') {
+                ppobCalcDriver = 'fee';
+                sell = modal + profit;
+                if (sellEl) sellEl.value = sell;
+            } else if (source === 'sell') {
+                ppobCalcDriver = 'sell';
+                profit = sell - modal;
+                if (feeEl) feeEl.value = profit;
+            } else if (source === 'modal') {
+                if (ppobCalcDriver === 'fee') {
+                    sell = modal + profit;
+                    if (sellEl) sellEl.value = sell;
+                } else {
+                    profit = sell - modal;
+                    if (feeEl) feeEl.value = profit;
+                }
+            } else {
+                profit = sell - modal;
+                if (feeEl) feeEl.value = profit;
+            }
+
+            if (feeEl) {
+                feeEl.className = `w-full border rounded px-2.5 py-1.5 font-mono font-extrabold focus:outline-none ${
+                    profit < 0
+                        ? 'bg-red-50 border-red-300 text-red-700 focus:border-red-600'
+                        : 'bg-emerald-50 border-emerald-300 text-emerald-700 focus:border-emerald-600'
+                }`;
+            }
+
             const infoEl = document.getElementById('ppob-accounting-info');
             if (infoEl) {
                 const src = getWalletNameById(document.getElementById('ppob-source-wallet')?.value);
@@ -12279,6 +12550,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             const partSel = document.getElementById('sc-sparepart-item');
             partSel.innerHTML = `<option value="">-- Tanpa Sparepart Fisik (Jasa Saja) --</option>` +
                 appState.items.map(it => `<option value="${esc(it.code)}">${esc(it.code)} - ${esc(it.name)} (Stok: ${it.stock} | HPP: ${formatRp(it.cost)})</option>`).join('');
+            const partCodeEl = document.getElementById('sc-sparepart-code');
+            if (partCodeEl) partCodeEl.value = '';
             document.getElementById('sc-sparepart-qty').value = 0;
             document.getElementById('sc-modal-cost').value = 0;
             document.getElementById('sc-service-price').value = 0;
@@ -12291,13 +12564,32 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             document.getElementById('sc-due-date-box')?.classList.toggle('hidden', w !== 'PIUTANG_TEMPO');
         }
 
-        function recalcServiceCompletion() {
-            const code = document.getElementById('sc-sparepart-item')?.value;
-            const qty = Number(document.getElementById('sc-sparepart-qty')?.value) || 0;
-            if (code && qty > 0) {
-                const it = appState.items.find(x => x.code === code);
-                if (it) document.getElementById('sc-modal-cost').value = it.cost * qty;
+        function onServiceSparepartChanged() {
+            const code = document.getElementById('sc-sparepart-item')?.value || '';
+            syncTxCodeFromSelect('sc-sparepart-item', 'sc-sparepart-code');
+            const qtyEl = document.getElementById('sc-sparepart-qty');
+            if (!code) {
+                if (qtyEl) qtyEl.value = 0;
+                document.getElementById('sc-modal-cost').value = 0;
+                recalcServiceCompletion();
+                return;
             }
+            const curQty = Number(qtyEl?.value) || 0;
+            if (qtyEl && curQty <= 0) qtyEl.value = 1;
+            onServiceSparepartQtyChanged();
+        }
+
+        function onServiceSparepartQtyChanged() {
+            const code = document.getElementById('sc-sparepart-item')?.value || '';
+            const qty = Math.max(0, Number(document.getElementById('sc-sparepart-qty')?.value) || 0);
+            if (code) {
+                const it = appState.items.find(x => x.code === code);
+                if (it) document.getElementById('sc-modal-cost').value = (Number(it.cost) || 0) * qty;
+            }
+            recalcServiceCompletion();
+        }
+
+        function recalcServiceCompletion() {
             const modal = Number(document.getElementById('sc-modal-cost')?.value) || 0;
             const sell = Number(document.getElementById('sc-service-price')?.value) || 0;
             document.getElementById('sc-profit-preview').textContent = formatRp(sell - modal);
@@ -12377,9 +12669,11 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
         }
 
         // =========================================================================
-        // 9. PEMBUATAN VOUCHER FISIK (MULTI-ITEM PER NOTA, KODE BARANG & FIFO) & MUTASI SUMBER DANA
+        // 9. PEMBUATAN VOUCHER FISIK (MULTI-ITEM PER NOTA, KODE BARANG, FIFO, EDIT/HAPUS & CETAK) & MUTASI SUMBER DANA
         // =========================================================================
         let vfDraftItems = [];
+        let vfeDraftItems = [];
+        let selectedVfIndex = -1;
 
         function generateRktNoteNo() {
             const d = new Date();
@@ -12393,10 +12687,11 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             return `RKT-${ymd}-${String(maxSeq + 1).padStart(3, '0')}`;
         }
 
-        function buildZeroFifoLayers(zeroCode) {
+        function buildZeroFifoLayers(zeroCode, opts = {}) {
             const zeroIt = (appState.items || []).find(i => i.code === zeroCode);
             if (!zeroIt) return [];
-            const currentStock = Math.max(0, Number(zeroIt.stock) || 0);
+            const excludeVoucherId = opts && opts.excludeVoucherId ? String(opts.excludeVoucherId) : '';
+            const currentStock = Math.max(0, opts && opts.stockOverride !== undefined ? Number(opts.stockOverride) : (Number(zeroIt.stock) || 0));
             const fallbackCost = Math.max(0, Number(zeroIt.cost) || 0);
             if (currentStock <= 0) return [];
 
@@ -12415,7 +12710,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             });
 
             (appState.voucherProductions || []).forEach(v => {
-                if (!v) return;
+                if (!v || (excludeVoucherId && v.id === excludeVoucherId)) return;
                 const subs = Array.isArray(v.items) && v.items.length
                     ? v.items
                     : [{ targetCode: v.targetCode, targetName: v.targetName, qty: v.qty, newHpp: v.qty ? (Number(v.totalModal) || 0) / Number(v.qty) : fallbackCost }];
@@ -12478,10 +12773,10 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             return layers;
         }
 
-        function previewVoucherFifoAllocation(zeroCode, draftItems) {
+        function previewVoucherFifoAllocation(zeroCode, draftItems, layerOpts = {}) {
             const zeroIt = (appState.items || []).find(i => i.code === zeroCode);
             const fallbackCost = Math.max(0, Number(zeroIt && zeroIt.cost) || 0);
-            const layers = buildZeroFifoLayers(zeroCode).map(l => ({ ...l }));
+            const layers = buildZeroFifoLayers(zeroCode, layerOpts).map(l => ({ ...l }));
 
             let totalQty = 0, totalInject = 0, totalZeroCost = 0, grandTotal = 0;
             const allocated = (draftItems || []).map(row => {
@@ -12573,7 +12868,10 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             if (matched) {
                 targetSel.value = matched.code;
                 codeEl.value = matched.code;
-                if (fromEnter) document.getElementById('vf-qty')?.focus();
+                if (fromEnter) {
+                    const q = document.getElementById('vf-qty');
+                    if (q) { q.focus(); q.select?.(); }
+                }
                 return true;
             }
             if (fromEnter) showToast(`Kode barang "${raw}" tidak ditemukan di Master Data.`, 'error');
@@ -12711,18 +13009,15 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             }
             if (sim.totalInject > 0 && !confirmIfInsufficient(srcWallet, sim.totalInject)) return;
 
-            // Potong stok Zero secara FIFO & perbarui HPP aktif Voucher Zero dari lapisan FIFO berikutnya
             zeroIt.stock = Math.max(0, (Number(zeroIt.stock) || 0) - sim.totalQty);
             if (sim.remainingLayers.length > 0) {
                 zeroIt.cost = Math.round(sim.remainingLayers[0].unitCost);
             }
 
-            // Potong saldo inject
             if (appState.wallets[srcWallet] !== undefined) {
                 appState.wallets[srcWallet] -= sim.totalInject;
             }
 
-            // Tambah stok masing-masing Voucher Jadi & perbarui HPP barunya (HPP FIFO Zero + Biaya Inject/PCS)
             let rktId = (document.getElementById('vf-note-no')?.value || '').trim().toUpperCase();
             if (!rktId || (appState.voucherProductions || []).some(v => v && v.id === rktId)) {
                 rktId = generateRktNoteNo();
@@ -12734,6 +13029,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             sim.allocated.forEach(row => {
                 const targetIt = (appState.items || []).find(i => i.code === row.targetCode);
                 if (!targetIt) return;
+                const prevHpp = Number(targetIt.cost) || 0;
                 targetIt.stock = (Number(targetIt.stock) || 0) + row.qty;
                 targetIt.cost = row.newHpp;
                 savedItems.push({
@@ -12743,6 +13039,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                     injectCost: row.injectCost,
                     zeroUnitCost: row.zeroUnitCost,
                     zeroCost: row.zeroCost,
+                    prevHpp,
                     newHpp: row.newHpp,
                     subtotalModal: row.subtotalModal
                 });
@@ -12783,6 +13080,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 totalModal: sim.grandTotal,
                 items: savedItems
             });
+            selectedVfIndex = 0;
 
             vfDraftItems = [];
             const noteInput = document.getElementById('vf-note');
@@ -12840,19 +13138,72 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             };
         }
 
+        function selectVoucherHistoryRow(idx) {
+            selectedVfIndex = idx;
+            renderVoucherAssemblyHistory();
+        }
+
+        function updateSelectedVoucherLabel() {
+            const lbl = document.getElementById('selected-vf-label');
+            if (!lbl) return;
+            const raw = (appState.voucherProductions || [])[selectedVfIndex];
+            if (!raw) {
+                lbl.textContent = 'Belum ada yang dipilih';
+                return;
+            }
+            const v = normalizeVoucherNote(raw);
+            lbl.textContent = `${v.id} (${formatNum(v.totalQty)} PCS)`;
+        }
+
+        function openSelectedVoucherDetail() {
+            if (selectedVfIndex < 0 || !(appState.voucherProductions || [])[selectedVfIndex]) {
+                showToast('Pilih salah satu baris riwayat nota perakitan terlebih dahulu!', 'error');
+                return;
+            }
+            openVoucherAssemblyDetail(selectedVfIndex);
+        }
+
+        function openSelectedVoucherEdit() {
+            if (selectedVfIndex < 0 || !(appState.voucherProductions || [])[selectedVfIndex]) {
+                showToast('Pilih salah satu baris riwayat nota perakitan terlebih dahulu untuk diedit!', 'error');
+                return;
+            }
+            openVoucherAssemblyEdit(selectedVfIndex);
+        }
+
+        function deleteSelectedVoucherAssembly() {
+            if (selectedVfIndex < 0 || !(appState.voucherProductions || [])[selectedVfIndex]) {
+                showToast('Pilih salah satu baris riwayat nota perakitan terlebih dahulu untuk dihapus!', 'error');
+                return;
+            }
+            deleteVoucherAssemblyByIndex(selectedVfIndex, false);
+        }
+
+        function printSelectedVoucherAssembly() {
+            if (selectedVfIndex < 0 || !(appState.voucherProductions || [])[selectedVfIndex]) {
+                showToast('Pilih salah satu baris riwayat nota perakitan terlebih dahulu untuk dicetak!', 'error');
+                return;
+            }
+            printVoucherAssemblyByIndex(selectedVfIndex);
+        }
+
         function renderVoucherAssemblyHistory() {
             const tbody = document.getElementById('vf-history-tbody');
             if (!tbody) return;
             const list = appState.voucherProductions || [];
             if (!list.length) {
+                selectedVfIndex = -1;
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">Belum ada riwayat perakitan voucher fisik.</td></tr>';
+                updateSelectedVoucherLabel();
                 return;
             }
+            if (selectedVfIndex >= list.length) selectedVfIndex = list.length - 1;
             tbody.innerHTML = list.map((raw, idx) => {
                 const v = normalizeVoucherNote(raw);
+                const isSelected = idx === selectedVfIndex;
                 const summary = v.items.map(it => `${it.targetName || it.targetCode} (${formatNum(it.qty)})`).join(', ');
                 return `
-                    <tr>
+                    <tr onclick="selectVoucherHistoryRow(${idx})" ondblclick="openVoucherAssemblyEdit(${idx})" class="cursor-pointer ${isSelected ? '!bg-cyan-100/90 font-semibold' : ''}">
                         <td class="font-mono font-bold text-[11px] text-cyan-900 whitespace-nowrap">${esc(v.id)}</td>
                         <td class="font-mono text-[10.5px] whitespace-nowrap">${v.date ? new Date(v.date).toLocaleString('id-ID') : '-'}</td>
                         <td class="text-[11px]">
@@ -12862,13 +13213,14 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                         <td class="text-right font-mono font-bold whitespace-nowrap">${formatRp(v.totalModal)}</td>
                         <td class="text-[11px] text-slate-600">${esc(v.note || '-')}</td>
                         <td class="text-center">
-                            <button type="button" onclick="openVoucherAssemblyDetail(${idx})" class="ipos-btn px-2 py-0.5 rounded text-[10.5px] font-bold text-cyan-800" title="Lihat Detail Nota">
+                            <button type="button" onclick="event.stopPropagation(); selectedVfIndex=${idx}; renderVoucherAssemblyHistory(); openVoucherAssemblyDetail(${idx});" class="ipos-btn px-2 py-0.5 rounded text-[10.5px] font-bold text-cyan-800" title="Lihat Detail Nota">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </td>
                     </tr>
                 `;
             }).join('');
+            updateSelectedVoucherLabel();
         }
 
         function openVoucherAssemblyDetail(idx) {
@@ -12876,6 +13228,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             const v = normalizeVoucherNote(raw);
             const body = document.getElementById('vf-detail-body');
             if (!v || !body) return;
+            selectedVfIndex = idx;
             const zeroItem = (appState.items || []).find(i => i.code === v.zeroCode);
             const zeroLabel = v.zeroCode ? `${v.zeroCode}${v.zeroName || zeroItem?.name ? ' - ' + (v.zeroName || zeroItem.name) : ''}` : '-';
             const walletLabel = v.sourceWallet ? getWalletNameById(v.sourceWallet) : '-';
@@ -12923,6 +13276,527 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
                 </div>
             `;
             document.getElementById('vf-detail-modal')?.classList.remove('hidden');
+        }
+
+        function getVoucherEditSimOptions(zeroCode) {
+            const idx = Number(document.getElementById('vfe-edit-index')?.value ?? -1);
+            const rawOld = (appState.voucherProductions || [])[idx];
+            if (!rawOld) return {};
+            const old = normalizeVoucherNote(rawOld);
+            const zeroIt = (appState.items || []).find(i => i.code === zeroCode);
+            const stockAfterRollback = zeroIt
+                ? (zeroCode === old.zeroCode ? (Number(zeroIt.stock) || 0) + old.totalQty : (Number(zeroIt.stock) || 0))
+                : 0;
+            return { excludeVoucherId: old.id, stockOverride: stockAfterRollback };
+        }
+
+        function updateVoucherEditHeaderInfo() {
+            const idx = Number(document.getElementById('vfe-edit-index')?.value ?? -1);
+            const rawOld = (appState.voucherProductions || [])[idx];
+            const old = rawOld ? normalizeVoucherNote(rawOld) : null;
+            const zeroCode = document.getElementById('vfe-zero-item')?.value || '';
+            const srcWallet = document.getElementById('vfe-source-wallet')?.value || '';
+            const zeroInfo = document.getElementById('vfe-zero-info');
+            const walletInfo = document.getElementById('vfe-wallet-info');
+
+            const zeroIt = (appState.items || []).find(i => i.code === zeroCode);
+            if (zeroInfo) {
+                if (zeroIt) {
+                    const simOpts = getVoucherEditSimOptions(zeroCode);
+                    const availStock = simOpts.stockOverride !== undefined ? simOpts.stockOverride : (Number(zeroIt.stock) || 0);
+                    const layers = buildZeroFifoLayers(zeroCode, simOpts);
+                    const fifoFront = layers.length ? layers[0].unitCost : (Number(zeroIt.cost) || 0);
+                    zeroInfo.textContent = `Stok tersedia (pasca-rollback): ${formatNum(availStock)} ${zeroIt.unit || 'PCS'} • HPP FIFO Zero: Rp ${formatRp(fifoFront)}/PCS`;
+                } else {
+                    zeroInfo.textContent = '';
+                }
+            }
+            if (walletInfo) {
+                if (srcWallet && appState.wallets[srcWallet] !== undefined) {
+                    const curBal = Number(appState.wallets[srcWallet]) || 0;
+                    const availBal = (old && old.sourceWallet === srcWallet) ? curBal + old.totalInject : curBal;
+                    walletInfo.textContent = `Saldo tersedia (pasca-rollback): Rp ${formatRp(availBal)}`;
+                    walletInfo.className = `text-[10.5px] mt-0.5 font-mono ${availBal < 0 ? 'text-red-700 font-bold' : 'text-slate-600'}`;
+                } else {
+                    walletInfo.textContent = '';
+                }
+            }
+        }
+
+        function syncVoucherEditCodeFromTarget() {
+            const targetSel = document.getElementById('vfe-target-item');
+            const codeEl = document.getElementById('vfe-target-code');
+            if (!targetSel || !codeEl) return;
+            codeEl.value = targetSel.value || '';
+        }
+
+        function syncVoucherEditTargetFromCode(fromEnter = false) {
+            const codeEl = document.getElementById('vfe-target-code');
+            const targetSel = document.getElementById('vfe-target-item');
+            if (!codeEl || !targetSel) return false;
+            const raw = codeEl.value.trim().toUpperCase();
+            if (!raw) return false;
+            const matched = (appState.items || []).find(i => String(i.code || '').trim().toUpperCase() === raw);
+            if (matched) {
+                targetSel.value = matched.code;
+                codeEl.value = matched.code;
+                if (fromEnter) {
+                    const q = document.getElementById('vfe-qty');
+                    if (q) { q.focus(); q.select?.(); }
+                }
+                return true;
+            }
+            if (fromEnter) showToast(`Kode barang "${raw}" tidak ditemukan di Master Data.`, 'error');
+            return false;
+        }
+
+        function handleVoucherEditCodeKeydown(ev) {
+            if (ev.key === 'Enter') {
+                ev.preventDefault();
+                syncVoucherEditTargetFromCode(true);
+            }
+        }
+
+        function onVoucherEditZeroChanged() {
+            updateVoucherEditHeaderInfo();
+            renderVoucherEditDraftTable();
+        }
+
+        function openVoucherAssemblyEdit(idx) {
+            const raw = (appState.voucherProductions || [])[idx];
+            const v = normalizeVoucherNote(raw);
+            if (!v) return;
+            selectedVfIndex = idx;
+
+            document.getElementById('vfe-edit-index').value = idx;
+            document.getElementById('vfe-title-note').textContent = v.id;
+            document.getElementById('vfe-note-no').value = v.id;
+            document.getElementById('vfe-note').value = v.note || '';
+
+            const zeroSel = document.getElementById('vfe-zero-item');
+            const targetSel = document.getElementById('vfe-target-item');
+            const walletSel = document.getElementById('vfe-source-wallet');
+            const opts = (appState.items || []).map(i => `<option value="${esc(i.code)}">${esc(i.code)} - ${esc(i.name)} (Stok: ${i.stock})</option>`).join('');
+            if (zeroSel) {
+                zeroSel.innerHTML = opts;
+                if (v.zeroCode && (appState.items || []).some(i => i.code === v.zeroCode)) zeroSel.value = v.zeroCode;
+            }
+            if (targetSel) {
+                targetSel.innerHTML = opts;
+                if (appState.items.length > 1) targetSel.selectedIndex = 1;
+            }
+            if (walletSel) {
+                walletSel.innerHTML = (appState.walletList || []).map(w =>
+                    `<option value="${esc(w.id)}">${esc(w.name)} (${formatRp(appState.wallets[w.id] || 0)})</option>`
+                ).join('');
+                if (v.sourceWallet && walletSel.querySelector(`option[value="${CSS.escape(v.sourceWallet)}"]`)) {
+                    walletSel.value = v.sourceWallet;
+                }
+            }
+
+            vfeDraftItems = v.items.map(it => ({
+                targetCode: it.targetCode,
+                targetName: it.targetName,
+                qty: Number(it.qty) || 1,
+                injectCost: Number(it.injectCost) || 0
+            }));
+
+            syncVoucherEditCodeFromTarget();
+            updateVoucherEditHeaderInfo();
+            renderVoucherEditDraftTable();
+            document.getElementById('vf-edit-modal')?.classList.remove('hidden');
+        }
+
+        function addVoucherEditDraftItem() {
+            const codeEl = document.getElementById('vfe-target-code');
+            if (codeEl && codeEl.value.trim()) {
+                const typed = codeEl.value.trim().toUpperCase();
+                const selVal = document.getElementById('vfe-target-item')?.value || '';
+                if (typed !== selVal.toUpperCase()) {
+                    if (!syncVoucherEditTargetFromCode(false)) {
+                        showToast(`Kode barang "${typed}" tidak ditemukan.`, 'error');
+                        codeEl.focus();
+                        return;
+                    }
+                }
+            }
+
+            const zeroCode = document.getElementById('vfe-zero-item')?.value || '';
+            const targetCode = document.getElementById('vfe-target-item')?.value || '';
+            const qty = Math.max(0, Math.floor(Number(document.getElementById('vfe-qty')?.value) || 0));
+            const injectCost = Math.max(0, Number(document.getElementById('vfe-inject-cost')?.value) || 0);
+
+            const targetIt = (appState.items || []).find(i => i.code === targetCode);
+            if (!targetIt) { showToast('Pilih produk voucher jadi terlebih dahulu!', 'error'); return; }
+            if (targetCode === zeroCode) { showToast('Produk tujuan tidak boleh sama dengan bahan baku Voucher Zero!', 'error'); return; }
+            if (qty <= 0) { showToast('Qty perakitan minimal 1 PCS!', 'error'); document.getElementById('vfe-qty')?.focus(); return; }
+
+            const existingRow = vfeDraftItems.find(x => x.targetCode === targetIt.code && x.injectCost === injectCost);
+            if (existingRow) {
+                existingRow.qty += qty;
+                existingRow.targetName = targetIt.name;
+            } else {
+                vfeDraftItems.push({
+                    targetCode: targetIt.code,
+                    targetName: targetIt.name,
+                    qty,
+                    injectCost
+                });
+            }
+            renderVoucherEditDraftTable();
+            if (codeEl) { codeEl.value = ''; codeEl.focus(); }
+        }
+
+        function updateVoucherEditDraftItem(idx, field, val) {
+            if (!vfeDraftItems[idx]) return;
+            if (field === 'qty') vfeDraftItems[idx].qty = Math.max(1, Math.floor(Number(val) || 1));
+            if (field === 'injectCost') vfeDraftItems[idx].injectCost = Math.max(0, Number(val) || 0);
+            renderVoucherEditDraftTable();
+        }
+
+        function removeVoucherEditDraftItem(idx) {
+            vfeDraftItems.splice(idx, 1);
+            renderVoucherEditDraftTable();
+        }
+
+        function renderVoucherEditDraftTable() {
+            const tbody = document.getElementById('vfe-draft-tbody');
+            const zeroCode = document.getElementById('vfe-zero-item')?.value || '';
+            const sim = previewVoucherFifoAllocation(zeroCode, vfeDraftItems, getVoucherEditSimOptions(zeroCode));
+
+            if (tbody) {
+                if (!sim.allocated.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-slate-400">Daftar item kosong. Tambahkan minimal 1 item di atas.</td></tr>';
+                } else {
+                    tbody.innerHTML = sim.allocated.map((it, idx) => `
+                        <tr>
+                            <td class="font-mono font-bold text-slate-700">${esc(it.targetCode)}</td>
+                            <td class="font-semibold">${esc(it.targetName)}</td>
+                            <td class="text-center">
+                                <input type="number" min="1" step="1" value="${it.qty}" onchange="updateVoucherEditDraftItem(${idx}, 'qty', this.value)" class="w-16 text-center border border-slate-300 rounded px-1 py-0.5 font-mono font-bold">
+                            </td>
+                            <td class="text-right">
+                                <input type="text" inputmode="decimal" data-money value="${formatNum(it.injectCost)}" onchange="updateVoucherEditDraftItem(${idx}, 'injectCost', this.value)" class="w-24 text-right border border-slate-300 rounded px-1 py-0.5 font-mono">
+                            </td>
+                            <td class="text-right font-mono font-bold text-emerald-700">${formatRp(it.newHpp)}</td>
+                            <td class="text-right font-mono font-bold text-cyan-900">${formatRp(it.subtotalModal)}</td>
+                            <td class="text-center">
+                                <button type="button" onclick="removeVoucherEditDraftItem(${idx})" class="text-red-600 hover:text-red-800 font-bold px-1.5" title="Hapus item">&times;</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            const qtyEl = document.getElementById('vfe-total-qty');
+            const injEl = document.getElementById('vfe-total-inject');
+            const totEl = document.getElementById('vfe-grand-total');
+            if (qtyEl) qtyEl.textContent = `${formatNum(sim.totalQty)} PCS`;
+            if (injEl) injEl.textContent = `Rp ${formatRp(sim.totalInject)}`;
+            if (totEl) totEl.textContent = `Rp ${formatRp(sim.grandTotal)}`;
+        }
+
+        async function saveVoucherAssemblyEdit() {
+            const idx = Number(document.getElementById('vfe-edit-index')?.value ?? -1);
+            const rawOld = (appState.voucherProductions || [])[idx];
+            if (!rawOld) { showToast('Nota perakitan tidak ditemukan!', 'error'); return; }
+            if (!vfeDraftItems.length) { showToast('Daftar item nota tidak boleh kosong! Gunakan tombol Hapus bila ingin menghapus nota.', 'error'); return; }
+
+            const oldNote = normalizeVoucherNote(rawOld);
+            const zeroCode = document.getElementById('vfe-zero-item')?.value || '';
+            const srcWallet = document.getElementById('vfe-source-wallet')?.value || '';
+            const note = (document.getElementById('vfe-note')?.value || '').trim();
+            const newZeroIt = (appState.items || []).find(i => i.code === zeroCode);
+            const oldZeroIt = (appState.items || []).find(i => i.code === oldNote.zeroCode);
+            if (!newZeroIt) { showToast('Bahan baku Voucher Zero tidak ditemukan!', 'error'); return; }
+
+            // Validasi kecukupan stok Voucher Jadi agar rollback + penerapan item edit tidak pernah membuat stok minus
+            const oldByTarget = {};
+            oldNote.items.forEach(it => {
+                const c = it.targetCode || ((appState.items || []).find(x => x.name === it.targetName)?.code) || '';
+                if (c) oldByTarget[c] = (oldByTarget[c] || 0) + (Number(it.qty) || 0);
+            });
+            const newByTarget = {};
+            vfeDraftItems.forEach(it => {
+                if (it.targetCode) newByTarget[it.targetCode] = (newByTarget[it.targetCode] || 0) + (Number(it.qty) || 0);
+            });
+            for (const [code, oldQ] of Object.entries(oldByTarget)) {
+                const tIt = (appState.items || []).find(i => i.code === code);
+                const curS = Number(tIt?.stock) || 0;
+                const newQ = newByTarget[code] || 0;
+                if (curS - oldQ + newQ < 0) {
+                    showToast(`Tidak dapat menyimpan edit: stok "${tIt?.name || code}" tersisa ${formatNum(curS)} PCS sudah terjual/berkurang (butuh tarik ${formatNum(oldQ - newQ)} PCS).`, 'error');
+                    return;
+                }
+            }
+
+            // Simulasi FIFO pasca-rollback untuk validasi stok Voucher Zero & saldo inject
+            const zeroStockAfterRollback = (newZeroIt.code === oldNote.zeroCode)
+                ? (Number(newZeroIt.stock) || 0) + oldNote.totalQty
+                : (Number(newZeroIt.stock) || 0);
+            const sim = previewVoucherFifoAllocation(zeroCode, vfeDraftItems, { excludeVoucherId: oldNote.id, stockOverride: zeroStockAfterRollback });
+
+            if (zeroStockAfterRollback < sim.totalQty) {
+                showToast(`Stok bahan baku ${newZeroIt.name} pasca-rollback tidak cukup (tersedia ${formatNum(zeroStockAfterRollback)} PCS, butuh ${formatNum(sim.totalQty)} PCS)!`, 'error');
+                return;
+            }
+
+            const curWalletBal = (appState.wallets[srcWallet] !== undefined) ? (Number(appState.wallets[srcWallet]) || 0) : 0;
+            const postRollbackWalletBal = (oldNote.sourceWallet === srcWallet) ? curWalletBal + oldNote.totalInject : curWalletBal;
+            if (sim.totalInject > 0 && postRollbackWalletBal < sim.totalInject) {
+                if (!confirm(`Saldo "${getWalletNameById(srcWallet)}" pasca-rollback (Rp ${formatRp(postRollbackWalletBal)}) lebih kecil dari total inject Rp ${formatRp(sim.totalInject)}. Saldo akan menjadi minus.\n\nTetap lanjutkan?`)) {
+                    return;
+                }
+            }
+
+            // 1. Rollback nota versi lama
+            if (oldZeroIt) {
+                oldZeroIt.stock = (Number(oldZeroIt.stock) || 0) + oldNote.totalQty;
+            }
+            if (oldNote.sourceWallet && appState.wallets[oldNote.sourceWallet] !== undefined) {
+                appState.wallets[oldNote.sourceWallet] += oldNote.totalInject;
+            }
+            for (const [code, oldQ] of Object.entries(oldByTarget)) {
+                const tIt = (appState.items || []).find(i => i.code === code);
+                if (tIt) {
+                    tIt.stock = Math.max(0, (Number(tIt.stock) || 0) - oldQ);
+                    const oldRow = oldNote.items.find(x => x.targetCode === code);
+                    if (oldRow && oldRow.prevHpp !== undefined && !(newByTarget[code] > 0)) {
+                        tIt.cost = Number(oldRow.prevHpp) || tIt.cost;
+                    }
+                }
+            }
+            appState.voucherProductions.splice(idx, 1);
+            appState.stockLedger = (appState.stockLedger || []).filter(r => !(r && r.ref === oldNote.id && r.type === 'PERAKITAN VOUCHER'));
+
+            if (oldZeroIt && oldZeroIt.code !== newZeroIt.code) {
+                const oldZeroLayers = buildZeroFifoLayers(oldZeroIt.code);
+                if (oldZeroLayers.length > 0) oldZeroIt.cost = Math.round(oldZeroLayers[0].unitCost);
+            }
+
+            // 2. Terapkan hasil edit FIFO & saldo baru di atas state pasca-rollback
+            const finalSim = previewVoucherFifoAllocation(zeroCode, vfeDraftItems);
+            newZeroIt.stock = Math.max(0, (Number(newZeroIt.stock) || 0) - finalSim.totalQty);
+            if (finalSim.remainingLayers.length > 0) {
+                newZeroIt.cost = Math.round(finalSim.remainingLayers[0].unitCost);
+            }
+            if (appState.wallets[srcWallet] !== undefined) {
+                appState.wallets[srcWallet] -= finalSim.totalInject;
+            }
+
+            const ledgerDate = oldNote.date || new Date().toISOString();
+            const savedItems = [];
+            finalSim.allocated.forEach(row => {
+                const targetIt = (appState.items || []).find(i => i.code === row.targetCode);
+                if (!targetIt) return;
+                const oldRow = oldNote.items.find(x => x.targetCode === targetIt.code);
+                const prevHpp = (oldRow && oldRow.prevHpp !== undefined) ? Number(oldRow.prevHpp) : (Number(targetIt.cost) || 0);
+                targetIt.stock = (Number(targetIt.stock) || 0) + row.qty;
+                targetIt.cost = row.newHpp;
+                savedItems.push({
+                    targetCode: targetIt.code,
+                    targetName: targetIt.name,
+                    qty: row.qty,
+                    injectCost: row.injectCost,
+                    zeroUnitCost: row.zeroUnitCost,
+                    zeroCost: row.zeroCost,
+                    prevHpp,
+                    newHpp: row.newHpp,
+                    subtotalModal: row.subtotalModal
+                });
+                appState.stockLedger.unshift({
+                    date: ledgerDate,
+                    ref: oldNote.id,
+                    code: targetIt.code,
+                    name: targetIt.name,
+                    type: 'PERAKITAN VOUCHER',
+                    inQty: row.qty,
+                    outQty: 0,
+                    balance: targetIt.stock
+                });
+            });
+
+            appState.stockLedger.unshift({
+                date: ledgerDate,
+                ref: oldNote.id,
+                code: newZeroIt.code,
+                name: newZeroIt.name,
+                type: 'PERAKITAN VOUCHER',
+                inQty: 0,
+                outQty: finalSim.totalQty,
+                balance: newZeroIt.stock
+            });
+
+            // Timpa data nota pada indeks yang sama tanpa membuat No. Nota baru
+            appState.voucherProductions.splice(idx, 0, {
+                id: oldNote.id,
+                date: oldNote.date || ledgerDate,
+                updatedAt: new Date().toISOString(),
+                zeroCode: newZeroIt.code,
+                zeroName: newZeroIt.name,
+                sourceWallet: srcWallet,
+                note,
+                totalQty: finalSim.totalQty,
+                totalInject: finalSim.totalInject,
+                totalZeroCost: finalSim.totalZeroCost,
+                totalModal: finalSim.grandTotal,
+                items: savedItems
+            });
+            selectedVfIndex = idx;
+
+            closeModal('vf-edit-modal');
+            await saveAppState();
+            showToast(`Perubahan Nota ${oldNote.id} berhasil disimpan (FIFO & saldo diperbarui)!`, 'success');
+        }
+
+        async function deleteVoucherAssemblyByIndex(idx, fromEditModal = false) {
+            const raw = (appState.voucherProductions || [])[idx];
+            if (!raw) { showToast('Nota perakitan tidak ditemukan!', 'error'); return; }
+            const oldNote = normalizeVoucherNote(raw);
+
+            const rollbackByTarget = {};
+            oldNote.items.forEach(it => {
+                const c = it.targetCode || ((appState.items || []).find(x => x.name === it.targetName)?.code) || '';
+                if (!rollbackByTarget[c || it.targetName]) {
+                    rollbackByTarget[c || it.targetName] = { code: c, name: it.targetName || c, qty: 0, prevHpp: it.prevHpp };
+                }
+                rollbackByTarget[c || it.targetName].qty += (Number(it.qty) || 0);
+            });
+
+            // Validasi ketat agar stok Voucher Jadi & FIFO tidak minus saat ditarik kembali
+            for (const req of Object.values(rollbackByTarget)) {
+                const tIt = req.code
+                    ? (appState.items || []).find(i => i.code === req.code)
+                    : (appState.items || []).find(i => i.name === req.name);
+                const curStock = Number(tIt?.stock) || 0;
+                if (!tIt || curStock < req.qty) {
+                    showToast(`Nota ${oldNote.id} tidak dapat dihapus: stok "${req.name}" tersisa ${formatNum(curStock)} PCS, tidak mencukupi untuk ditarik ${formatNum(req.qty)} PCS (sudah terjual/berkurang agar FIFO tidak minus).`, 'error');
+                    return;
+                }
+            }
+
+            if (!confirm(`Hapus Nota Perakitan ${oldNote.id}?\n\n• Mengembalikan ${formatNum(oldNote.totalQty)} PCS Voucher Zero (${oldNote.zeroName || oldNote.zeroCode})\n• Mengembalikan saldo inject Rp ${formatRp(oldNote.totalInject)}\n• Menarik kembali stok Voucher Jadi hasil nota ini.`)) {
+                return;
+            }
+
+            // 1. Hapus nota & catatan kartu stoknya terlebih dahulu agar perhitungan layer FIFO bersih
+            appState.voucherProductions.splice(idx, 1);
+            appState.stockLedger = (appState.stockLedger || []).filter(r => !(r && r.ref === oldNote.id && r.type === 'PERAKITAN VOUCHER'));
+
+            // 2. Kembalikan stok Voucher Zero & pulihkan HPP FIFO-nya
+            const zeroIt = (appState.items || []).find(i => i.code === oldNote.zeroCode);
+            if (zeroIt) {
+                zeroIt.stock = (Number(zeroIt.stock) || 0) + oldNote.totalQty;
+                const restoredLayers = buildZeroFifoLayers(zeroIt.code);
+                if (restoredLayers.length > 0) zeroIt.cost = Math.round(restoredLayers[0].unitCost);
+            }
+
+            // 3. Kembalikan saldo inject
+            if (oldNote.sourceWallet && appState.wallets[oldNote.sourceWallet] !== undefined) {
+                appState.wallets[oldNote.sourceWallet] += oldNote.totalInject;
+            }
+
+            // 4. Tarik kembali stok Voucher Jadi & pulihkan HPP sebelumnya bila tersedia
+            for (const req of Object.values(rollbackByTarget)) {
+                const tIt = req.code
+                    ? (appState.items || []).find(i => i.code === req.code)
+                    : (appState.items || []).find(i => i.name === req.name);
+                if (tIt) {
+                    tIt.stock = Math.max(0, (Number(tIt.stock) || 0) - req.qty);
+                    const tLayers = buildZeroFifoLayers(tIt.code);
+                    if (tLayers.length > 0) tIt.cost = Math.round(tLayers[0].unitCost);
+                    else if (req.prevHpp !== undefined) tIt.cost = Number(req.prevHpp) || tIt.cost;
+                }
+            }
+
+            selectedVfIndex = -1;
+            if (fromEditModal) closeModal('vf-edit-modal');
+            closeModal('vf-detail-modal');
+            await saveAppState();
+            showToast(`Nota ${oldNote.id} dihapus. Stok Voucher Zero, Voucher Jadi, dan saldo inject telah dikembalikan!`, 'info');
+        }
+
+        function printVoucherAssemblyByIndex(idx) {
+            const raw = (appState.voucherProductions || [])[idx];
+            if (!raw) { showToast('Nota perakitan tidak ditemukan untuk dicetak!', 'error'); return; }
+            const v = normalizeVoucherNote(raw);
+            const zeroItem = (appState.items || []).find(i => i.code === v.zeroCode);
+            const zeroLabel = v.zeroCode ? `${v.zeroCode}${v.zeroName || zeroItem?.name ? ' - ' + (v.zeroName || zeroItem.name) : ''}` : '-';
+            const walletLabel = v.sourceWallet ? getWalletNameById(v.sourceWallet) : '-';
+
+            lastDocPreview = { kind: 'voucher_assembly', docType: 'PERAKITAN', data: v };
+            const titleEl = document.getElementById('doc-preview-title');
+            if (titleEl) {
+                titleEl.innerHTML = `<i class="fas fa-sim-card mr-1.5 text-cyan-700"></i> Preview & Cetak Nota Perakitan Voucher (${esc(v.id)})`;
+            }
+
+            const rowsHtml = v.items.map((it, i) => `
+                <tr class="border-b border-slate-300">
+                    <td class="py-1 px-2 text-center border-r border-slate-300">${i + 1}</td>
+                    <td class="py-1 px-2 font-mono font-bold border-r border-slate-300">${esc(it.targetCode || '-')}</td>
+                    <td class="py-1 px-2 border-r border-slate-300">${esc(it.targetName || '-')}</td>
+                    <td class="py-1 px-2 text-center font-mono border-r border-slate-300">${formatNum(it.qty)}</td>
+                    <td class="py-1 px-2 text-right font-mono border-r border-slate-300">${formatRp(it.zeroUnitCost || 0)}</td>
+                    <td class="py-1 px-2 text-right font-mono border-r border-slate-300">${formatRp(it.injectCost || 0)}</td>
+                    <td class="py-1 px-2 text-right font-mono font-bold border-r border-slate-300">${formatRp(it.newHpp || 0)}</td>
+                    <td class="py-1 px-2 text-right font-mono font-bold">${formatRp(it.subtotalModal || 0)}</td>
+                </tr>
+            `).join('');
+
+            const sheet = document.getElementById('doc-print-sheet');
+            if (sheet) {
+                sheet.innerHTML = `
+                    <div class="border-b-2 border-slate-800 pb-3 mb-3 flex justify-between items-start">
+                        <div>
+                            <div class="text-base font-extrabold text-slate-900 uppercase">${esc(appState.settings.storeName)}</div>
+                            <div class="text-[11px] text-slate-600">${esc(appState.settings.storeAddress)}</div>
+                            <div class="text-[11px] text-slate-600">Telp/WA: ${esc(appState.settings.storePhone)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-extrabold uppercase px-2.5 py-1 rounded bg-cyan-100 text-cyan-900 border border-cyan-400">
+                                NOTA PERAKITAN VOUCHER
+                            </div>
+                            <div class="font-mono font-bold text-xs mt-1">No: ${esc(v.id)}</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-3 bg-slate-50 p-2.5 rounded border border-slate-300 text-[11px]">
+                        <div>
+                            <div>Bahan Baku Zero: <b>${esc(zeroLabel)}</b></div>
+                            <div>Sumber Saldo: <b>${esc(walletLabel)}</b></div>
+                        </div>
+                        <div class="text-right">
+                            <div>Waktu: <b class="font-mono">${v.date ? new Date(v.date).toLocaleString('id-ID') : '-'}</b></div>
+                            <div>Keterangan: <b>${esc(v.note || '-')}</b></div>
+                        </div>
+                    </div>
+
+                    <table class="w-full border border-slate-400 border-collapse mb-3 text-[11px]">
+                        <thead>
+                            <tr class="bg-slate-200 border-b border-slate-400 font-bold">
+                                <th class="py-1 px-2 text-center border-r border-slate-400 w-8">No</th>
+                                <th class="py-1 px-2 text-left border-r border-slate-400">Kode</th>
+                                <th class="py-1 px-2 text-left border-r border-slate-400">Nama Voucher Jadi</th>
+                                <th class="py-1 px-2 text-center border-r border-slate-400 w-12">Qty</th>
+                                <th class="py-1 px-2 text-right border-r border-slate-400">HPP Zero</th>
+                                <th class="py-1 px-2 text-right border-r border-slate-400">Inject</th>
+                                <th class="py-1 px-2 text-right border-r border-slate-400">HPP Baru</th>
+                                <th class="py-1 px-2 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                        <tfoot>
+                            <tr class="bg-slate-100 font-extrabold border-t-2 border-slate-400">
+                                <td colspan="3" class="py-1.5 px-2 text-right border-r border-slate-400">TOTAL KESELURUHAN :</td>
+                                <td class="py-1.5 px-2 text-center font-mono border-r border-slate-400">${formatNum(v.totalQty)}</td>
+                                <td colspan="2" class="py-1.5 px-2 text-right font-mono border-r border-slate-400">Inject: Rp ${formatRp(v.totalInject)}</td>
+                                <td colspan="2" class="py-1.5 px-2 text-right font-mono text-sm">Rp ${formatRp(v.totalModal)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                `;
+            }
+            document.getElementById('doc-preview-modal')?.classList.remove('hidden');
         }
 
         async function submitMutasiSumberDana(e) {
@@ -15296,8 +16170,8 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #0f1
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (swRefreshing) return;
                 try {
-                    if (sessionStorage.getItem('donet_sw_reloaded_v20')) return;
-                    sessionStorage.setItem('donet_sw_reloaded_v20', '1');
+                    if (sessionStorage.getItem('donet_sw_reloaded_v21')) return;
+                    sessionStorage.setItem('donet_sw_reloaded_v21', '1');
                 } catch (_) {}
                 swRefreshing = true;
                 window.location.reload();
